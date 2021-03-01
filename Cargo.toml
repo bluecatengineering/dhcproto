@@ -1,0 +1,11 @@
+
+[profile.release]
+opt-level = 3
+
+[profile.dev]
+opt-level = 0
+
+[workspace]
+members = [
+    "libs/proto",
+]
