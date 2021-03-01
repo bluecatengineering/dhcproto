@@ -1,16 +1,19 @@
-use std::net::Ipv4Addr;
+//use std::net::Ipv4Addr;
 
-enum Opcode {
-    bootRequest,
-    bootReply,
-}
+use std::{
+    io::{self, Error, ErrorKind},
+    net::Ipv4Addr,
+};
+
+use decoder::{Decodable, Decoder};
+
+mod decoder;
 
 /// https://tools.ietf.org/html/rfc2131#section-2
 struct Message {
     /// op code / message type
     opcode: Opcode,
-    /// Hardware address type.
-    /// https://tools.ietf.org/html/rfc3232
+    /// Hardware address type: https://tools.ietf.org/html/rfc3232
     htype: u8,
     hlen: u8,
     hops: u8,
@@ -21,4 +24,20 @@ struct Message {
     yiaddr: Ipv4Addr,
     siaddr: Ipv4Addr,
     giaddr: Ipv4Addr,
+    chaddr: [u8; 6],
+    sname: String,
+    file: String,
+    // TODO options
+}
+
+enum Opcode {
+    BootRequest,
+    BootReply,
+    Unknown(u8),
+}
+
+impl<'r> Decodable<'r> for Message {
+    fn read(decoder: &mut Decoder<'r>) -> io::Result<Self> {
+        todo!()
+    }
 }
