@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 #rand = "0.8"
+anyhow = "1.0"
+thiserror = "1.0.20"
