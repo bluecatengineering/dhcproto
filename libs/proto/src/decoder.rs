@@ -1,4 +1,6 @@
-use thiserror::Error;
+use crate::error::{DecodeResult, DecodeError};
+
+use std::{convert::TryInto, mem};
 
 /// A trait for types which are serializable to and from DHCP binary formats
 pub trait Decodable<'r>: Sized {
