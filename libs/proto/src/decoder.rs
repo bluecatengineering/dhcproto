@@ -39,11 +39,6 @@ impl<'a> Decoder<'a> {
         }
     }
 
-    /// Reads a byte from the buffer, equivalent to `Self::pop()`
-    //pub fn read_u8(&mut self) -> DecodeResult<u8> {
-    //    self.pop()
-    //}
-
     pub fn read_u8(&mut self) -> DecodeResult<u8> {
         Ok(self.read::<u8>()?[0])
     }
@@ -70,5 +65,19 @@ impl<'a> Decoder<'a> {
         // self.index += len;
         self.index = end;
         Ok(bytes)
+    }
+
+    pub fn read_slice(&mut self, len: usize) -> DecodeResult<&'a [u8]> {
+        let end = self
+            .index
+            .checked_add(len)
+            .ok_or(DecodeError::EndOfBuffer { index: self.index })?;
+
+        let slice = self
+            .buffer
+            .get(self.index..end)
+            .ok_or(DecodeError::EndOfBuffer { index: end })?;
+        self.index += len;
+        Ok(slice)
     }
 }
