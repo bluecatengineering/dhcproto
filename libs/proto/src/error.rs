@@ -2,16 +2,19 @@ use std::fmt;
 use thiserror::Error;
 
 /// An alias for results returned by functions of this crate
-pub type ProtoResult<T> = ::std::result::Result<T, ProtoError>;
+pub type DecodeResult<T> = ::std::result::Result<T, DecodeError>;
 
-#[derive(Error, Clone, Debug)]
-pub struct ProtoError {
-    kind: ProtoErrorKind,
-}
+//#[derive(Error, Clone, Debug)]
+//pub struct ProtoError {
+//    kind: ProtoErrorKind,
+//}
 
 /// The error kind for errors that get returned in the crate
 #[derive(Error, Clone, Debug)]
-pub enum ProtoErrorKind {
+pub enum DecodeError {
+    #[error("decoder ran out of bytes to read on byte {index}")]
+    EndOfBuffer { index: usize },
+
     /// An error with an arbitrary message
     #[error("{0}")]
     Message(String),
@@ -19,28 +22,19 @@ pub enum ProtoErrorKind {
     /// An error with an arbitrary message
     #[error("{0}")]
     Msg(&'static str),
+
+    #[error("error converting from slice")]
+    SliceError(#[from] std::array::TryFromSliceError),
 }
 
-impl From<String> for ProtoError {
-    fn from(msg: String) -> ProtoError {
-        ProtoErrorKind::Message(msg).into()
+impl From<String> for DecodeError {
+    fn from(msg: String) -> DecodeError {
+        Self::Message(msg)
     }
 }
 
-impl From<&'static str> for ProtoError {
-    fn from(msg: &'static str) -> ProtoError {
-        ProtoErrorKind::Msg(msg).into()
-    }
-}
-
-impl From<ProtoErrorKind> for ProtoError {
-    fn from(kind: ProtoErrorKind) -> ProtoError {
-        ProtoError { kind }
-    }
-}
-
-impl fmt::Display for ProtoError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&self.kind, f)
+impl From<&'static str> for DecodeError {
+    fn from(msg: &'static str) -> DecodeError {
+        Self::Msg(msg)
     }
 }

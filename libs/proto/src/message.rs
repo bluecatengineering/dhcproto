@@ -38,27 +38,37 @@ use crate::error::*;
 struct Message {
     /// op code / message type
     opcode: Opcode,
-    // Hardware address type: https://tools.ietf.org/html/rfc3232
-    //htype: u8,
-    //hlen: u8,
-    //hops: u8,
-    //xid: u32,
-    //secs: u16,
-    //flags: u16, // todo: enum
-    //ciaddr: Ipv4Addr,
-    //yiaddr: Ipv4Addr,
-    //siaddr: Ipv4Addr,
-    //giaddr: Ipv4Addr,
-    //chaddr: [u8; 6],
-    //sname: String,
-    //file: String,
-    // TODO options
+    /// Hardware address type: https://tools.ietf.org/html/rfc3232
+    htype: u8,
+    /// Hardware address length
+    hlen: u8,
+    /// Client sets to zero, optionally used by relay agents when booting via a relay agent.
+    hops: u8,
+    /// Transaction ID, a random number chosen by the client
+    xid: u32,
+    /// seconds elapsed since client began address acquisition or renewal process
+    secs: u16,
+    flags: u16, // todo: struct with a bool?
+                //ciaddr: Ipv4Addr,
+                //yiaddr: Ipv4Addr,
+                //siaddr: Ipv4Addr,
+                //giaddr: Ipv4Addr,
+                //chaddr: [u8; 6],
+                //sname: String,
+                //file: String,
+                // TODO options
 }
 
 impl<'r> Decodable<'r> for Message {
-    fn read(decoder: &mut Decoder<'r>) -> ProtoResult<Self> {
+    fn read(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
         Ok(Message {
             opcode: Opcode::read(decoder)?,
+            htype: decoder.read_u8()?,
+            hlen: decoder.read_u8()?,
+            hops: decoder.read_u8()?,
+            xid: decoder.read_u32()?,
+            secs: decoder.read_u16()?,
+            flags: decoder.read_u16()?,
         })
     }
 }
@@ -71,7 +81,7 @@ enum Opcode {
 }
 
 impl<'r> Decodable<'r> for Opcode {
-    fn read(decoder: &mut Decoder<'r>) -> ProtoResult<Self> {
+    fn read(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
         Ok(decoder.read_u8()?.into())
     }
 }
@@ -84,6 +94,11 @@ impl From<u8> for Opcode {
             _ => Opcode::Unknown(opcode),
         }
     }
+}
+
+struct Flags {
+    broadcast: bool,
+    mbz: u16,
 }
 
 #[cfg(test)]
