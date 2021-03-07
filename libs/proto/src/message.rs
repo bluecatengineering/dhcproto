@@ -1,6 +1,7 @@
 //use std::net::Ipv4Addr;
 
 use macaddr::*;
+use std::convert::{TryFrom, TryInto};
 use std::net::Ipv4Addr;
 
 use crate::decoder::{Decodable, Decoder};
@@ -50,13 +51,20 @@ struct Message {
     /// seconds elapsed since client began address acquisition or renewal process
     secs: u16,
     flags: u16, // todo: struct with a bool?
+    /// Client IP address
     ciaddr: Ipv4Addr,
+    /// Your IP Address,
     yiaddr: Ipv4Addr,
+    /// Server IP Address   
     siaddr: Ipv4Addr,
+    /// Gateway IP Address
     giaddr: Ipv4Addr,
-    //chaddr: [u8; 6], or chaddr: MacAddr
-    //sname: String,
-    //file: String,
+    /// Client hardware addres
+    chaddr: ChAddr,
+    /// Server host name
+    sname: Vec<u8>,
+    /// Boot filename
+    file: Vec<u8>,
     // TODO options
 }
 
@@ -74,6 +82,12 @@ impl<'r> Decodable<'r> for Message {
         let siaddr: Ipv4Addr = decoder.read_u32()?.into();
         let giaddr: Ipv4Addr = decoder.read_u32()?.into();
 
+        let mac = decoder.read_slice(hlen as usize)?;
+        let chaddr: ChAddr = mac.try_into()?;
+
+        let sname: Vec<u8> = decoder.read_slice(64)?.into();
+        let file: Vec<u8> = decoder.read_slice(128)?.into();
+
         Ok(Message {
             opcode,
             htype,
@@ -86,6 +100,9 @@ impl<'r> Decodable<'r> for Message {
             yiaddr,
             siaddr,
             giaddr,
+            chaddr,
+            sname,
+            file,
         })
     }
 }
@@ -116,6 +133,31 @@ impl From<u8> for Opcode {
 struct Flags {
     broadcast: bool,
     mbz: u16,
+}
+
+#[derive(Debug)]
+enum ChAddr {
+    Addr6(MacAddr6),
+    Addr8(MacAddr8),
+    Unknown(Vec<u8>),
+}
+
+impl TryFrom<&[u8]> for ChAddr {
+    type Error = DecodeError;
+    fn try_from(addr: &[u8]) -> DecodeResult<Self> {
+        let mac = match addr.len() {
+            6 => {
+                let array = <[u8; 6]>::try_from(addr)?;
+                ChAddr::Addr6(MacAddr6::from(array))
+            }
+            8 => {
+                let array = <[u8; 8]>::try_from(addr)?;
+                ChAddr::Addr8(MacAddr8::from(array))
+            }
+            _ => ChAddr::Unknown(addr.into()),
+        };
+        Ok(mac)
+    }
 }
 
 #[cfg(test)]
