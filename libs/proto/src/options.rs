@@ -1,3 +1,45 @@
+use std::collections::HashMap;
+
+use crate::decoder::{Decodable, Decoder};
+use crate::error::*;
+
+pub struct DhcpOptions {
+    options: HashMap<u8, DhcpOption>,
+}
+
+impl<'r> Decodable<'r> for DhcpOptions {
+    fn read(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
+        let mut options: HashMap<u8, DhcpOption> = HashMap::new();
+
+        // Read the magic cookie
+        // Todo validate cookie
+        let cookie = decoder.read_slice(4);
+        dbg!(cookie);
+
+        Ok(DhcpOptions { options })
+    }
+}
+
+pub enum OptionCode {
+    /// [RFC 2132, Pad Option](https://tools.ietf.org/html/rfc2132#section-3.1)
+    Pad,
+
+    /// [RFC 2132, End Option](https://tools.ietf.org/html/rfc2132#section-3.2)
+    End,
+
+    Unknown(u8),
+}
+
+impl From<u8> for OptionCode {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => OptionCode::Pad,
+            255 => OptionCode::End,
+            _ => OptionCode::Unknown(value),
+        }
+    }
+}
+
 enum DhcpOption {
     MessageType(MessageType),
 }

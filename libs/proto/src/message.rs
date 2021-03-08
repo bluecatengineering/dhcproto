@@ -6,6 +6,7 @@ use std::net::Ipv4Addr;
 
 use crate::decoder::{Decodable, Decoder};
 use crate::error::*;
+use crate::options::DhcpOptions;
 
 /// [Dynamic Host Configuration Protocol](https://tools.ietf.org/html/rfc2131#section-2)
 ///
@@ -83,10 +84,13 @@ impl<'r> Decodable<'r> for Message {
         let giaddr: Ipv4Addr = decoder.read_u32()?.into();
 
         let mac = decoder.read_slice(hlen as usize)?;
+        let _ = decoder.read_slice(16 - hlen as usize);
         let chaddr: ChAddr = mac.try_into()?;
 
         let sname: Vec<u8> = decoder.read_slice(64)?.into();
         let file: Vec<u8> = decoder.read_slice(128)?.into();
+
+        let options = DhcpOptions::read(decoder);
 
         Ok(Message {
             opcode,
@@ -134,7 +138,7 @@ struct Flags {
     broadcast: bool,
     mbz: u16,
 }
-
+/// Client hardware address
 #[derive(Debug)]
 enum ChAddr {
     Addr6(MacAddr6),

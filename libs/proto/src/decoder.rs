@@ -29,15 +29,15 @@ impl<'a> Decoder<'a> {
     }
 
     /// Pop one byte from the buffer
-    pub fn pop(&mut self) -> DecodeResult<u8> {
-        if self.index < self.buffer.len() {
-            let byte = self.buffer[self.index];
-            self.index += 1;
-            Ok(byte)
-        } else {
-            Err("unexpected end of input reached".into())
-        }
-    }
+    //pub fn pop(&mut self) -> DecodeResult<u8> {
+    //    if self.index < self.buffer.len() {
+    //        let byte = self.buffer[self.index];
+    //        self.index += 1;
+    //        Ok(byte)
+    //    } else {
+    //        Err("unexpected end of input reached".into())
+    //    }
+    //}
 
     pub fn read_u8(&mut self) -> DecodeResult<u8> {
         Ok(self.read::<u8>()?[0])
