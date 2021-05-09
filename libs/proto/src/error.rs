@@ -22,6 +22,9 @@ pub enum DecodeError {
 
     #[error("error converting from slice")]
     SliceError(#[from] std::array::TryFromSliceError),
+
+    #[error("error getting null terminated string")]
+    NulError(#[from] std::ffi::FromBytesWithNulError),
 }
 
 /// The error kind for errors that get returned in the crate

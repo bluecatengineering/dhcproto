@@ -1,7 +1,9 @@
-//use std::net::Ipv4Addr;
-
 use macaddr::*;
-use std::{convert::TryInto, net::Ipv4Addr};
+use std::{
+    convert::TryInto,
+    ffi::{CStr, CString},
+    net::Ipv4Addr,
+};
 
 use crate::error::*;
 use crate::{
@@ -64,11 +66,13 @@ pub struct Message {
     giaddr: Ipv4Addr,
     /// Client hardware address
     chaddr: [u8; 16],
-    // TODO: use CStr or String
+    // TODO: convert to utf8 String?
     /// Server hostname
-    sname: [u8; 64],
-    // TODO: use CStr or String
-    file: [u8; 128],
+    sname: Option<CString>,
+    // TODO: convert to utf8 String?
+    // File name
+    file: Option<CString>,
+    magic: [u8; 4],
     option: Vec<DhcpOption>,
 }
 
@@ -86,8 +90,9 @@ impl<'r> Decodable<'r> for Message {
         let siaddr: Ipv4Addr = decoder.read_u32()?.into();
         let giaddr: Ipv4Addr = decoder.read_u32()?.into();
         let chaddr: [u8; 16] = decoder.read_bytes::<16>()?.try_into()?;
-        let sname: [u8; 64] = decoder.read_bytes::<64>()?.try_into()?;
-        let file: [u8; 128] = decoder.read_bytes::<128>()?.try_into()?;
+        let sname = read_cstring::<64>(decoder)?;
+        let file = read_cstring::<128>(decoder)?;
+        let magic: [u8; 4] = decoder.read_bytes::<4>()?.try_into()?;
         let option = decoder.read_opts()?;
 
         let mac = decoder.read_slice(hlen as usize)?;
@@ -114,11 +119,21 @@ impl<'r> Decodable<'r> for Message {
             chaddr,
             sname,
             file,
+            magic,
             option,
         })
     }
 }
 
+// read a nul terminated string from the buffer, CString will be up to some MAX size
+fn read_cstring<const MAX: usize>(decoder: &mut Decoder<'_>) -> DecodeResult<Option<CString>> {
+    let bytes = decoder.read_bytes::<MAX>()?;
+    if bytes.starts_with(&[0]) {
+        Ok(None)
+    } else {
+        Ok(Some(CStr::from_bytes_with_nul(bytes)?.to_owned()))
+    }
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Opcode {
     BootRequest,
