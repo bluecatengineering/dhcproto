@@ -7,8 +7,4 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-macaddr = "1.0"
 thiserror = "1.0"
-
-[dev-dependencies]
-anyhow = "1.0"

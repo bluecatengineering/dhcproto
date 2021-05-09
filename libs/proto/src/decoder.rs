@@ -1,7 +1,4 @@
-use crate::{
-    error::{DecodeError, DecodeResult},
-    option::DhcpOption,
-};
+use crate::error::{DecodeError, DecodeResult};
 
 use std::{convert::TryInto, mem};
 
@@ -85,21 +82,5 @@ impl<'a> Decoder<'a> {
             .ok_or(DecodeError::EndOfBuffer { index: end })?;
         self.index = end;
         Ok(slice)
-    }
-
-    pub fn read_opts(&mut self) -> DecodeResult<Vec<DhcpOption>> {
-        let mut opts = Vec::new();
-        loop {
-            match DhcpOption::read(self)? {
-                DhcpOption::End => {
-                    break;
-                }
-                opt => {
-                    opts.push(opt);
-                }
-            }
-        }
-        opts.push(DhcpOption::End);
-        Ok(opts)
     }
 }

@@ -1,15 +1,11 @@
-use macaddr::*;
 use std::{
     convert::TryInto,
     ffi::{CStr, CString},
     net::Ipv4Addr,
 };
 
-use crate::error::*;
-use crate::{
-    decoder::{Decodable, Decoder},
-    option::DhcpOption,
-};
+use crate::decoder::{Decodable, Decoder};
+use crate::{error::*, options::DhcpOptions};
 
 /// [Dynamic Host Configuration Protocol](https://tools.ietf.org/html/rfc2131#section-2)
 ///
@@ -73,7 +69,7 @@ pub struct Message {
     // File name
     file: Option<CString>,
     magic: [u8; 4],
-    option: Vec<DhcpOption>,
+    options: DhcpOptions,
 }
 
 impl<'r> Decodable<'r> for Message {
@@ -93,16 +89,7 @@ impl<'r> Decodable<'r> for Message {
         let sname = read_cstring::<64>(decoder)?;
         let file = read_cstring::<128>(decoder)?;
         let magic: [u8; 4] = decoder.read_bytes::<4>()?.try_into()?;
-        let option = decoder.read_opts()?;
-
-        let mac = decoder.read_slice(hlen as usize)?;
-        let _ = decoder.read_slice(16 - hlen as usize);
-        let chaddr: ChAddr = mac.try_into()?;
-
-        let sname: Vec<u8> = decoder.read_slice(64)?.into();
-        let file: Vec<u8> = decoder.read_slice(128)?.into();
-
-        let options = DhcpOptions::read(decoder);
+        let options = DhcpOptions::read(decoder)?;
 
         Ok(Message {
             opcode,
@@ -120,7 +107,7 @@ impl<'r> Decodable<'r> for Message {
             sname,
             file,
             magic,
-            option,
+            options,
         })
     }
 }
@@ -166,36 +153,12 @@ impl Flags {
         (self.0 & 0x8000) >> 15 == 1
     }
 }
-/// Client hardware address
-#[derive(Debug)]
-enum ChAddr {
-    Addr6(MacAddr6),
-    Addr8(MacAddr8),
-    Unknown(Vec<u8>),
-}
-
-impl TryFrom<&[u8]> for ChAddr {
-    type Error = DecodeError;
-    fn try_from(addr: &[u8]) -> DecodeResult<Self> {
-        let mac = match addr.len() {
-            6 => {
-                let array = <[u8; 6]>::try_from(addr)?;
-                ChAddr::Addr6(MacAddr6::from(array))
-            }
-            8 => {
-                let array = <[u8; 8]>::try_from(addr)?;
-                ChAddr::Addr8(MacAddr8::from(array))
-            }
-            _ => ChAddr::Unknown(addr.into()),
-        };
-        Ok(mac)
-    }
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::Result;
+
+    type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
     #[test]
     fn decode_offer() -> Result<()> {
