@@ -12,12 +12,14 @@ impl<'r> Decodable<'r> for DhcpOptions {
     fn read(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
         // represented as a vector in the actual message
         let mut opts = HashMap::new();
-        loop {
-            match DhcpOption::read(decoder)? {
+        // should we error the whole parser if we fail to parse an
+        // option or just stop parsing options? -- here we will just stop
+        while let Ok(opt) = DhcpOption::read(decoder) {
+            match opt {
                 DhcpOption::End => {
                     break;
                 }
-                opt => {
+                _ => {
                     opts.insert(OptionCode::from(&opt), opt);
                 }
             }
