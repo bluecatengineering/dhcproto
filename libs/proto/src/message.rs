@@ -1,12 +1,13 @@
 //use std::net::Ipv4Addr;
 
 use macaddr::*;
-use std::convert::{TryFrom, TryInto};
-use std::net::Ipv4Addr;
+use std::{convert::TryInto, net::Ipv4Addr};
 
-use crate::decoder::{Decodable, Decoder};
 use crate::error::*;
-use crate::options::DhcpOptions;
+use crate::{
+    decoder::{Decodable, Decoder},
+    option::DhcpOption,
+};
 
 /// [Dynamic Host Configuration Protocol](https://tools.ietf.org/html/rfc2131#section-2)
 ///
@@ -37,8 +38,8 @@ use crate::options::DhcpOptions;
 /// |                          options (variable)                   |
 /// +---------------------------------------------------------------+
 /// ```
-#[derive(Debug)]
-struct Message {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Message {
     /// op code / message type
     opcode: Opcode,
     /// Hardware address type: https://tools.ietf.org/html/rfc3232
@@ -51,22 +52,24 @@ struct Message {
     xid: u32,
     /// seconds elapsed since client began address acquisition or renewal process
     secs: u16,
-    flags: u16, // todo: struct with a bool?
-    /// Client IP address
+    /// Flags
+    flags: u16,
+    /// Client IP
     ciaddr: Ipv4Addr,
-    /// Your IP Address,
+    /// Your IP
     yiaddr: Ipv4Addr,
-    /// Server IP Address   
+    /// Server IP
     siaddr: Ipv4Addr,
-    /// Gateway IP Address
+    /// Gateway IP
     giaddr: Ipv4Addr,
-    /// Client hardware addres
-    chaddr: ChAddr,
-    /// Server host name
-    sname: Vec<u8>,
-    /// Boot filename
-    file: Vec<u8>,
-    // TODO options
+    /// Client hardware address
+    chaddr: [u8; 16],
+    // TODO: use CStr or String
+    /// Server hostname
+    sname: [u8; 64],
+    // TODO: use CStr or String
+    file: [u8; 128],
+    option: Vec<DhcpOption>,
 }
 
 impl<'r> Decodable<'r> for Message {
@@ -82,6 +85,10 @@ impl<'r> Decodable<'r> for Message {
         let yiaddr: Ipv4Addr = decoder.read_u32()?.into();
         let siaddr: Ipv4Addr = decoder.read_u32()?.into();
         let giaddr: Ipv4Addr = decoder.read_u32()?.into();
+        let chaddr: [u8; 16] = decoder.read_bytes::<16>()?.try_into()?;
+        let sname: [u8; 64] = decoder.read_bytes::<64>()?.try_into()?;
+        let file: [u8; 128] = decoder.read_bytes::<128>()?.try_into()?;
+        let option = decoder.read_opts()?;
 
         let mac = decoder.read_slice(hlen as usize)?;
         let _ = decoder.read_slice(16 - hlen as usize);
@@ -107,11 +114,12 @@ impl<'r> Decodable<'r> for Message {
             chaddr,
             sname,
             file,
+            option,
         })
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Opcode {
     BootRequest,
     BootReply,
@@ -134,9 +142,14 @@ impl From<u8> for Opcode {
     }
 }
 
-struct Flags {
-    broadcast: bool,
-    mbz: u16,
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct Flags(u16);
+
+impl Flags {
+    /// get the status of the broadcast flag
+    pub fn broadcast(&self) -> bool {
+        (self.0 & 0x8000) >> 15 == 1
+    }
 }
 /// Client hardware address
 #[derive(Debug)]
@@ -172,9 +185,9 @@ mod tests {
     #[test]
     fn decode_offer() -> Result<()> {
         let offer = dhcp_offer();
-        let mut decoder = Decoder::new(offer.as_slice());
+        let mut decoder = Decoder::new(&offer);
         let msg = Message::read(&mut decoder);
-        dbg!(msg);
+        dbg!(msg)?;
         Ok(())
     }
 

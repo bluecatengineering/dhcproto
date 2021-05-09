@@ -8,6 +8,8 @@ edition = "2018"
 
 [dependencies]
 #rand = "0.8"
-anyhow = "1.0"
 macaddr = "1.0"
 thiserror = "1.0"
+
+[dev-dependencies]
+anyhow = "1.0"

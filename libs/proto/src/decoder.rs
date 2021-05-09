@@ -1,4 +1,7 @@
-use crate::error::{DecodeResult, DecodeError};
+use crate::{
+    error::{DecodeError, DecodeResult},
+    option::DhcpOption,
+};
 
 use std::{convert::TryInto, mem};
 
@@ -25,14 +28,22 @@ impl<'a> Decoder<'a> {
         Decoder { buffer, index: 0 }
     }
 
+    /// read a u8
     pub fn read_u8(&mut self) -> DecodeResult<u8> {
         Ok(self.read::<u8>()?[0])
     }
 
+    /// read a u32
     pub fn read_u32(&mut self) -> DecodeResult<u32> {
         Ok(u32::from_be_bytes(self.read::<u32>()?.try_into()?))
     }
 
+    /// read a i32
+    pub fn read_i32(&mut self) -> DecodeResult<i32> {
+        Ok(i32::from_be_bytes(self.read::<i32>()?.try_into()?))
+    }
+
+    /// read a u16
     pub fn read_u16(&mut self) -> DecodeResult<u16> {
         Ok(u16::from_be_bytes(self.read::<u16>()?.try_into()?))
     }
@@ -42,27 +53,53 @@ impl<'a> Decoder<'a> {
         let end = self
             .index
             .checked_add(len)
-            .ok_or(DecodeError::EndOfBuffer { index: self.index })?;
-
+            .ok_or(DecodeError::AddOverflow)?;
         let bytes = self
             .buffer
             .get(self.index..end)
             .ok_or(DecodeError::EndOfBuffer { index: end })?;
-        // self.index += len;
         self.index = end;
         Ok(bytes)
     }
 
+    /// read a constant number of bytes
+    pub fn read_bytes<const N: usize>(&mut self) -> DecodeResult<&'a [u8]> {
+        let end = self.index.checked_add(N).ok_or(DecodeError::AddOverflow)?;
+        let bytes = self
+            .buffer
+            .get(self.index..end)
+            .ok_or(DecodeError::EndOfBuffer { index: end })?;
+        self.index = end;
+        Ok(bytes)
+    }
+
+    /// read a slice of bytes determined at runtime
     pub fn read_slice(&mut self, len: usize) -> DecodeResult<&'a [u8]> {
         let end = self
             .index
             .checked_add(len)
-            .ok_or(DecodeError::EndOfBuffer { index: self.index })?;
+            .ok_or(DecodeError::AddOverflow)?;
         let slice = self
             .buffer
             .get(self.index..end)
             .ok_or(DecodeError::EndOfBuffer { index: end })?;
-        self.index += len;
+        self.index = end;
         Ok(slice)
+    }
+
+    pub fn read_opts(&mut self) -> DecodeResult<Vec<DhcpOption>> {
+        let mut opts = Vec::new();
+        loop {
+            match DhcpOption::read(self)? {
+                DhcpOption::End => {
+                    break;
+                }
+                opt => {
+                    opts.push(opt);
+                }
+            }
+        }
+        opts.push(DhcpOption::End);
+        Ok(opts)
     }
 }
