@@ -315,6 +315,7 @@ fn read_ips(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Vec<Ipv4Addr>> {
         .map(|bytes| [bytes[0], bytes[1], bytes[2], bytes[3]].into())
         .collect())
 }
+
 impl From<&DhcpOption> for OptionCode {
     fn from(opt: &DhcpOption) -> Self {
         use DhcpOption::*;

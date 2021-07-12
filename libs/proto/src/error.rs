@@ -25,6 +25,9 @@ pub enum DecodeError {
 
     #[error("error getting null terminated string")]
     NulError(#[from] std::ffi::FromBytesWithNulError),
+
+    #[error("error converting to UTF-8")]
+    Utf8Error(#[from] std::str::Utf8Error),
 }
 
 /// The error kind for errors that get returned in the crate

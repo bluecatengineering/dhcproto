@@ -1,8 +1,4 @@
-use std::{
-    convert::TryInto,
-    ffi::{CStr, CString},
-    net::Ipv4Addr,
-};
+use std::{convert::TryInto, net::Ipv4Addr};
 
 use crate::decoder::{Decodable, Decoder};
 use crate::{error::*, options::DhcpOptions};
@@ -64,10 +60,10 @@ pub struct Message {
     chaddr: [u8; 16],
     // TODO: convert to utf8 String?
     /// Server hostname
-    sname: Option<CString>,
+    sname: Option<String>,
     // TODO: convert to utf8 String?
     // File name
-    file: Option<CString>,
+    file: Option<String>,
     magic: [u8; 4],
     options: DhcpOptions,
 }
@@ -85,10 +81,10 @@ impl<'r> Decodable<'r> for Message {
         let yiaddr: Ipv4Addr = decoder.read_u32()?.into();
         let siaddr: Ipv4Addr = decoder.read_u32()?.into();
         let giaddr: Ipv4Addr = decoder.read_u32()?.into();
-        let chaddr: [u8; 16] = decoder.read_bytes::<16>()?.try_into()?;
-        let sname = read_cstring::<64>(decoder)?;
-        let file = read_cstring::<128>(decoder)?;
-        let magic: [u8; 4] = decoder.read_bytes::<4>()?.try_into()?;
+        let chaddr: [u8; 16] = decoder.read::<16>()?.try_into()?;
+        let sname = decoder.read_string::<64>()?;
+        let file = decoder.read_string::<128>()?;
+        let magic: [u8; 4] = decoder.read::<4>()?.try_into()?;
         let options = DhcpOptions::read(decoder)?;
 
         Ok(Message {
@@ -112,15 +108,6 @@ impl<'r> Decodable<'r> for Message {
     }
 }
 
-// read a nul terminated string from the buffer, CString will be up to some MAX size
-fn read_cstring<const MAX: usize>(decoder: &mut Decoder<'_>) -> DecodeResult<Option<CString>> {
-    let bytes = decoder.read_bytes::<MAX>()?;
-    if bytes.starts_with(&[0]) {
-        Ok(None)
-    } else {
-        Ok(Some(CStr::from_bytes_with_nul(bytes)?.to_owned()))
-    }
-}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Opcode {
     BootRequest,
@@ -163,8 +150,15 @@ mod tests {
     #[test]
     fn decode_offer() -> Result<()> {
         let offer = dhcp_offer();
-        let mut decoder = Decoder::new(&offer);
-        let msg = Message::read(&mut decoder);
+        let msg = Message::read(&mut Decoder::new(&offer));
+        dbg!(msg)?;
+        Ok(())
+    }
+
+    #[test]
+    fn decode_bootreq() -> Result<()> {
+        let offer = dhcp_bootreq();
+        let msg = Message::read(&mut Decoder::new(&offer));
         dbg!(msg)?;
         Ok(())
     }
@@ -193,6 +187,36 @@ mod tests {
             0x34, 0x01, 0x04, 0xff, 0xff, 0xff, 0x00, 0x03, 0x04, 0xc0, 0xa8, 0x00, 0x01, 0x06,
             0x08, 0xc0, 0xa8, 0x00, 0x01, 0xc0, 0xa8, 0x01, 0x01, 0xff, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ]
+    }
+    fn dhcp_bootreq() -> Vec<u8> {
+        vec![
+            1u8, // op
+            2,   // htype
+            3,   // hlen
+            4,   // ops
+            5, 6, 7, 8, // xid
+            9, 10, // secs
+            11, 12, // flags
+            13, 14, 15, 16, // ciaddr
+            17, 18, 19, 20, // yiaddr
+            21, 22, 23, 24, // siaddr
+            25, 26, 27, 28, // giaddr
+            29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, // chaddr
+            45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
+            67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+            89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
+            0, // sname: "-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijk",
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 0, 0, 0, 0, 0, 0, 0,
+            0, // file: "mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}m",
+            99, 130, 83, 99, // magic cookie
         ]
     }
 }
