@@ -58,10 +58,8 @@ pub struct Message {
     giaddr: Ipv4Addr,
     /// Client hardware address
     chaddr: [u8; 16],
-    // TODO: convert to utf8 String?
     /// Server hostname
     sname: Option<String>,
-    // TODO: convert to utf8 String?
     // File name
     file: Option<String>,
     magic: [u8; 4],

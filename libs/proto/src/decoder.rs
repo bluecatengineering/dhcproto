@@ -12,10 +12,10 @@ pub trait Decodable<'r>: Sized {
     fn read(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self>;
 
     // Returns the object in binary form
-    //fn from_bytes(bytes: &'r [u8]) -> io::Result<Self> {
-    //    let mut decoder = Decoder::new(bytes);
-    //    Self::read(&mut decoder)
-    //}
+    fn from_bytes(bytes: &'r [u8]) -> DecodeResult<Self> {
+        let mut decoder = Decoder::new(bytes);
+        Self::read(&mut decoder)
+    }
 }
 
 #[derive(Debug)]
