@@ -13,5 +13,4 @@
 pub mod decoder;
 pub mod encoder;
 pub mod error;
-pub mod message;
-pub mod options;
+pub mod msg;

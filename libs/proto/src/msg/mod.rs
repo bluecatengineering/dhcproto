@@ -1,7 +1,16 @@
 use std::{convert::TryInto, net::Ipv4Addr};
 
-use crate::decoder::{Decodable, Decoder};
-use crate::{error::*, options::DhcpOptions};
+mod flags;
+mod opcode;
+mod options;
+
+// re-export submodules from proto::msg
+pub use self::{flags::*, opcode::*, options::*};
+
+use crate::{
+    decoder::{Decodable, Decoder},
+    error::*,
+};
 
 /// [Dynamic Host Configuration Protocol](https://tools.ietf.org/html/rfc2131#section-2)
 ///
@@ -103,39 +112,6 @@ impl<'r> Decodable<'r> for Message {
             magic,
             options,
         })
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Opcode {
-    BootRequest,
-    BootReply,
-    Unknown(u8),
-}
-
-impl<'r> Decodable<'r> for Opcode {
-    fn read(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
-        Ok(decoder.read_u8()?.into())
-    }
-}
-
-impl From<u8> for Opcode {
-    fn from(opcode: u8) -> Self {
-        match opcode {
-            1 => Opcode::BootRequest,
-            2 => Opcode::BootReply,
-            _ => Opcode::Unknown(opcode),
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Flags(u16);
-
-impl Flags {
-    /// get the status of the broadcast flag
-    pub fn broadcast(&self) -> bool {
-        (self.0 & 0x8000) >> 15 == 1
     }
 }
 

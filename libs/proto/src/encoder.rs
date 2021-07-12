@@ -35,6 +35,7 @@ impl<'a> Encoder<'a> {
 
             debug_assert!(self.buffer.len() == expected_len);
         }
+
         let index = self
             .offset
             .checked_add(additional)
