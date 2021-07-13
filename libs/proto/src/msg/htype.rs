@@ -1,3 +1,9 @@
+use crate::{
+    decoder::{Decodable, Decoder},
+    encoder::{Encodable, Encoder},
+    error::{DecodeResult, EncodeResult},
+};
+
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
 pub enum HType {
     /// 1 Ethernet
@@ -126,5 +132,17 @@ impl From<HType> for u8 {
             PureIP => 35,
             Unknown(n) => n,
         }
+    }
+}
+
+impl<'r> Decodable<'r> for HType {
+    fn decode(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
+        Ok(decoder.read_u8()?.into())
+    }
+}
+
+impl<'a> Encodable<'a> for HType {
+    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<usize> {
+        e.write_u8((*self).into())
     }
 }

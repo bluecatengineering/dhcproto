@@ -2,19 +2,20 @@ use std::{collections::HashMap, net::Ipv4Addr};
 
 use crate::{
     decoder::{Decodable, Decoder},
-    error::DecodeResult,
+    encoder::{Encodable, Encoder},
+    error::{DecodeResult, EncodeResult},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DhcpOptions(HashMap<OptionCode, DhcpOption>);
 
 impl<'r> Decodable<'r> for DhcpOptions {
-    fn read(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
         // represented as a vector in the actual message
         let mut opts = HashMap::new();
         // should we error the whole parser if we fail to parse an
         // option or just stop parsing options? -- here we will just stop
-        while let Ok(opt) = DhcpOption::read(decoder) {
+        while let Ok(opt) = DhcpOption::decode(decoder) {
             match opt {
                 DhcpOption::End => {
                     break;
@@ -25,6 +26,16 @@ impl<'r> Decodable<'r> for DhcpOptions {
             }
         }
         Ok(DhcpOptions(opts))
+    }
+}
+
+impl<'a> Encodable<'a> for DhcpOptions {
+    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<usize> {
+        let mut len = 0;
+        for (_, opt) in self.0.iter() {
+            len += opt.encode(e)?;
+        }
+        Ok(len)
     }
 }
 
@@ -456,7 +467,7 @@ impl From<NodeType> for u8 {
 }
 
 impl<'r> Decodable<'r> for DhcpOption {
-    fn read(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
+    fn decode(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
         use DhcpOption::*;
         // read the code first, determines the variant
 
@@ -704,6 +715,141 @@ impl<'r> Decodable<'r> for DhcpOption {
     }
 }
 
+impl<'a> Encodable<'a> for DhcpOption {
+    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<usize> {
+        use DhcpOption::*;
+
+        let code: OptionCode = self.into();
+        let mut len = 0;
+        // pad has no length, so we can't read len up here
+        // don't want to have a fall-through case either
+        // so we get exhaustiveness checking, so we'll write
+        // code in each match arm
+        Ok(match self {
+            Pad | End => {
+                len += e.write_u8(code.into())?;
+                len
+            }
+            SubnetMask(addr)
+            | SwapServer(addr)
+            | BroadcastAddr(addr)
+            | RouterSolicitationAddr(addr)
+            | RequestedIpAddress(addr)
+            | ServerIdentifier(addr) => {
+                len += e.write_u8(code.into())?;
+                len += e.write_u8(4)?;
+                len += e.write_u32((*addr).into())?;
+                len
+            }
+            TimeOffset(offset) => {
+                len += e.write_u8(code.into())?;
+                len += e.write_u8(4)?;
+                len += e.write_i32(*offset)?;
+                len
+            }
+            TimeServer(ips)
+            | NameServer(ips)
+            | Router(ips)
+            | DomainNameServer(ips)
+            | LogServer(ips)
+            | QuoteServer(ips)
+            | LprServer(ips)
+            | ImpressServer(ips)
+            | ResourceLocationServer(ips)
+            | XFontServer(ips)
+            | XDisplayManager(ips)
+            | NIS(ips)
+            | NTPServers(ips)
+            | NetBiosNameServers(ips)
+            | NetBiosDatagramDistributionServer(ips) => {
+                len += e.write_u8(code.into())?;
+                len += e.write_u8(ips.len() as u8)?;
+                for ip in ips {
+                    len += e.write_u32((*ip).into())?;
+                }
+                len
+            }
+            Hostname(s) | MeritDumpFile(s) | DomainName(s) | ExtensionsPath(s) | NISDomain(s)
+            | RootPath(s) | NetBiosScope(s) | Message(s) => {
+                len += e.write_u8(code.into())?;
+                len += e.write_u8(s.len() as u8)?;
+                len += e.write_slice(s.as_bytes())?;
+                len
+            }
+            BootFileSize(num) | MaxDatagramSize(num) | InterfaceMtu(num) | MaxMessageSize(num) => {
+                len += e.write_u8(code.into())?;
+                len += e.write_u8(2)?;
+                len += e.write_u16(*num)?;
+                len
+            }
+            IpForwarding(b)
+            | NonLocalSrcRouting(b)
+            | AllSubnetsLocal(b)
+            | PerformMaskDiscovery(b)
+            | MaskSupplier(b)
+            | PerformRouterDiscovery(b)
+            | EthernetEncapsulation(b)
+            | TcpKeepaliveGarbage(b) => {
+                len += e.write_u8(code.into())?;
+                len += e.write_u8(1)?;
+                len += e.write_u8((*b).into())?;
+                len
+            }
+            DefaultIpTtl(byte) | DefaultTcpTtl(byte) | OptionOverload(byte) => {
+                len += e.write_u8(code.into())?;
+                len += e.write_u8(1)?;
+                len += e.write_u8(*byte)?;
+                len
+            }
+            StaticRoutingTable(pair_ips) => {
+                len += e.write_u8(code.into())?;
+                len += e.write_u8(pair_ips.len() as u8)?;
+                for (a, b) in pair_ips {
+                    len += e.write_u32((*a).into())?;
+                    len += e.write_u32((*b).into())?;
+                }
+                len
+            }
+            ArpCacheTimeout(num)
+            | TcpKeepaliveInterval(num)
+            | AddressLeaseTime(num)
+            | Renewal(num)
+            | Rebinding(num) => {
+                len += e.write_u8(code.into())?;
+                len += e.write_u8(4)?;
+                len += e.write_u32(*num)?;
+                len
+            }
+            VendorExtensions(bytes)
+            | ParameterRequestList(bytes)
+            | ClassIdentifier(bytes)
+            | ClientIdentifier(bytes) => {
+                len += e.write_u8(code.into())?;
+                len += e.write_u8(bytes.len() as u8)?;
+                len += e.write_slice(bytes)?;
+                len
+            }
+            NetBiosNodeType(ntype) => {
+                len += e.write_u8(code.into())?;
+                len += e.write_u8((*ntype).into())?;
+                len
+            }
+
+            MessageType(mtype) => {
+                len += e.write_u8(code.into())?;
+                len += e.write_u8((*mtype).into())?;
+                len
+            }
+            // not yet implemented
+            Unknown(opt) => {
+                len += e.write_u8(code.into())?;
+                len += e.write_u8(opt.length)?;
+                len += e.write_slice(&opt.bytes)?;
+                len
+            }
+        })
+    }
+}
 impl From<&DhcpOption> for OptionCode {
     fn from(opt: &DhcpOption) -> Self {
         use DhcpOption::*;

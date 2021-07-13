@@ -1,6 +1,7 @@
 use crate::{
     decoder::{Decodable, Decoder},
-    error::DecodeResult,
+    encoder::{Encodable, Encoder},
+    error::{DecodeResult, EncodeResult},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -11,8 +12,14 @@ pub enum Opcode {
 }
 
 impl<'r> Decodable<'r> for Opcode {
-    fn read(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
+    fn decode(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
         Ok(decoder.read_u8()?.into())
+    }
+}
+
+impl<'a> Encodable<'a> for Opcode {
+    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<usize> {
+        e.write_u8((*self).into())
     }
 }
 

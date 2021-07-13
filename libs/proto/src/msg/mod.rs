@@ -10,6 +10,7 @@ pub use self::{flags::*, htype::*, opcode::*, options::*};
 
 use crate::{
     decoder::{Decodable, Decoder},
+    encoder::{Encodable, Encoder},
     error::*,
 };
 
@@ -57,7 +58,7 @@ pub struct Message {
     /// seconds elapsed since client began address acquisition or renewal process
     secs: u16,
     /// Flags
-    flags: u16,
+    flags: Flags,
     /// Client IP
     ciaddr: Ipv4Addr,
     /// Your IP
@@ -77,15 +78,15 @@ pub struct Message {
 }
 
 impl<'r> Decodable<'r> for Message {
-    fn read(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
+    fn decode(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
         Ok(Message {
-            opcode: Opcode::read(decoder)?,
+            opcode: Opcode::decode(decoder)?,
             htype: decoder.read_u8()?.into(),
             hlen: decoder.read_u8()?,
             hops: decoder.read_u8()?,
             xid: decoder.read_u32()?,
             secs: decoder.read_u16()?,
-            flags: decoder.read_u16()?,
+            flags: decoder.read_u16()?.into(),
             ciaddr: decoder.read_u32()?.into(),
             yiaddr: decoder.read_u32()?.into(),
             siaddr: decoder.read_u32()?.into(),
@@ -94,30 +95,63 @@ impl<'r> Decodable<'r> for Message {
             sname: decoder.read_const_string::<64>()?,
             file: decoder.read_const_string::<128>()?,
             magic: decoder.read::<4>()?.try_into()?,
-            options: DhcpOptions::read(decoder)?,
+            options: DhcpOptions::decode(decoder)?,
         })
+    }
+}
+
+impl<'a> Encodable<'a> for Message {
+    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<usize> {
+        let mut len = 0;
+        len += self.opcode.encode(e)?;
+        len += self.htype.encode(e)?;
+        len += e.write_u8(self.hlen)?;
+        len += e.write_u8(self.hops)?;
+        len += e.write_u32(self.xid)?;
+        len += e.write_u16(self.secs)?;
+        len += e.write_u16(self.flags.into())?;
+        len += e.write_u32(self.ciaddr.into())?;
+        len += e.write_u32(self.yiaddr.into())?;
+        len += e.write_u32(self.siaddr.into())?;
+        len += e.write_u32(self.giaddr.into())?;
+        len += e.write_slice(&self.chaddr[..])?;
+        len += e.write_fill_string(&self.sname, 64)?;
+        len += e.write_fill_string(&self.file, 128)?;
+        len += e.write(self.magic)?;
+        self.options.encode(e)?;
+        Ok(len)
     }
 }
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
     #[test]
     fn decode_offer() -> Result<()> {
+        // decode
         let offer = dhcp_offer();
-        let msg = Message::read(&mut Decoder::new(&offer));
-        dbg!(msg)?;
+        let msg = Message::decode(&mut Decoder::new(&offer))?;
+        // now encode
+        let mut buf = Vec::new();
+        let mut e = Encoder::new(&mut buf);
+        msg.encode(&mut e)?;
+        assert_eq!(buf, dhcp_offer());
         Ok(())
     }
 
     #[test]
     fn decode_bootreq() -> Result<()> {
         let offer = dhcp_bootreq();
-        let msg = Message::read(&mut Decoder::new(&offer));
-        dbg!(msg)?;
+        let msg = Message::decode(&mut Decoder::new(&offer))?;
+        // now encode
+        let mut buf = Vec::new();
+        let mut e = Encoder::new(&mut buf);
+        msg.encode(&mut e)?;
+        assert_eq!(buf, dhcp_bootreq());
         Ok(())
     }
 
