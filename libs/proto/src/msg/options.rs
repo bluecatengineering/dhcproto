@@ -459,28 +459,63 @@ impl<'r> Decodable<'r> for DhcpOption {
     fn read(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
         use DhcpOption::*;
         // read the code first, determines the variant
+
+        // pad has no length, so we can't read len up here
         Ok(match decoder.read_u8()?.into() {
             OptionCode::Pad => Pad,
-            OptionCode::SubnetMask => SubnetMask(read_ip(decoder)?),
+            OptionCode::SubnetMask => {
+                let length = decoder.read_u8()?;
+                SubnetMask(decoder.read_ip(length as usize)?)
+            }
 
             OptionCode::TimeOffset => {
                 let _ = decoder.read_u8()?;
                 TimeOffset(decoder.read_i32()?)
             }
-            OptionCode::Router => Router(read_ips(decoder)?),
-            OptionCode::TimeServer => TimeServer(read_ips(decoder)?),
-            OptionCode::NameServer => NameServer(read_ips(decoder)?),
-            OptionCode::DomainNameServer => DomainNameServer(read_ips(decoder)?),
-            OptionCode::LogServer => LogServer(read_ips(decoder)?),
-            OptionCode::QuoteServer => QuoteServer(read_ips(decoder)?),
-            OptionCode::LprServer => LprServer(read_ips(decoder)?),
-            OptionCode::ImpressServer => ImpressServer(read_ips(decoder)?),
-            OptionCode::ResourceLocationServer => ResourceLocationServer(read_ips(decoder)?),
+            OptionCode::Router => {
+                let length = decoder.read_u8()?;
+                Router(decoder.read_ips(length as usize)?)
+            }
+            OptionCode::TimeServer => {
+                let length = decoder.read_u8()?;
+                TimeServer(decoder.read_ips(length as usize)?)
+            }
+            OptionCode::NameServer => {
+                let length = decoder.read_u8()?;
+                NameServer(decoder.read_ips(length as usize)?)
+            }
+            OptionCode::DomainNameServer => {
+                let length = decoder.read_u8()?;
+                DomainNameServer(decoder.read_ips(length as usize)?)
+            }
+            OptionCode::LogServer => {
+                let length = decoder.read_u8()?;
+                LogServer(decoder.read_ips(length as usize)?)
+            }
+            OptionCode::QuoteServer => {
+                let length = decoder.read_u8()?;
+                QuoteServer(decoder.read_ips(length as usize)?)
+            }
+            OptionCode::LprServer => {
+                let length = decoder.read_u8()?;
+                LprServer(decoder.read_ips(length as usize)?)
+            }
+            OptionCode::ImpressServer => {
+                let length = decoder.read_u8()?;
+                ImpressServer(decoder.read_ips(length as usize)?)
+            }
+            OptionCode::ResourceLocationServer => {
+                let length = decoder.read_u8()?;
+                ResourceLocationServer(decoder.read_ips(length as usize)?)
+            }
             OptionCode::Hostname => {
                 let length = decoder.read_u8()?;
                 Hostname(decoder.read_string(length as usize)?)
             }
-            OptionCode::BootFileSize => BootFileSize(decoder.read_u16()?),
+            OptionCode::BootFileSize => {
+                let _ = decoder.read_u8()?;
+                BootFileSize(decoder.read_u16()?)
+            }
             OptionCode::MeritDumpFile => {
                 let length = decoder.read_u8()?;
                 MeritDumpFile(decoder.read_string(length as usize)?)
@@ -489,7 +524,10 @@ impl<'r> Decodable<'r> for DhcpOption {
                 let length = decoder.read_u8()?;
                 DomainName(decoder.read_string(length as usize)?)
             }
-            OptionCode::SwapServer => SwapServer(read_ip(decoder)?),
+            OptionCode::SwapServer => {
+                let length = decoder.read_u8()?;
+                SwapServer(decoder.read_ip(length as usize)?)
+            }
             OptionCode::RootPath => {
                 let length = decoder.read_u8()?;
                 DomainName(decoder.read_string(length as usize)?)
@@ -498,45 +536,115 @@ impl<'r> Decodable<'r> for DhcpOption {
                 let length = decoder.read_u8()?;
                 DomainName(decoder.read_string(length as usize)?)
             }
-            OptionCode::IpForwarding => IpForwarding(decoder.read_bool()?),
-            OptionCode::NonLocalSrcRouting => NonLocalSrcRouting(decoder.read_bool()?),
-            OptionCode::MaxDatagramSize => MaxDatagramSize(decoder.read_u16()?),
-            OptionCode::DefaultIpTtl => DefaultIpTtl(decoder.read_u8()?),
-            OptionCode::InterfaceMtu => InterfaceMtu(decoder.read_u16()?),
-            OptionCode::AllSubnetsLocal => AllSubnetsLocal(decoder.read_bool()?),
-            OptionCode::BroadcastAddr => BroadcastAddr(read_ip(decoder)?),
-            OptionCode::PerformMaskDiscovery => PerformMaskDiscovery(decoder.read_bool()?),
-            OptionCode::MaskSupplier => MaskSupplier(decoder.read_bool()?),
-            OptionCode::PerformRouterDiscovery => PerformRouterDiscovery(decoder.read_bool()?),
-            OptionCode::RouterSolicitationAddr => RouterSolicitationAddr(read_ip(decoder)?),
-            OptionCode::StaticRoutingTable => StaticRoutingTable(read_pair_ips(decoder)?),
-            OptionCode::ArpCacheTimeout => ArpCacheTimeout(decoder.read_u32()?),
-            OptionCode::EthernetEncapsulation => EthernetEncapsulation(decoder.read_bool()?),
-            OptionCode::DefaultTcpTtl => DefaultIpTtl(decoder.read_u8()?),
-            OptionCode::TcpKeepaliveInterval => TcpKeepaliveInterval(decoder.read_u32()?),
-            OptionCode::TcpKeepaliveGarbage => TcpKeepaliveGarbage(decoder.read_bool()?),
+            OptionCode::IpForwarding => {
+                let _ = decoder.read_u8()?;
+                IpForwarding(decoder.read_bool()?)
+            }
+            OptionCode::NonLocalSrcRouting => {
+                let _ = decoder.read_u8()?;
+                NonLocalSrcRouting(decoder.read_bool()?)
+            }
+            OptionCode::MaxDatagramSize => {
+                let _ = decoder.read_u8()?;
+                MaxDatagramSize(decoder.read_u16()?)
+            }
+            OptionCode::DefaultIpTtl => {
+                let _ = decoder.read_u8()?;
+                DefaultIpTtl(decoder.read_u8()?)
+            }
+            OptionCode::InterfaceMtu => {
+                let _ = decoder.read_u8()?;
+                InterfaceMtu(decoder.read_u16()?)
+            }
+            OptionCode::AllSubnetsLocal => {
+                let _ = decoder.read_u8()?;
+                AllSubnetsLocal(decoder.read_bool()?)
+            }
+            OptionCode::BroadcastAddr => {
+                let length = decoder.read_u8()?;
+                BroadcastAddr(decoder.read_ip(length as usize)?)
+            }
+            OptionCode::PerformMaskDiscovery => {
+                let _ = decoder.read_u8()?;
+                PerformMaskDiscovery(decoder.read_bool()?)
+            }
+            OptionCode::MaskSupplier => {
+                let _ = decoder.read_u8()?;
+                MaskSupplier(decoder.read_bool()?)
+            }
+            OptionCode::PerformRouterDiscovery => {
+                let _ = decoder.read_u8()?;
+                PerformRouterDiscovery(decoder.read_bool()?)
+            }
+            OptionCode::RouterSolicitationAddr => {
+                let length = decoder.read_u8()?;
+                RouterSolicitationAddr(decoder.read_ip(length as usize)?)
+            }
+            OptionCode::StaticRoutingTable => {
+                let length = decoder.read_u8()?;
+                StaticRoutingTable(decoder.read_pair_ips(length as usize)?)
+            }
+            OptionCode::ArpCacheTimeout => {
+                let _ = decoder.read_u8()?;
+                ArpCacheTimeout(decoder.read_u32()?)
+            }
+            OptionCode::EthernetEncapsulation => {
+                let _ = decoder.read_u8()?;
+                EthernetEncapsulation(decoder.read_bool()?)
+            }
+            OptionCode::DefaultTcpTtl => {
+                let _ = decoder.read_u8()?;
+                DefaultIpTtl(decoder.read_u8()?)
+            }
+            OptionCode::TcpKeepaliveInterval => {
+                let _ = decoder.read_u8()?;
+                TcpKeepaliveInterval(decoder.read_u32()?)
+            }
+            OptionCode::TcpKeepaliveGarbage => {
+                let _ = decoder.read_u8()?;
+                TcpKeepaliveGarbage(decoder.read_bool()?)
+            }
             OptionCode::NISDomain => {
                 let length = decoder.read_u8()?;
                 DomainName(decoder.read_string(length as usize)?)
             }
-            OptionCode::NIS => NIS(read_ips(decoder)?),
-            OptionCode::NTPServers => NTPServers(read_ips(decoder)?),
+            OptionCode::NIS => {
+                let length = decoder.read_u8()?;
+                NIS(decoder.read_ips(length as usize)?)
+            }
+            OptionCode::NTPServers => {
+                let length = decoder.read_u8()?;
+                NTPServers(decoder.read_ips(length as usize)?)
+            }
             OptionCode::VendorExtensions => {
                 let length = decoder.read_u8()?;
                 VendorExtensions(decoder.read_slice(length as usize)?.to_vec())
             }
-            OptionCode::NetBiosNameServers => NetBiosNameServers(read_ips(decoder)?),
+            OptionCode::NetBiosNameServers => {
+                let length = decoder.read_u8()?;
+                NetBiosNameServers(decoder.read_ips(length as usize)?)
+            }
             OptionCode::NetBiosDatagramDistributionServer => {
-                NetBiosDatagramDistributionServer(read_ips(decoder)?)
+                let length = decoder.read_u8()?;
+                NetBiosDatagramDistributionServer(decoder.read_ips(length as usize)?)
             }
             OptionCode::NetBiosNodeType => NetBiosNodeType(decoder.read_u8()?.into()),
             OptionCode::NetBiosScope => {
                 let length = decoder.read_u8()?;
                 NetBiosScope(decoder.read_string(length as usize)?)
             }
-            OptionCode::XFontServer => XFontServer(read_ips(decoder)?),
-            OptionCode::XDisplayManager => XDisplayManager(read_ips(decoder)?),
-            OptionCode::RequestedIpAddress => RequestedIpAddress(read_ip(decoder)?),
+            OptionCode::XFontServer => {
+                let length = decoder.read_u8()?;
+                XFontServer(decoder.read_ips(length as usize)?)
+            }
+            OptionCode::XDisplayManager => {
+                let length = decoder.read_u8()?;
+                XDisplayManager(decoder.read_ips(length as usize)?)
+            }
+            OptionCode::RequestedIpAddress => {
+                let length = decoder.read_u8()?;
+                RequestedIpAddress(decoder.read_ip(length as usize)?)
+            }
             OptionCode::AddressLeaseTime => {
                 let _ = decoder.read_u8()?;
                 AddressLeaseTime(decoder.read_u32()?)
@@ -549,7 +657,10 @@ impl<'r> Decodable<'r> for DhcpOption {
                 let _ = decoder.read_u8()?;
                 MessageType(decoder.read_u8()?.into())
             }
-            OptionCode::ServerIdentifier => ServerIdentifier(read_ip(decoder)?),
+            OptionCode::ServerIdentifier => {
+                let length = decoder.read_u8()?;
+                ServerIdentifier(decoder.read_ip(length as usize)?)
+            }
             OptionCode::ParameterRequestList => {
                 let length = decoder.read_u8()?;
                 ParameterRequestList(decoder.read_slice(length as usize)?.to_vec())
@@ -591,30 +702,6 @@ impl<'r> Decodable<'r> for DhcpOption {
             }
         })
     }
-}
-
-#[inline]
-fn read_ip(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Ipv4Addr> {
-    // must be always set to 4
-    let length = decoder.read_u8()?;
-    assert!(length == 4);
-    decoder.read_ip(length as usize)
-}
-
-#[inline]
-fn read_ips(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Vec<Ipv4Addr>> {
-    // must be a multiple of 4
-    let length = decoder.read_u8()?;
-    assert!(length % 4 == 0);
-    decoder.read_ips(length as usize)
-}
-
-#[inline]
-fn read_pair_ips(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Vec<(Ipv4Addr, Ipv4Addr)>> {
-    // must be a multiple of 8
-    let length = decoder.read_u8()?;
-    assert!(length % 8 == 0);
-    decoder.read_pair_ips(length as usize)
 }
 
 impl From<&DhcpOption> for OptionCode {

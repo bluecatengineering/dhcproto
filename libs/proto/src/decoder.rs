@@ -112,11 +112,14 @@ impl<'a> Decoder<'a> {
     }
 
     pub fn read_ip(&mut self, length: usize) -> DecodeResult<Ipv4Addr> {
+        assert!(length == 4);
         let bytes = self.read_slice(length as usize)?;
         Ok([bytes[0], bytes[1], bytes[2], bytes[3]].into())
     }
 
     pub fn read_ips(&mut self, length: usize) -> DecodeResult<Vec<Ipv4Addr>> {
+        // must be multiple of 4
+        assert!(length % 4 == 0);
         let ips = self.read_slice(length as usize)?;
         Ok(ips
             .chunks(4)
@@ -125,6 +128,8 @@ impl<'a> Decoder<'a> {
     }
 
     pub fn read_pair_ips(&mut self, length: usize) -> DecodeResult<Vec<(Ipv4Addr, Ipv4Addr)>> {
+        // must be multiple of 8
+        assert!(length % 8 == 0);
         let ips = self.read_slice(length as usize)?;
         Ok(ips
             .chunks(8)
