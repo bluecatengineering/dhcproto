@@ -1,11 +1,12 @@
 use std::{convert::TryInto, net::Ipv4Addr};
 
 mod flags;
+mod htype;
 mod opcode;
 mod options;
 
 // re-export submodules from proto::msg
-pub use self::{flags::*, opcode::*, options::*};
+pub use self::{flags::*, htype::*, opcode::*, options::*};
 
 use crate::{
     decoder::{Decodable, Decoder},
@@ -46,7 +47,7 @@ pub struct Message {
     /// op code / message type
     opcode: Opcode,
     /// Hardware address type: https://tools.ietf.org/html/rfc3232
-    htype: u8,
+    htype: HType,
     /// Hardware address length
     hlen: u8,
     /// Client sets to zero, optionally used by relay agents when booting via a relay agent.
@@ -77,40 +78,23 @@ pub struct Message {
 
 impl<'r> Decodable<'r> for Message {
     fn read(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
-        let opcode = Opcode::read(decoder)?;
-        let htype = decoder.read_u8()?;
-        let hlen = decoder.read_u8()?;
-        let hops = decoder.read_u8()?;
-        let xid = decoder.read_u32()?;
-        let secs = decoder.read_u16()?;
-        let flags = decoder.read_u16()?;
-        let ciaddr: Ipv4Addr = decoder.read_u32()?.into();
-        let yiaddr: Ipv4Addr = decoder.read_u32()?.into();
-        let siaddr: Ipv4Addr = decoder.read_u32()?.into();
-        let giaddr: Ipv4Addr = decoder.read_u32()?.into();
-        let chaddr: [u8; 16] = decoder.read::<16>()?.try_into()?;
-        let sname = decoder.read_string::<64>()?;
-        let file = decoder.read_string::<128>()?;
-        let magic: [u8; 4] = decoder.read::<4>()?.try_into()?;
-        let options = DhcpOptions::read(decoder)?;
-
         Ok(Message {
-            opcode,
-            htype,
-            hlen,
-            hops,
-            xid,
-            secs,
-            flags,
-            ciaddr,
-            yiaddr,
-            siaddr,
-            giaddr,
-            chaddr,
-            sname,
-            file,
-            magic,
-            options,
+            opcode: Opcode::read(decoder)?,
+            htype: decoder.read_u8()?.into(),
+            hlen: decoder.read_u8()?,
+            hops: decoder.read_u8()?,
+            xid: decoder.read_u32()?,
+            secs: decoder.read_u16()?,
+            flags: decoder.read_u16()?,
+            ciaddr: decoder.read_u32()?.into(),
+            yiaddr: decoder.read_u32()?.into(),
+            siaddr: decoder.read_u32()?.into(),
+            giaddr: decoder.read_u32()?.into(),
+            chaddr: decoder.read::<16>()?.try_into()?,
+            sname: decoder.read_const_string::<64>()?,
+            file: decoder.read_const_string::<128>()?,
+            magic: decoder.read::<4>()?.try_into()?,
+            options: DhcpOptions::read(decoder)?,
         })
     }
 }

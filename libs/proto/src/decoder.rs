@@ -3,7 +3,9 @@ use crate::error::{DecodeError, DecodeResult};
 use std::{
     convert::TryInto,
     ffi::{CStr, CString},
-    mem, str,
+    mem,
+    net::Ipv4Addr,
+    str,
 };
 
 /// A trait for types which are serializable to and from DHCP binary formats
@@ -79,7 +81,7 @@ impl<'a> Decoder<'a> {
     }
 
     /// read `MAX` length bytes and read into utf-8 encoded `String`
-    pub fn read_string<const MAX: usize>(&mut self) -> DecodeResult<Option<String>> {
+    pub fn read_const_string<const MAX: usize>(&mut self) -> DecodeResult<Option<String>> {
         let bytes = self.read::<MAX>()?;
         let nul_idx = bytes.iter().position(|&b| b == 0);
         match nul_idx {
@@ -102,5 +104,36 @@ impl<'a> Decoder<'a> {
             .ok_or(DecodeError::EndOfBuffer { index: end })?;
         self.index = end;
         Ok(slice)
+    }
+
+    pub fn read_string(&mut self, len: usize) -> DecodeResult<String> {
+        let slice = self.read_slice(len)?;
+        Ok(str::from_utf8(slice)?.to_owned())
+    }
+
+    pub fn read_ip(&mut self, length: usize) -> DecodeResult<Ipv4Addr> {
+        let bytes = self.read_slice(length as usize)?;
+        Ok([bytes[0], bytes[1], bytes[2], bytes[3]].into())
+    }
+
+    pub fn read_ips(&mut self, length: usize) -> DecodeResult<Vec<Ipv4Addr>> {
+        let ips = self.read_slice(length as usize)?;
+        Ok(ips
+            .chunks(4)
+            .map(|bytes| [bytes[0], bytes[1], bytes[2], bytes[3]].into())
+            .collect())
+    }
+
+    pub fn read_pair_ips(&mut self, length: usize) -> DecodeResult<Vec<(Ipv4Addr, Ipv4Addr)>> {
+        let ips = self.read_slice(length as usize)?;
+        Ok(ips
+            .chunks(8)
+            .map(|bytes| {
+                (
+                    [bytes[0], bytes[1], bytes[2], bytes[3]].into(),
+                    [bytes[4], bytes[5], bytes[6], bytes[7]].into(),
+                )
+            })
+            .collect())
     }
 }
