@@ -498,23 +498,23 @@ impl<'r> Decodable<'r> for DhcpOption {
                 let length = decoder.read_u8()?;
                 DomainName(decoder.read_string(length as usize)?)
             }
-            OptionCode::IpForwarding => IpForwarding(decoder.read_u8()? == 1),
-            OptionCode::NonLocalSrcRouting => NonLocalSrcRouting(decoder.read_u8()? == 1),
+            OptionCode::IpForwarding => IpForwarding(decoder.read_bool()?),
+            OptionCode::NonLocalSrcRouting => NonLocalSrcRouting(decoder.read_bool()?),
             OptionCode::MaxDatagramSize => MaxDatagramSize(decoder.read_u16()?),
             OptionCode::DefaultIpTtl => DefaultIpTtl(decoder.read_u8()?),
             OptionCode::InterfaceMtu => InterfaceMtu(decoder.read_u16()?),
-            OptionCode::AllSubnetsLocal => AllSubnetsLocal(decoder.read_u8()? == 1),
+            OptionCode::AllSubnetsLocal => AllSubnetsLocal(decoder.read_bool()?),
             OptionCode::BroadcastAddr => BroadcastAddr(read_ip(decoder)?),
-            OptionCode::PerformMaskDiscovery => PerformMaskDiscovery(decoder.read_u8()? == 1),
-            OptionCode::MaskSupplier => MaskSupplier(decoder.read_u8()? == 1),
-            OptionCode::PerformRouterDiscovery => PerformRouterDiscovery(decoder.read_u8()? == 1),
+            OptionCode::PerformMaskDiscovery => PerformMaskDiscovery(decoder.read_bool()?),
+            OptionCode::MaskSupplier => MaskSupplier(decoder.read_bool()?),
+            OptionCode::PerformRouterDiscovery => PerformRouterDiscovery(decoder.read_bool()?),
             OptionCode::RouterSolicitationAddr => RouterSolicitationAddr(read_ip(decoder)?),
             OptionCode::StaticRoutingTable => StaticRoutingTable(read_pair_ips(decoder)?),
             OptionCode::ArpCacheTimeout => ArpCacheTimeout(decoder.read_u32()?),
-            OptionCode::EthernetEncapsulation => EthernetEncapsulation(decoder.read_u8()? == 1),
+            OptionCode::EthernetEncapsulation => EthernetEncapsulation(decoder.read_bool()?),
             OptionCode::DefaultTcpTtl => DefaultIpTtl(decoder.read_u8()?),
             OptionCode::TcpKeepaliveInterval => TcpKeepaliveInterval(decoder.read_u32()?),
-            OptionCode::TcpKeepaliveGarbage => TcpKeepaliveGarbage(decoder.read_u8()? == 1),
+            OptionCode::TcpKeepaliveGarbage => TcpKeepaliveGarbage(decoder.read_bool()?),
             OptionCode::NISDomain => {
                 let length = decoder.read_u8()?;
                 DomainName(decoder.read_string(length as usize)?)

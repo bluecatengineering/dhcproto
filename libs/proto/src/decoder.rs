@@ -136,4 +136,8 @@ impl<'a> Decoder<'a> {
             })
             .collect())
     }
+
+    pub fn read_bool(&mut self) -> DecodeResult<bool> {
+        Ok(self.read_u8()? == 1)
+    }
 }
