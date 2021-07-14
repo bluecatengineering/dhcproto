@@ -39,31 +39,32 @@ impl<'a> Decoder<'a> {
     /// read a u32
     pub fn read_u32(&mut self) -> DecodeResult<u32> {
         Ok(u32::from_be_bytes(
-            self.read::<{ mem::size_of::<u32>() }>()?.try_into()?,
+            self.read::<{ mem::size_of::<u32>() }>()?,
         ))
     }
 
     /// read a i32
     pub fn read_i32(&mut self) -> DecodeResult<i32> {
         Ok(i32::from_be_bytes(
-            self.read::<{ mem::size_of::<i32>() }>()?.try_into()?,
+            self.read::<{ mem::size_of::<i32>() }>()?,
         ))
     }
 
     /// read a u16
     pub fn read_u16(&mut self) -> DecodeResult<u16> {
         Ok(u16::from_be_bytes(
-            self.read::<{ mem::size_of::<u16>() }>()?.try_into()?,
+            self.read::<{ mem::size_of::<u16>() }>()?,
         ))
     }
 
     /// read a `N` bytes into slice
-    pub fn read<const N: usize>(&mut self) -> DecodeResult<&'a [u8]> {
+    pub fn read<const N: usize>(&mut self) -> DecodeResult<[u8; N]> {
         let end = self.index.checked_add(N).ok_or(DecodeError::AddOverflow)?;
         let bytes = self
             .buffer
             .get(self.index..end)
-            .ok_or(DecodeError::EndOfBuffer { index: end })?;
+            .ok_or(DecodeError::EndOfBuffer { index: end })?
+            .try_into()?;
         self.index = end;
         Ok(bytes)
     }

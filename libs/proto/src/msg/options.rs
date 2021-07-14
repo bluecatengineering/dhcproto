@@ -34,11 +34,13 @@ impl<'a> Encodable<'a> for DhcpOptions {
     fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<usize> {
         let mut len = 0;
         for (_, opt) in self.0.iter() {
-            println!("{:?}", opt);
             len += opt.encode(e)?;
         }
-        // Add `End` so decoders know when to stop
-        len += DhcpOption::End.encode(e)?;
+        // if we added some opts, also add End opt
+        if len != 0 {
+            // Add `End` so decoders know when to stop
+            len += DhcpOption::End.encode(e)?;
+        }
         // TODO: no padding added for now
         // it is "normally" added to pad out to word sizes
         // but test packet captures are often padded to 60 bytes

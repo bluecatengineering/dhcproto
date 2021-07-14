@@ -1,4 +1,4 @@
-use std::{convert::TryInto, net::Ipv4Addr};
+use std::net::Ipv4Addr;
 
 mod flags;
 mod htype;
@@ -93,11 +93,11 @@ impl<'r> Decodable<'r> for Message {
             yiaddr: decoder.read_u32()?.into(),
             siaddr: decoder.read_u32()?.into(),
             giaddr: decoder.read_u32()?.into(),
-            chaddr: decoder.read::<16>()?.try_into()?,
+            chaddr: decoder.read::<16>()?,
             sname: decoder.read_const_string::<64>()?,
             file: decoder.read_const_string::<128>()?,
             // TODO: check magic bytes against expected?
-            magic: decoder.read::<4>()?.try_into()?,
+            magic: decoder.read::<4>()?,
             options: DhcpOptions::decode(decoder)?,
         })
     }
