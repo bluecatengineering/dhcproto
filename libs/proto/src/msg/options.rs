@@ -1,4 +1,4 @@
-use std::{collections::HashMap, net::Ipv4Addr};
+use std::{collections::HashMap, iter, net::Ipv4Addr};
 
 use crate::{
     decoder::{Decodable, Decoder},
@@ -32,20 +32,26 @@ impl<'r> Decodable<'r> for DhcpOptions {
 
 impl<'a> Encodable<'a> for DhcpOptions {
     fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<usize> {
-        let mut len = 0;
-        for (_, opt) in self.0.iter() {
-            len += opt.encode(e)?;
+        if self.0.is_empty() {
+            Ok(0)
+        } else {
+            // encode all opts adding the `End` afterwards
+            // sum all bytes written
+            let mut len = 0;
+            for n in self
+                .0
+                .iter()
+                .chain(iter::once((&OptionCode::End, &DhcpOption::End)))
+                .map(|(_, opt)| opt.encode(e))
+            {
+                len += n?;
+            }
+            Ok(len)
+            // TODO: no padding added for now, is it necessary?
+            // apparently it's "normally" added to pad out to word sizes
+            // but test packet captures are often padded to 60 bytes
+            // which seems like not a word size?
         }
-        // if we added some opts, also add End opt
-        if len != 0 {
-            // Add `End` so decoders know when to stop
-            len += DhcpOption::End.encode(e)?;
-        }
-        // TODO: no padding added for now
-        // it is "normally" added to pad out to word sizes
-        // but test packet captures are often padded to 60 bytes
-        // which seems like not a word size?
-        Ok(len)
     }
 }
 
