@@ -14,3 +14,4 @@ pub mod decoder;
 pub mod encoder;
 pub mod error;
 pub mod msg;
+pub mod v6;

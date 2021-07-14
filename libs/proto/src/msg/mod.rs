@@ -79,6 +79,88 @@ pub struct Message {
     options: DhcpOptions,
 }
 
+impl Message {
+    /// Get the message's opcode.
+    pub fn opcode(&self) -> Opcode {
+        self.opcode
+    }
+
+    /// Get the message's htype.
+    pub fn htype(&self) -> &HType {
+        &self.htype
+    }
+
+    /// Get the message's hlen.
+    pub fn hlen(&self) -> u8 {
+        self.hlen
+    }
+
+    /// Get the message's hops.
+    pub fn hops(&self) -> u8 {
+        self.hops
+    }
+
+    /// Get the message's chaddr.
+    pub fn chaddr(&self) -> [u8; 16] {
+        self.chaddr
+    }
+
+    /// Get the message's giaddr.
+    pub fn giaddr(&self) -> Ipv4Addr {
+        self.giaddr
+    }
+
+    /// Get the message's siaddr.
+    pub fn siaddr(&self) -> Ipv4Addr {
+        self.siaddr
+    }
+
+    /// Get the message's yiaddr.
+    pub fn yiaddr(&self) -> Ipv4Addr {
+        self.yiaddr
+    }
+
+    /// Get the message's ciaddr.
+    pub fn ciaddr(&self) -> Ipv4Addr {
+        self.ciaddr
+    }
+
+    /// Get the message's flags.
+    pub fn flags(&self) -> Flags {
+        self.flags
+    }
+
+    /// Get the message's secs.
+    pub fn secs(&self) -> u16 {
+        self.secs
+    }
+
+    /// Get the message's xid.
+    pub fn xid(&self) -> u32 {
+        self.xid
+    }
+
+    /// Get a reference to the message's file.
+    pub fn file(&self) -> Option<&String> {
+        self.file.as_ref()
+    }
+
+    /// Get a reference to the message's sname.
+    pub fn sname(&self) -> Option<&String> {
+        self.sname.as_ref()
+    }
+
+    /// Get a reference to the message's options.
+    pub fn options(&self) -> &DhcpOptions {
+        &self.options
+    }
+
+    /// Get a mutable reference to the message's options.
+    pub fn options_mut(&mut self) -> &mut DhcpOptions {
+        &mut self.options
+    }
+}
+
 impl<'r> Decodable<'r> for Message {
     fn decode(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
         Ok(Message {

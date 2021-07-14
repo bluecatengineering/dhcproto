@@ -33,7 +33,7 @@ impl<'a> Decoder<'a> {
 
     /// read a u8
     pub fn read_u8(&mut self) -> DecodeResult<u8> {
-        Ok(self.read::<{ mem::size_of::<u8>() }>()?[0])
+        Ok(u8::from_be_bytes(self.read::<{ mem::size_of::<u8>() }>()?))
     }
 
     /// read a u32
