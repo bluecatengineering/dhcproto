@@ -36,6 +36,11 @@ pub enum EncodeError {
     #[error("encoder checked_add failed")]
     AddOverflow,
 
+    #[error(
+        "message is trying to write a string to the message that exceeds the max size of {len}"
+    )]
+    StringSizeTooBig { len: usize },
+
     /// An error with an arbitrary message
     #[error("{0}")]
     Message(String),

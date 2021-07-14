@@ -14,6 +14,8 @@ use crate::{
     error::*,
 };
 
+const MAGIC: [u8; 4] = [99, 130, 83, 99];
+
 /// [Dynamic Host Configuration Protocol](https://tools.ietf.org/html/rfc2131#section-2)
 ///
 ///```text
@@ -94,6 +96,7 @@ impl<'r> Decodable<'r> for Message {
             chaddr: decoder.read::<16>()?.try_into()?,
             sname: decoder.read_const_string::<64>()?,
             file: decoder.read_const_string::<128>()?,
+            // TODO: check magic bytes against expected?
             magic: decoder.read::<4>()?.try_into()?,
             options: DhcpOptions::decode(decoder)?,
         })
@@ -117,6 +120,7 @@ impl<'a> Encodable<'a> for Message {
         len += e.write_slice(&self.chaddr[..])?;
         len += e.write_fill_string(&self.sname, 64)?;
         len += e.write_fill_string(&self.file, 128)?;
+
         len += e.write(self.magic)?;
         self.options.encode(e)?;
         Ok(len)
@@ -135,16 +139,26 @@ mod tests {
         // decode
         let offer = dhcp_offer();
         let msg = Message::decode(&mut Decoder::new(&offer))?;
+        dbg!(&msg);
+        dbg!(offer.len());
         // now encode
         let mut buf = Vec::new();
         let mut e = Encoder::new(&mut buf);
         msg.encode(&mut e)?;
-        assert_eq!(buf, dhcp_offer());
+        println!("{:?}", &buf);
+        println!("{:?}", &dhcp_offer());
+        // len will be different because input has arbitrary PAD bytes
+        // assert_eq!(buf.len(), dhcp_offer().len());
+        // decode again
+        let res = Message::decode(&mut Decoder::new(&buf))?;
+        // check Messages are equal after decoding/encoding
+        assert_eq!(msg, res);
         Ok(())
     }
 
     #[test]
     fn decode_bootreq() -> Result<()> {
+        println!("{:02x?}", &MAGIC[..]);
         let offer = dhcp_bootreq();
         let msg = Message::decode(&mut Decoder::new(&offer))?;
         // now encode

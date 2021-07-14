@@ -16,6 +16,7 @@ impl<'r> Decodable<'r> for DhcpOptions {
         // should we error the whole parser if we fail to parse an
         // option or just stop parsing options? -- here we will just stop
         while let Ok(opt) = DhcpOption::decode(decoder) {
+            // we throw away PAD bytes here
             match opt {
                 DhcpOption::End => {
                     break;
@@ -33,8 +34,15 @@ impl<'a> Encodable<'a> for DhcpOptions {
     fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<usize> {
         let mut len = 0;
         for (_, opt) in self.0.iter() {
+            println!("{:?}", opt);
             len += opt.encode(e)?;
         }
+        // Add `End` so decoders know when to stop
+        len += DhcpOption::End.encode(e)?;
+        // TODO: no padding added for now
+        // it is "normally" added to pad out to word sizes
+        // but test packet captures are often padded to 60 bytes
+        // which seems like not a word size?
         Ok(len)
     }
 }
@@ -478,7 +486,6 @@ impl<'r> Decodable<'r> for DhcpOption {
                 let length = decoder.read_u8()?;
                 SubnetMask(decoder.read_ip(length as usize)?)
             }
-
             OptionCode::TimeOffset => {
                 let _ = decoder.read_u8()?;
                 TimeOffset(decoder.read_i32()?)
@@ -639,7 +646,10 @@ impl<'r> Decodable<'r> for DhcpOption {
                 let length = decoder.read_u8()?;
                 NetBiosDatagramDistributionServer(decoder.read_ips(length as usize)?)
             }
-            OptionCode::NetBiosNodeType => NetBiosNodeType(decoder.read_u8()?.into()),
+            OptionCode::NetBiosNodeType => {
+                let _ = decoder.read_u8()?;
+                NetBiosNodeType(decoder.read_u8()?.into())
+            }
             OptionCode::NetBiosScope => {
                 let length = decoder.read_u8()?;
                 NetBiosScope(decoder.read_string(length as usize)?)
@@ -721,9 +731,9 @@ impl<'a> Encodable<'a> for DhcpOption {
 
         let code: OptionCode = self.into();
         let mut len = 0;
-        // pad has no length, so we can't read len up here
+        // pad has no length, so we can't read len up here.
         // don't want to have a fall-through case either
-        // so we get exhaustiveness checking, so we'll write
+        // so we get exhaustiveness checking, so we'll parse
         // code in each match arm
         Ok(match self {
             Pad | End => {
@@ -763,7 +773,7 @@ impl<'a> Encodable<'a> for DhcpOption {
             | NetBiosNameServers(ips)
             | NetBiosDatagramDistributionServer(ips) => {
                 len += e.write_u8(code.into())?;
-                len += e.write_u8(ips.len() as u8)?;
+                len += e.write_u8(ips.len() as u8 * 4)?;
                 for ip in ips {
                     len += e.write_u32((*ip).into())?;
                 }
@@ -803,7 +813,7 @@ impl<'a> Encodable<'a> for DhcpOption {
             }
             StaticRoutingTable(pair_ips) => {
                 len += e.write_u8(code.into())?;
-                len += e.write_u8(pair_ips.len() as u8)?;
+                len += e.write_u8(pair_ips.len() as u8 * 8)?;
                 for (a, b) in pair_ips {
                     len += e.write_u32((*a).into())?;
                     len += e.write_u32((*b).into())?;
@@ -831,12 +841,14 @@ impl<'a> Encodable<'a> for DhcpOption {
             }
             NetBiosNodeType(ntype) => {
                 len += e.write_u8(code.into())?;
+                len += e.write_u8(1)?;
                 len += e.write_u8((*ntype).into())?;
                 len
             }
 
             MessageType(mtype) => {
                 len += e.write_u8(code.into())?;
+                len += e.write_u8(1)?;
                 len += e.write_u8((*mtype).into())?;
                 len
             }
@@ -964,5 +976,122 @@ impl From<MessageType> for u8 {
             MessageType::Release => 7,
             MessageType::Unknown(n) => n,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+
+    fn test_opt(opt: DhcpOption, actual: Vec<u8>) -> Result<()> {
+        let mut out = vec![];
+        let mut enc = Encoder::new(&mut out);
+        let len = opt.encode(&mut enc)?;
+        println!("{:?}", enc.buffer());
+        assert_eq!(len, actual.len());
+        assert_eq!(out, actual);
+
+        let buf = DhcpOption::decode(&mut Decoder::new(&out))?;
+        assert_eq!(buf, opt);
+        Ok(())
+    }
+    #[test]
+    fn test_opts() -> Result<()> {
+        let input = binput();
+        println!("{:?}", input);
+        let opts = DhcpOptions::decode(&mut Decoder::new(&input))?;
+
+        let mut output = Vec::new();
+        let _len = opts.encode(&mut Encoder::new(&mut output))?;
+        // not comparing len as we don't add PAD bytes
+        // assert_eq!(input.len(), len);
+        Ok(())
+    }
+    #[test]
+    fn test_ips() -> Result<()> {
+        test_opt(
+            DhcpOption::DomainNameServer(vec![
+                "192.168.0.1".parse::<Ipv4Addr>().unwrap(),
+                "192.168.1.1".parse::<Ipv4Addr>().unwrap(),
+            ]),
+            vec![6, 8, 192, 168, 0, 1, 192, 168, 1, 1],
+        )?;
+        Ok(())
+    }
+    #[test]
+    fn test_ip() -> Result<()> {
+        test_opt(
+            DhcpOption::ServerIdentifier("192.168.0.1".parse::<Ipv4Addr>().unwrap()),
+            vec![54, 4, 192, 168, 0, 1],
+        )?;
+        Ok(())
+    }
+    #[test]
+    fn test_str() -> Result<()> {
+        test_opt(
+            DhcpOption::Hostname("foobar.com".to_string()),
+            vec![12, 10, 102, 111, 111, 98, 97, 114, 46, 99, 111, 109],
+        )?;
+
+        Ok(())
+    }
+    #[test]
+    fn test_byte() -> Result<()> {
+        test_opt(DhcpOption::DefaultIpTtl(10), vec![23, 1, 10])?;
+
+        Ok(())
+    }
+    #[test]
+    fn test_num() -> Result<()> {
+        test_opt(DhcpOption::Renewal(30), vec![58, 4, 0, 0, 0, 30])?;
+        Ok(())
+    }
+    #[test]
+    fn test_mtype() -> Result<()> {
+        test_opt(DhcpOption::MessageType(MessageType::Offer), vec![53, 1, 2])?;
+
+        Ok(())
+    }
+    #[test]
+    fn test_ntype() -> Result<()> {
+        test_opt(DhcpOption::NetBiosNodeType(NodeType::M), vec![46, 1, 4])?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_pair_ips() -> Result<()> {
+        test_opt(
+            DhcpOption::StaticRoutingTable(vec![(
+                "192.168.1.1".parse::<Ipv4Addr>().unwrap(),
+                "192.168.0.1".parse::<Ipv4Addr>().unwrap(),
+            )]),
+            vec![33, 8, 192, 168, 1, 1, 192, 168, 0, 1],
+        )?;
+
+        Ok(())
+    }
+    #[test]
+    fn test_unknown() -> Result<()> {
+        test_opt(
+            DhcpOption::Unknown(UnknownOption {
+                code: 91,
+                length: 4,
+                bytes: vec![1, 2, 3, 4],
+            }),
+            vec![91, 4, 1, 2, 3, 4],
+        )?;
+
+        Ok(())
+    }
+
+    fn binput() -> Vec<u8> {
+        vec![
+            53, 1, 2, 54, 4, 192, 168, 0, 1, 51, 4, 0, 0, 0, 60, 58, 4, 0, 0, 0, 30, 59, 4, 0, 0,
+            0, 52, 1, 4, 255, 255, 255, 0, 3, 4, 192, 168, 0, 1, 6, 8, 192, 168, 0, 1, 192, 168, 1,
+            1, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ]
     }
 }

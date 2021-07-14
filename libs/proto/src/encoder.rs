@@ -17,6 +17,10 @@ impl<'a> Encoder<'a> {
         Self { buffer, offset: 0 }
     }
 
+    pub fn buffer(&self) -> &[u8] {
+        &self.buffer
+    }
+
     /// write bytes to buffer
     /// Return:
     ///     number of bytes written
@@ -81,8 +85,14 @@ impl<'a> Encoder<'a> {
     pub fn write_i32(&mut self, data: i32) -> EncodeResult<usize> {
         self.write(data.to_be_bytes())
     }
+    /// Writes bytes to buffer and pads with 0 bytes up to some fill_len
+    ///
+    /// Returns
+    ///    Err - if bytes.len() is greater then fill_len
     pub fn write_fill_bytes(&mut self, bytes: &[u8], fill_len: usize) -> EncodeResult<usize> {
-        assert!(bytes.len() >= fill_len);
+        if bytes.len() > fill_len {
+            return Err(EncodeError::StringSizeTooBig { len: bytes.len() });
+        }
         let nul_len = fill_len - bytes.len();
         let mut len = 0;
         len += self.write_slice(bytes)?;
@@ -91,6 +101,11 @@ impl<'a> Encoder<'a> {
         }
         Ok(len)
     }
+    /// Writes string to buffer and pads with 0 bytes up to some fill_len
+    /// if String is None then write fill_len 0 bytes
+    ///
+    /// Returns
+    ///    Err - if bytes.len() is greater then fill_len
     pub fn write_fill_string(
         &mut self,
         s: &Option<String>,
