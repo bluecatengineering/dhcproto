@@ -76,7 +76,7 @@ pub struct Message {
     // File name
     file: Option<String>,
     magic: [u8; 4],
-    options: DhcpOptions,
+    opts: DhcpOptions,
 }
 
 impl Message {
@@ -150,14 +150,14 @@ impl Message {
         self.sname.as_ref()
     }
 
-    /// Get a reference to the message's options.
-    pub fn options(&self) -> &DhcpOptions {
-        &self.options
+    /// Get a reference to the message's opts.
+    pub fn opts(&self) -> &DhcpOptions {
+        &self.opts
     }
 
     /// Get a mutable reference to the message's options.
-    pub fn options_mut(&mut self) -> &mut DhcpOptions {
-        &mut self.options
+    pub fn opts_mut(&mut self) -> &mut DhcpOptions {
+        &mut self.opts
     }
 }
 
@@ -180,32 +180,31 @@ impl<'r> Decodable<'r> for Message {
             file: decoder.read_const_string::<128>()?,
             // TODO: check magic bytes against expected?
             magic: decoder.read::<4>()?,
-            options: DhcpOptions::decode(decoder)?,
+            opts: DhcpOptions::decode(decoder)?,
         })
     }
 }
 
 impl<'a> Encodable<'a> for Message {
-    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<usize> {
-        let mut len = 0;
-        len += self.opcode.encode(e)?;
-        len += self.htype.encode(e)?;
-        len += e.write_u8(self.hlen)?;
-        len += e.write_u8(self.hops)?;
-        len += e.write_u32(self.xid)?;
-        len += e.write_u16(self.secs)?;
-        len += e.write_u16(self.flags.into())?;
-        len += e.write_u32(self.ciaddr.into())?;
-        len += e.write_u32(self.yiaddr.into())?;
-        len += e.write_u32(self.siaddr.into())?;
-        len += e.write_u32(self.giaddr.into())?;
-        len += e.write_slice(&self.chaddr[..])?;
-        len += e.write_fill_string(&self.sname, 64)?;
-        len += e.write_fill_string(&self.file, 128)?;
+    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()> {
+        self.opcode.encode(e)?;
+        self.htype.encode(e)?;
+        e.write_u8(self.hlen)?;
+        e.write_u8(self.hops)?;
+        e.write_u32(self.xid)?;
+        e.write_u16(self.secs)?;
+        e.write_u16(self.flags.into())?;
+        e.write_u32(self.ciaddr.into())?;
+        e.write_u32(self.yiaddr.into())?;
+        e.write_u32(self.siaddr.into())?;
+        e.write_u32(self.giaddr.into())?;
+        e.write_slice(&self.chaddr[..])?;
+        e.write_fill_string(&self.sname, 64)?;
+        e.write_fill_string(&self.file, 128)?;
 
-        len += e.write(self.magic)?;
-        self.options.encode(e)?;
-        Ok(len)
+        e.write(self.magic)?;
+        self.opts.encode(e)?;
+        Ok(())
     }
 }
 

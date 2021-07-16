@@ -57,6 +57,13 @@ impl<'a> Decoder<'a> {
         ))
     }
 
+    /// read a u64
+    pub fn read_u64(&mut self) -> DecodeResult<u64> {
+        Ok(u64::from_be_bytes(
+            self.read::<{ mem::size_of::<u64>() }>()?,
+        ))
+    }
+
     /// read a `N` bytes into slice
     pub fn read<const N: usize>(&mut self) -> DecodeResult<[u8; N]> {
         let end = self.index.checked_add(N).ok_or(DecodeError::AddOverflow)?;
@@ -145,5 +152,10 @@ impl<'a> Decoder<'a> {
 
     pub fn read_bool(&mut self) -> DecodeResult<bool> {
         Ok(self.read_u8()? == 1)
+    }
+
+    /// return slice of buffer start at index of unread data
+    pub fn buffer(&self) -> &[u8] {
+        &self.buffer[self.index..]
     }
 }

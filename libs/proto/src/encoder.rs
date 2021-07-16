@@ -3,7 +3,7 @@ use crate::error::{EncodeError, EncodeResult};
 /// A trait for types which are deserializable to DHCP binary formats
 pub trait Encodable<'a> {
     /// Read the type from the stream
-    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<usize>;
+    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()>;
 }
 
 #[derive(Debug)]
@@ -24,7 +24,7 @@ impl<'a> Encoder<'a> {
     /// write bytes to buffer
     /// Return:
     ///     number of bytes written
-    pub fn write_slice(&mut self, bytes: &[u8]) -> EncodeResult<usize> {
+    pub fn write_slice(&mut self, bytes: &[u8]) -> EncodeResult<()> {
         let additional = bytes.len();
         // space already reserved, we may not need this
         if self.offset + additional <= self.buffer.len() {
@@ -45,10 +45,10 @@ impl<'a> Encoder<'a> {
             .checked_add(additional)
             .ok_or(EncodeError::AddOverflow)?;
         self.offset = index;
-        Ok(additional)
+        Ok(())
     }
 
-    pub fn write<const N: usize>(&mut self, bytes: [u8; N]) -> EncodeResult<usize> {
+    pub fn write<const N: usize>(&mut self, bytes: [u8; N]) -> EncodeResult<()> {
         // TODO: refactor this and above method?
         // only difference is zip & extend
         let additional = bytes.len();
@@ -70,62 +70,56 @@ impl<'a> Encoder<'a> {
             .checked_add(additional)
             .ok_or(EncodeError::AddOverflow)?;
         self.offset = index;
-        Ok(additional)
+        Ok(())
     }
 
-    pub fn write_u8(&mut self, data: u8) -> EncodeResult<usize> {
+    pub fn write_u8(&mut self, data: u8) -> EncodeResult<()> {
         self.write(data.to_be_bytes())
     }
-    pub fn write_u16(&mut self, data: u16) -> EncodeResult<usize> {
+    pub fn write_u16(&mut self, data: u16) -> EncodeResult<()> {
         self.write(data.to_be_bytes())
     }
-    pub fn write_u32(&mut self, data: u32) -> EncodeResult<usize> {
+    pub fn write_u32(&mut self, data: u32) -> EncodeResult<()> {
         self.write(data.to_be_bytes())
     }
-    pub fn write_i32(&mut self, data: i32) -> EncodeResult<usize> {
+    pub fn write_i32(&mut self, data: i32) -> EncodeResult<()> {
         self.write(data.to_be_bytes())
     }
     /// Writes bytes to buffer and pads with 0 bytes up to some fill_len
     ///
     /// Returns
     ///    Err - if bytes.len() is greater then fill_len
-    pub fn write_fill_bytes(&mut self, bytes: &[u8], fill_len: usize) -> EncodeResult<usize> {
+    pub fn write_fill_bytes(&mut self, bytes: &[u8], fill_len: usize) -> EncodeResult<()> {
         if bytes.len() > fill_len {
             return Err(EncodeError::StringSizeTooBig { len: bytes.len() });
         }
         let nul_len = fill_len - bytes.len();
-        let mut len = 0;
-        len += self.write_slice(bytes)?;
+        self.write_slice(bytes)?;
         for _ in 0..nul_len {
-            len += self.write_u8(0)?;
+            self.write_u8(0)?;
         }
-        Ok(len)
+        Ok(())
     }
     /// Writes string to buffer and pads with 0 bytes up to some fill_len
     /// if String is None then write fill_len 0 bytes
     ///
     /// Returns
     ///    Err - if bytes.len() is greater then fill_len
-    pub fn write_fill_string(
-        &mut self,
-        s: &Option<String>,
-        fill_len: usize,
-    ) -> EncodeResult<usize> {
-        let mut len = 0;
+    pub fn write_fill_string(&mut self, s: &Option<String>, fill_len: usize) -> EncodeResult<()> {
         match s {
             Some(sname) => {
                 let bytes = sname.as_bytes();
-                len += self.write_fill_bytes(bytes, fill_len)?;
+                self.write_fill_bytes(bytes, fill_len)?;
             }
             None => {
                 // should we keep some static [0;64] arrays around
                 // to fill quickly?
                 for _ in 0..fill_len {
-                    len += self.write_u8(0)?;
+                    self.write_u8(0)?;
                 }
             }
         }
-        Ok(len)
+        Ok(())
     }
 }
 

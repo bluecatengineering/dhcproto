@@ -35,7 +35,7 @@ impl<'r> Decodable<'r> for Flags {
 }
 
 impl<'a> Encodable<'a> for Flags {
-    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<usize> {
+    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()> {
         e.write_u16((*self).into())
     }
 }

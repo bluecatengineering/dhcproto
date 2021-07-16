@@ -142,7 +142,7 @@ impl<'r> Decodable<'r> for HType {
 }
 
 impl<'a> Encodable<'a> for HType {
-    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<usize> {
+    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()> {
         e.write_u8((*self).into())
     }
 }

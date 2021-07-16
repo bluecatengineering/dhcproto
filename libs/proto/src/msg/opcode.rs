@@ -18,7 +18,7 @@ impl<'r> Decodable<'r> for Opcode {
 }
 
 impl<'a> Encodable<'a> for Opcode {
-    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<usize> {
+    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()> {
         e.write_u8((*self).into())
     }
 }
