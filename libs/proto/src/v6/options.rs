@@ -83,7 +83,7 @@ pub struct ReconfMsg {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VendorClass {
-    number: u32,
+    num: u32,
     data: Vec<String>,
     // each item in data is [len (2 bytes) | data]
 }
@@ -263,6 +263,11 @@ impl<'r> Decodable<'r> for DhcpOption {
                     t1: decoder.read_u32()?,
                     t2: decoder.read_u32()?,
                     opts: {
+                        // TODO: we should probably impl Decodable for each struct type
+                        // individually, then create a new Decoder with a bounded buffer of
+                        // len bytes. that way we won't have to do this length manipulation
+                        // and decode can be called on individual items
+                        //
                         // we need a new decoder but bounded to the len of where these
                         // encapsulated opts end
                         let mut opt_decoder = Decoder::new(decoder.read_slice(len - 12)?);
@@ -317,20 +322,51 @@ impl<'r> Decodable<'r> for DhcpOption {
             }),
             OptionCode::StatusCode => DhcpOption::StatusCode(StatusCode {
                 status: decoder.read_u8()?.into(),
-                msg: decoder.read_string(len)?,
+                msg: decoder.read_string(len - 1)?,
             }),
             OptionCode::RapidCommit => DhcpOption::RapidCommit,
-            OptionCode::UserClass => DhcpOption::UserClass(UserClass { data: todo!() }),
-            OptionCode::VendorClass => DhcpOption::VendorClass(VendorClass {
-                number: todo!(),
-                data: todo!(),
-            }),
+            OptionCode::UserClass => {
+                let buf = decoder.read_slice(len)?;
+                let mut class_dec = Decoder::new(buf);
+                let mut data = Vec::new();
+                while let Ok(len) = class_dec.read_u16() {
+                    // if we can read the len and the string
+                    match class_dec.read_string(len as usize) {
+                        Ok(s) => data.push(s),
+                        // push, otherwise stop
+                        _ => break,
+                    }
+                }
+                DhcpOption::UserClass(UserClass { data })
+            }
+            OptionCode::VendorClass => {
+                let num = decoder.read_u32()?;
+                let buf = decoder.read_slice(len - 4)?;
+                let mut class_dec = Decoder::new(buf);
+                let mut data = Vec::new();
+                while let Ok(len) = class_dec.read_u16() {
+                    // if we can read the len and the string
+                    match class_dec.read_string(len as usize) {
+                        Ok(s) => data.push(s),
+                        // push, otherwise stop
+                        _ => break,
+                    }
+                }
+                DhcpOption::VendorClass(VendorClass { num, data })
+            }
             OptionCode::VendorOpts => DhcpOption::VendorOpts(VendorOpts {
-                num: todo!(),
-                opts: todo!(),
+                num: decoder.read_u32()?,
+                opts: {
+                    let mut opt_decoder = Decoder::new(decoder.read_slice(len - 4)?);
+                    DhcpOptions::decode(&mut opt_decoder)?
+                },
             }),
-            OptionCode::InterfaceId => DhcpOption::InterfaceId(InterfaceId { id: todo!() }),
-            OptionCode::ReconfMsg => DhcpOption::ReconfMsg(ReconfMsg { msg_type: todo!() }),
+            OptionCode::InterfaceId => DhcpOption::InterfaceId(InterfaceId {
+                id: decoder.read_string(len)?,
+            }),
+            OptionCode::ReconfMsg => DhcpOption::ReconfMsg(ReconfMsg {
+                msg_type: decoder.read_u8()?.into(),
+            }),
             OptionCode::ReconfAccept => DhcpOption::ReconfAccept,
             OptionCode::Unknown(code) => DhcpOption::Unknown(UnknownOption {
                 code,
