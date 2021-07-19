@@ -82,6 +82,12 @@ impl<'a> Encoder<'a> {
     pub fn write_u32(&mut self, data: u32) -> EncodeResult<()> {
         self.write(data.to_be_bytes())
     }
+    pub fn write_u128(&mut self, data: u128) -> EncodeResult<()> {
+        self.write(data.to_be_bytes())
+    }
+    pub fn write_u64(&mut self, data: u64) -> EncodeResult<()> {
+        self.write(data.to_be_bytes())
+    }
     pub fn write_i32(&mut self, data: i32) -> EncodeResult<()> {
         self.write(data.to_be_bytes())
     }

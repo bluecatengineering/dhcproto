@@ -1,4 +1,4 @@
-use std::{collections::HashMap, net::Ipv6Addr};
+use std::net::Ipv6Addr;
 
 use crate::{
     decoder::{Decodable, Decoder},
@@ -61,6 +61,12 @@ pub enum DhcpOption {
     ReconfMsg(ReconfMsg),
     // 20 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.20
     ReconfAccept,
+    // 23 - https://datatracker.ietf.org/doc/html/rfc3646
+    DNSNameServer(Vec<Ipv6Addr>),
+    // 25 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.21
+    IAPD(IAPD),
+    // 26 - https://datatracker.ietf.org/doc/html/rfc3633#section-10
+    IAPDPrefix(IAPDPrefix),
     Unknown(UnknownOption),
 }
 
@@ -111,11 +117,27 @@ pub enum Status {
     NotOnLink,
     UseMulticast,
     NoPrefixAvail,
-    Unknown(u8),
+    UnknownQueryType,
+    MalformedQuery,
+    NotConfigured,
+    NotAllowed,
+    QueryTerminated,
+    DataMissing,
+    CatchUpComplete,
+    NotSupported,
+    TLSConnectionRefused,
+    AddressInUse,
+    ConfigurationConflict,
+    MissingBindingInformation,
+    OutdatedBindingInformation,
+    ServerShuttingDown,
+    DNSUpdateNotSupported,
+    ExcessiveTimeSkew,
+    Unknown(u16),
 }
 
-impl From<u8> for Status {
-    fn from(n: u8) -> Self {
+impl From<u16> for Status {
+    fn from(n: u16) -> Self {
         use Status::*;
         match n {
             0 => Success,
@@ -125,11 +147,27 @@ impl From<u8> for Status {
             4 => NotOnLink,
             5 => UseMulticast,
             6 => NoPrefixAvail,
+            7 => UnknownQueryType,
+            8 => MalformedQuery,
+            9 => NotConfigured,
+            10 => NotAllowed,
+            11 => QueryTerminated,
+            12 => DataMissing,
+            13 => CatchUpComplete,
+            14 => NotSupported,
+            15 => TLSConnectionRefused,
+            16 => AddressInUse,
+            17 => ConfigurationConflict,
+            18 => MissingBindingInformation,
+            19 => OutdatedBindingInformation,
+            20 => ServerShuttingDown,
+            21 => DNSUpdateNotSupported,
+            22 => ExcessiveTimeSkew,
             _ => Unknown(n),
         }
     }
 }
-impl From<Status> for u8 {
+impl From<Status> for u16 {
     fn from(n: Status) -> Self {
         use Status::*;
         match n {
@@ -140,6 +178,22 @@ impl From<Status> for u8 {
             NotOnLink => 4,
             UseMulticast => 5,
             NoPrefixAvail => 6,
+            UnknownQueryType => 7,
+            MalformedQuery => 8,
+            NotConfigured => 9,
+            NotAllowed => 10,
+            QueryTerminated => 11,
+            DataMissing => 12,
+            CatchUpComplete => 13,
+            NotSupported => 14,
+            TLSConnectionRefused => 15,
+            AddressInUse => 16,
+            ConfigurationConflict => 17,
+            MissingBindingInformation => 18,
+            OutdatedBindingInformation => 19,
+            ServerShuttingDown => 20,
+            DNSUpdateNotSupported => 21,
+            ExcessiveTimeSkew => 22,
             Unknown(n) => n,
         }
     }
@@ -178,6 +232,8 @@ pub struct RelayMsg {
 /// Elapsed Time
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct ElapsedTime {
+    /// elapsed time in millis
+    // TODO: use Duration?
     elapsed: u16,
 }
 
@@ -212,6 +268,27 @@ pub struct IANA {
     t1: u32,
     t2: u32,
     // 12 + opts.len()
+    opts: DhcpOptions,
+}
+
+/// Identity Association Prefix Delegation
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IAPD {
+    id: u32,
+    t1: u32,
+    t2: u32,
+    // 12 + opts.len()
+    opts: DhcpOptions,
+}
+
+/// Identity Association Prefix Delegation Prefix Option
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IAPDPrefix {
+    preferred_lifetime: u32,
+    valid_lifetime: u32,
+    prefix_len: u8,
+    prefix_ip: Ipv6Addr,
+    // 25 + opts.len()
     opts: DhcpOptions,
 }
 
@@ -321,7 +398,7 @@ impl<'r> Decodable<'r> for DhcpOption {
                 addr: decoder.read::<16>()?.into(),
             }),
             OptionCode::StatusCode => DhcpOption::StatusCode(StatusCode {
-                status: decoder.read_u8()?.into(),
+                status: decoder.read_u16()?.into(),
                 msg: decoder.read_string(len - 1)?,
             }),
             OptionCode::RapidCommit => DhcpOption::RapidCommit,
@@ -368,6 +445,32 @@ impl<'r> Decodable<'r> for DhcpOption {
                 msg_type: decoder.read_u8()?.into(),
             }),
             OptionCode::ReconfAccept => DhcpOption::ReconfAccept,
+            OptionCode::DNSNameServer => DhcpOption::DNSNameServer(decoder.read_ipv6s(len)?),
+            OptionCode::IAPD => DhcpOption::IAPD(IAPD {
+                id: decoder.read_u32()?,
+                t1: decoder.read_u32()?,
+                t2: decoder.read_u32()?,
+                opts: {
+                    let mut opt_decoder = Decoder::new(decoder.read_slice(len - 12)?);
+                    DhcpOptions::decode(&mut opt_decoder)?
+                },
+            }),
+            OptionCode::IAPDPrefix => DhcpOption::IAPDPrefix(IAPDPrefix {
+                preferred_lifetime: decoder.read_u32()?,
+                valid_lifetime: decoder.read_u32()?,
+                prefix_len: decoder.read_u8()?,
+                prefix_ip: decoder.read::<16>()?.into(),
+                opts: {
+                    let mut opt_decoder = Decoder::new(decoder.read_slice(len - 25)?);
+                    DhcpOptions::decode(&mut opt_decoder)?
+                },
+            }),
+            // not yet implemented
+            OptionCode::DomainSearchList => DhcpOption::Unknown(UnknownOption {
+                code: code.into(),
+                len: len as u16,
+                bytes: decoder.read_slice(len)?.to_vec(),
+            }),
             OptionCode::Unknown(code) => DhcpOption::Unknown(UnknownOption {
                 code,
                 len: len as u16,
@@ -378,7 +481,169 @@ impl<'r> Decodable<'r> for DhcpOption {
 }
 impl<'a> Encodable<'a> for DhcpOption {
     fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()> {
-        todo!()
+        let code: OptionCode = self.into();
+        e.write_u16(code.into())?;
+        match self {
+            DhcpOption::ClientId(duid) | DhcpOption::ServerId(duid) => {
+                e.write_u16(duid.len() as u16)?;
+                e.write_slice(duid)?;
+            }
+            DhcpOption::IANA(IANA { id, t1, t2, opts })
+            | DhcpOption::IAPD(IAPD { id, t1, t2, opts }) => {
+                // write len
+                let mut buf = Vec::new();
+                let mut opt_enc = Encoder::new(&mut buf);
+                opts.encode(&mut opt_enc)?;
+                // buf now has total len
+                e.write_u16(12 + buf.len() as u16)?;
+                // write data
+                e.write_u32(*id)?;
+                e.write_u32(*t1)?;
+                e.write_u32(*t2)?;
+                e.write_slice(&buf)?;
+            }
+            DhcpOption::IATA(IATA { id, opts }) => {
+                // write len
+                let mut buf = Vec::new();
+                let mut opt_enc = Encoder::new(&mut buf);
+                opts.encode(&mut opt_enc)?;
+                // buf now has total len
+                e.write_u16(4 + buf.len() as u16)?;
+                // data
+                e.write_u32(*id)?;
+                e.write_slice(&buf)?;
+            }
+            DhcpOption::IAAddr(IAAddr {
+                addr,
+                preferred_life,
+                valid_life,
+                opts,
+            }) => {
+                // write len
+                let mut buf = Vec::new();
+                let mut opt_enc = Encoder::new(&mut buf);
+                opts.encode(&mut opt_enc)?;
+                // buf now has total len
+                e.write_u16(24 + buf.len() as u16)?;
+                // data
+                e.write_u128((*addr).into())?;
+                e.write_u32(*preferred_life)?;
+                e.write_u32(*valid_life)?;
+                e.write_slice(&buf)?;
+            }
+            DhcpOption::ORO(ORO { opts }) => {
+                // write len
+                e.write_u16(2 * opts.len() as u16)?;
+                // data
+                for code in opts {
+                    e.write_u16(u16::from(*code))?;
+                }
+            }
+            DhcpOption::Preference(Preference { pref }) => {
+                e.write_u16(1)?;
+                e.write_u8(*pref)?;
+            }
+            DhcpOption::ElapsedTime(ElapsedTime { elapsed }) => {
+                e.write_u16(2)?;
+                e.write_u16(*elapsed)?;
+            }
+            DhcpOption::RelayMsg(RelayMsg { msg }) => {
+                e.write_u16(msg.len() as u16)?;
+                e.write_slice(&msg)?;
+            }
+            DhcpOption::Authentication(Authentication {
+                proto,
+                algo,
+                rdm,
+                replay_detection,
+                info,
+            }) => {
+                e.write_u16(11 + info.len() as u16)?;
+                e.write_u8(*proto)?;
+                e.write_u8(*algo)?;
+                e.write_u8(*rdm)?;
+                e.write_u64(*replay_detection)?;
+                e.write_slice(info)?;
+            }
+            DhcpOption::ServerUnicast(ServerUnicast { addr }) => {
+                e.write_u16(16)?;
+                e.write_u128((*addr).into())?;
+            }
+            DhcpOption::StatusCode(StatusCode { status, msg }) => {
+                e.write_u16(2 + msg.len() as u16)?;
+                e.write_u16((*status).into())?;
+                e.write_slice(msg.as_bytes())?;
+            }
+            DhcpOption::RapidCommit => {
+                e.write_u16(0)?;
+            }
+            DhcpOption::UserClass(UserClass { data }) => {
+                e.write_u16(data.len() as u16)?;
+                for s in data {
+                    e.write_u16(s.len() as u16)?;
+                    e.write_slice(s.as_bytes())?;
+                }
+            }
+            DhcpOption::VendorClass(VendorClass { num, data }) => {
+                e.write_u16(4 + data.len() as u16)?;
+                e.write_u32(*num)?;
+                for s in data {
+                    e.write_u16(s.len() as u16)?;
+                    e.write_slice(s.as_bytes())?;
+                }
+            }
+            DhcpOption::VendorOpts(VendorOpts { num, opts }) => {
+                let mut buf = Vec::new();
+                let mut opt_enc = Encoder::new(&mut buf);
+                opts.encode(&mut opt_enc)?;
+                // buf now has total len
+                e.write_u16(4 + buf.len() as u16)?;
+                e.write_u32(*num)?;
+                e.write_slice(&buf)?;
+            }
+            DhcpOption::InterfaceId(InterfaceId { id }) => {
+                let bytes = id.as_bytes();
+                e.write_u16(bytes.len() as u16)?;
+                e.write_slice(bytes)?;
+            }
+            DhcpOption::ReconfMsg(ReconfMsg { msg_type }) => {
+                e.write_u16(1)?;
+                e.write_u8((*msg_type).into())?;
+            }
+            DhcpOption::ReconfAccept => {
+                e.write_u16(0)?;
+            }
+            DhcpOption::DNSNameServer(addrs) => {
+                e.write_u16(addrs.len() as u16 * 16)?;
+                for addr in addrs {
+                    e.write_u128((*addr).into())?;
+                }
+            }
+            DhcpOption::IAPDPrefix(IAPDPrefix {
+                preferred_lifetime,
+                valid_lifetime,
+                prefix_len,
+                prefix_ip,
+                opts,
+            }) => {
+                let mut buf = Vec::new();
+                let mut opt_enc = Encoder::new(&mut buf);
+                opts.encode(&mut opt_enc)?;
+                // buf now has total len
+                e.write_u16(25 + buf.len() as u16)?;
+                // write data
+                e.write_u32(*preferred_lifetime)?;
+                e.write_u32(*valid_lifetime)?;
+                e.write_u8(*prefix_len)?;
+                e.write_u128((*prefix_ip).into())?;
+                e.write_slice(&buf)?;
+            }
+            DhcpOption::Unknown(UnknownOption { len, bytes, .. }) => {
+                e.write_u16(*len)?;
+                e.write_slice(bytes)?;
+            }
+        };
+        Ok(())
     }
 }
 
@@ -422,6 +687,14 @@ pub enum OptionCode {
     ReconfMsg,
     // 20
     ReconfAccept,
+    // 23
+    DNSNameServer,
+    // 24
+    DomainSearchList,
+    // 25
+    IAPD,
+    // 26
+    IAPDPrefix,
     Unknown(u16),
 }
 
@@ -448,6 +721,10 @@ impl From<OptionCode> for u16 {
             InterfaceId => 18,
             ReconfMsg => 19,
             ReconfAccept => 20,
+            DNSNameServer => 23,
+            DomainSearchList => 24,
+            IAPD => 25,
+            IAPDPrefix => 26,
             Unknown(n) => n,
         }
     }
@@ -476,6 +753,10 @@ impl From<u16> for OptionCode {
             18 => InterfaceId,
             19 => ReconfMsg,
             20 => ReconfAccept,
+            23 => DNSNameServer,
+            24 => DomainSearchList,
+            25 => IAPD,
+            26 => IAPDPrefix,
             _ => Unknown(n),
         }
     }
@@ -504,6 +785,9 @@ impl From<&DhcpOption> for OptionCode {
             InterfaceId(_) => OptionCode::InterfaceId,
             ReconfMsg(_) => OptionCode::ReconfMsg,
             ReconfAccept => OptionCode::ReconfAccept,
+            DNSNameServer(_) => OptionCode::DNSNameServer,
+            IAPD(_) => OptionCode::IAPD,
+            IAPDPrefix(_) => OptionCode::IAPDPrefix,
             Unknown(UnknownOption { code, .. }) => OptionCode::Unknown(*code),
         }
     }

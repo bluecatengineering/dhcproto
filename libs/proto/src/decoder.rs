@@ -1,10 +1,11 @@
 use crate::error::{DecodeError, DecodeResult};
 
 use std::{
+    array::TryFromSliceError,
     convert::TryInto,
     ffi::{CStr, CString},
     mem,
-    net::Ipv4Addr,
+    net::{Ipv4Addr, Ipv6Addr},
     str,
 };
 
@@ -119,15 +120,19 @@ impl<'a> Decoder<'a> {
         Ok(str::from_utf8(slice)?.to_owned())
     }
 
-    pub fn read_ip(&mut self, length: usize) -> DecodeResult<Ipv4Addr> {
-        assert!(length == 4);
+    pub fn read_ipv4(&mut self, length: usize) -> DecodeResult<Ipv4Addr> {
+        if length != 4 {
+            return Err(DecodeError::NotEnoughBytes);
+        }
         let bytes = self.read_slice(length as usize)?;
         Ok([bytes[0], bytes[1], bytes[2], bytes[3]].into())
     }
 
-    pub fn read_ips(&mut self, length: usize) -> DecodeResult<Vec<Ipv4Addr>> {
+    pub fn read_ipv4s(&mut self, length: usize) -> DecodeResult<Vec<Ipv4Addr>> {
         // must be multiple of 4
-        assert!(length % 4 == 0);
+        if length % 4 != 0 {
+            return Err(DecodeError::NotEnoughBytes);
+        }
         let ips = self.read_slice(length as usize)?;
         Ok(ips
             .chunks(4)
@@ -135,9 +140,24 @@ impl<'a> Decoder<'a> {
             .collect())
     }
 
-    pub fn read_pair_ips(&mut self, length: usize) -> DecodeResult<Vec<(Ipv4Addr, Ipv4Addr)>> {
+    pub fn read_ipv6s(&mut self, length: usize) -> DecodeResult<Vec<Ipv6Addr>> {
+        // must be multiple of 16
+        if length % 16 != 0 {
+            return Err(DecodeError::NotEnoughBytes);
+        }
+        let ips = self.read_slice(length as usize)?;
+        // type annotations needed below
+        Ok(ips
+            .chunks(16)
+            .map(|bytes| Ok::<_, TryFromSliceError>(TryInto::<[u8; 16]>::try_into(bytes)?.into()))
+            .collect::<Result<Vec<Ipv6Addr>, _>>()?)
+    }
+
+    pub fn read_pair_ipv4s(&mut self, length: usize) -> DecodeResult<Vec<(Ipv4Addr, Ipv4Addr)>> {
         // must be multiple of 8
-        assert!(length % 8 == 0);
+        if length % 8 != 0 {
+            return Err(DecodeError::NotEnoughBytes);
+        }
         let ips = self.read_slice(length as usize)?;
         Ok(ips
             .chunks(8)

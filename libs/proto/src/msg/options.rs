@@ -487,7 +487,7 @@ impl<'r> Decodable<'r> for DhcpOption {
             OptionCode::Pad => Pad,
             OptionCode::SubnetMask => {
                 let length = decoder.read_u8()?;
-                SubnetMask(decoder.read_ip(length as usize)?)
+                SubnetMask(decoder.read_ipv4(length as usize)?)
             }
             OptionCode::TimeOffset => {
                 let _ = decoder.read_u8()?;
@@ -495,39 +495,39 @@ impl<'r> Decodable<'r> for DhcpOption {
             }
             OptionCode::Router => {
                 let length = decoder.read_u8()?;
-                Router(decoder.read_ips(length as usize)?)
+                Router(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::TimeServer => {
                 let length = decoder.read_u8()?;
-                TimeServer(decoder.read_ips(length as usize)?)
+                TimeServer(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::NameServer => {
                 let length = decoder.read_u8()?;
-                NameServer(decoder.read_ips(length as usize)?)
+                NameServer(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::DomainNameServer => {
                 let length = decoder.read_u8()?;
-                DomainNameServer(decoder.read_ips(length as usize)?)
+                DomainNameServer(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::LogServer => {
                 let length = decoder.read_u8()?;
-                LogServer(decoder.read_ips(length as usize)?)
+                LogServer(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::QuoteServer => {
                 let length = decoder.read_u8()?;
-                QuoteServer(decoder.read_ips(length as usize)?)
+                QuoteServer(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::LprServer => {
                 let length = decoder.read_u8()?;
-                LprServer(decoder.read_ips(length as usize)?)
+                LprServer(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::ImpressServer => {
                 let length = decoder.read_u8()?;
-                ImpressServer(decoder.read_ips(length as usize)?)
+                ImpressServer(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::ResourceLocationServer => {
                 let length = decoder.read_u8()?;
-                ResourceLocationServer(decoder.read_ips(length as usize)?)
+                ResourceLocationServer(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::Hostname => {
                 let length = decoder.read_u8()?;
@@ -547,7 +547,7 @@ impl<'r> Decodable<'r> for DhcpOption {
             }
             OptionCode::SwapServer => {
                 let length = decoder.read_u8()?;
-                SwapServer(decoder.read_ip(length as usize)?)
+                SwapServer(decoder.read_ipv4(length as usize)?)
             }
             OptionCode::RootPath => {
                 let length = decoder.read_u8()?;
@@ -583,7 +583,7 @@ impl<'r> Decodable<'r> for DhcpOption {
             }
             OptionCode::BroadcastAddr => {
                 let length = decoder.read_u8()?;
-                BroadcastAddr(decoder.read_ip(length as usize)?)
+                BroadcastAddr(decoder.read_ipv4(length as usize)?)
             }
             OptionCode::PerformMaskDiscovery => {
                 let _ = decoder.read_u8()?;
@@ -599,11 +599,11 @@ impl<'r> Decodable<'r> for DhcpOption {
             }
             OptionCode::RouterSolicitationAddr => {
                 let length = decoder.read_u8()?;
-                RouterSolicitationAddr(decoder.read_ip(length as usize)?)
+                RouterSolicitationAddr(decoder.read_ipv4(length as usize)?)
             }
             OptionCode::StaticRoutingTable => {
                 let length = decoder.read_u8()?;
-                StaticRoutingTable(decoder.read_pair_ips(length as usize)?)
+                StaticRoutingTable(decoder.read_pair_ipv4s(length as usize)?)
             }
             OptionCode::ArpCacheTimeout => {
                 let _ = decoder.read_u8()?;
@@ -631,11 +631,11 @@ impl<'r> Decodable<'r> for DhcpOption {
             }
             OptionCode::NIS => {
                 let length = decoder.read_u8()?;
-                NIS(decoder.read_ips(length as usize)?)
+                NIS(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::NTPServers => {
                 let length = decoder.read_u8()?;
-                NTPServers(decoder.read_ips(length as usize)?)
+                NTPServers(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::VendorExtensions => {
                 let length = decoder.read_u8()?;
@@ -643,11 +643,11 @@ impl<'r> Decodable<'r> for DhcpOption {
             }
             OptionCode::NetBiosNameServers => {
                 let length = decoder.read_u8()?;
-                NetBiosNameServers(decoder.read_ips(length as usize)?)
+                NetBiosNameServers(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::NetBiosDatagramDistributionServer => {
                 let length = decoder.read_u8()?;
-                NetBiosDatagramDistributionServer(decoder.read_ips(length as usize)?)
+                NetBiosDatagramDistributionServer(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::NetBiosNodeType => {
                 let _ = decoder.read_u8()?;
@@ -659,15 +659,15 @@ impl<'r> Decodable<'r> for DhcpOption {
             }
             OptionCode::XFontServer => {
                 let length = decoder.read_u8()?;
-                XFontServer(decoder.read_ips(length as usize)?)
+                XFontServer(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::XDisplayManager => {
                 let length = decoder.read_u8()?;
-                XDisplayManager(decoder.read_ips(length as usize)?)
+                XDisplayManager(decoder.read_ipv4s(length as usize)?)
             }
             OptionCode::RequestedIpAddress => {
                 let length = decoder.read_u8()?;
-                RequestedIpAddress(decoder.read_ip(length as usize)?)
+                RequestedIpAddress(decoder.read_ipv4(length as usize)?)
             }
             OptionCode::AddressLeaseTime => {
                 let _ = decoder.read_u8()?;
@@ -683,7 +683,7 @@ impl<'r> Decodable<'r> for DhcpOption {
             }
             OptionCode::ServerIdentifier => {
                 let length = decoder.read_u8()?;
-                ServerIdentifier(decoder.read_ip(length as usize)?)
+                ServerIdentifier(decoder.read_ipv4(length as usize)?)
             }
             OptionCode::ParameterRequestList => {
                 let length = decoder.read_u8()?;

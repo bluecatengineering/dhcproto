@@ -12,13 +12,8 @@ pub enum DecodeError {
     #[error("decoder checked_add failed")]
     AddOverflow,
 
-    /// An error with an arbitrary message
-    #[error("{0}")]
-    Message(String),
-
-    /// An error with an arbitrary message
-    #[error("{0}")]
-    Msg(&'static str),
+    #[error("parser ran out of data-- not enough bytes")]
+    NotEnoughBytes,
 
     #[error("error converting from slice")]
     SliceError(#[from] std::array::TryFromSliceError),
@@ -31,7 +26,7 @@ pub enum DecodeError {
 }
 
 /// Returned from types that encode
-#[derive(Error, Clone, Debug)]
+#[derive(Error, Copy, Clone, Debug)]
 pub enum EncodeError {
     #[error("encoder checked_add failed")]
     AddOverflow,
@@ -40,14 +35,6 @@ pub enum EncodeError {
         "message is trying to write a string to the message that exceeds the max size of {len}"
     )]
     StringSizeTooBig { len: usize },
-
-    /// An error with an arbitrary message
-    #[error("{0}")]
-    Message(String),
-
-    /// An error with an arbitrary message
-    #[error("{0}")]
-    Msg(&'static str),
 }
 
 /// Convenience type for encode errors
