@@ -4,6 +4,7 @@ use crate::{
     error::{DecodeResult, EncodeResult},
 };
 
+/// Hardware type of message
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
 pub enum HType {
     /// 1 Ethernet
@@ -40,7 +41,7 @@ pub enum HType {
     HDLC,
     /// 18 FibreChannel
     FibreChannel,
-    // 20 SerialLine
+    /// 20 SerialLine
     SerialLine,
     /// 22 Mil STD
     MilStd188220,
@@ -60,6 +61,7 @@ pub enum HType {
     WiegandInt,
     /// 35 PureIP
     PureIP,
+    /// Unknown or not yet implemented htype
     Unknown(u8),
 }
 

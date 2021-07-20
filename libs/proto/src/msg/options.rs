@@ -6,6 +6,8 @@ use crate::{
     error::{DecodeResult, EncodeResult},
 };
 
+/// Options for DHCP. Defined as a HashMap for quick access
+/// This implemention of options ignores PAD bytes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DhcpOptions(HashMap<OptionCode, DhcpOption>);
 
@@ -50,6 +52,7 @@ impl<'a> Encodable<'a> for DhcpOptions {
     }
 }
 
+/// Each option type is represented by an 8-bit code
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
 pub enum OptionCode {
     /// 0 Padding
@@ -442,12 +445,18 @@ pub enum DhcpOption {
     End,
 }
 
+/// NetBIOS allows several different node types
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum NodeType {
+    /// Broadcast
     B,
+    /// Peer-to-peer
     P,
+    /// Mixed (B & P)
     M,
+    /// Hybrid (P & B)
     H,
+    /// Unknown
     Unknown(u8),
 }
 
@@ -917,21 +926,32 @@ impl From<&DhcpOption> for OptionCode {
     }
 }
 
+/// An as-of-yet unimplemented option type
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnknownOption {
     code: u8,
     bytes: Vec<u8>,
 }
 
+/// The DHCP message type
+/// https://datatracker.ietf.org/doc/html/rfc2131#section-3.1
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum MessageType {
+    /// DHCPDiscover
     Discover,
+    /// DHCPOffer
     Offer,
+    /// DHCPRequest
     Request,
+    /// DHCPDecline
     Decline,
+    /// DHCPAck
     Ack,
+    /// DHCPNak
     Nak,
+    /// DHCPRelease
     Release,
+    /// an unknown message type
     Unknown(u8),
 }
 

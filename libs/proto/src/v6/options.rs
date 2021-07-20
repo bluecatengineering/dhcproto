@@ -21,52 +21,54 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DhcpOptions(Vec<DhcpOption>);
 
+/// DHCPv6 option types
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DhcpOption {
-    // 1 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.2
+    /// 1 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.2
     ClientId(Vec<u8>), // should duid for this be bytes or string?
-    // 2 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.3
+    /// 2 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.3
     ServerId(Vec<u8>),
-    // 3 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.4
+    /// 3 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.4
     IANA(IANA),
-    // 4 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.5
+    /// 4 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.5
     IATA(IATA),
-    // 5 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.6
+    /// 5 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.6
     IAAddr(IAAddr),
-    // 6 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.7
+    /// 6 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.7
     ORO(ORO),
-    // 7 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.8
+    /// 7 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.8
     Preference(Preference),
-    // 8 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.9
+    /// 8 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.9
     ElapsedTime(ElapsedTime),
-    // 9 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.10
+    /// 9 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.10
     RelayMsg(RelayMsg),
-    // 11 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.11
+    /// 11 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.11
     Authentication(Authentication),
-    // 12 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.12
+    /// 12 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.12
     ServerUnicast(ServerUnicast),
-    // 13 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.13
+    /// 13 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.13
     StatusCode(StatusCode),
-    // 14 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.14
+    /// 14 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.14
     RapidCommit,
-    // 15 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.15
+    /// 15 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.15
     UserClass(UserClass),
-    // 16 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.16
+    /// 16 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.16
     VendorClass(VendorClass),
-    // 17 -  https://datatracker.ietf.org/doc/html/rfc8415#section-21.17
+    /// 17 -  https://datatracker.ietf.org/doc/html/rfc8415#section-21.17
     VendorOpts(VendorOpts),
-    // 18 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.18
+    /// 18 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.18
     InterfaceId(InterfaceId),
-    // 19 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.19
+    /// 19 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.19
     ReconfMsg(ReconfMsg),
-    // 20 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.20
+    /// 20 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.20
     ReconfAccept,
-    // 23 - https://datatracker.ietf.org/doc/html/rfc3646
+    /// 23 - https://datatracker.ietf.org/doc/html/rfc3646
     DNSNameServer(Vec<Ipv6Addr>),
-    // 25 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.21
+    /// 25 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.21
     IAPD(IAPD),
-    // 26 - https://datatracker.ietf.org/doc/html/rfc3633#section-10
+    /// 26 - https://datatracker.ietf.org/doc/html/rfc3633#section-10
     IAPDPrefix(IAPDPrefix),
+    /// An unknown or unimplemented option type
     Unknown(UnknownOption),
 }
 
@@ -100,6 +102,20 @@ pub struct UserClass {
     // each item in data is [len (2 bytes) | data]
 }
 
+#[inline]
+fn decode_strings(decoder: &'_ mut Decoder<'_>) -> Vec<String> {
+    let mut data = Vec::new();
+    while let Ok(len) = decoder.read_u16() {
+        // if we can read the len and the string
+        match decoder.read_string(len as usize) {
+            Ok(s) => data.push(s),
+            // push, otherwise stop
+            _ => break,
+        }
+    }
+    data
+}
+
 /// Server Unicast
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StatusCode {
@@ -108,6 +124,7 @@ pub struct StatusCode {
     msg: String,
 }
 
+/// Status code for Server Unicast
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Status {
     Success,
@@ -216,6 +233,19 @@ pub struct Authentication {
     info: Vec<u8>,
 }
 
+impl<'r> Decodable<'r> for Authentication {
+    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+        let len = decoder.buffer().len();
+        Ok(Authentication {
+            proto: decoder.read_u8()?,
+            algo: decoder.read_u8()?,
+            rdm: decoder.read_u8()?,
+            replay_detection: decoder.read_u64()?,
+            info: decoder.read_slice(len - 11)?.to_vec(),
+        })
+    }
+}
+
 /// Relay Msg
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RelayMsg {
@@ -251,6 +281,22 @@ pub struct ORO {
     opts: Vec<OptionCode>,
 }
 
+impl<'r> Decodable<'r> for ORO {
+    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+        let len = decoder.buffer().len();
+        Ok(ORO {
+            opts: {
+                decoder
+                    .read_slice(len)?
+                    .chunks_exact(2)
+                    // TODO: use .array_chunks::<2>() when stable
+                    .map(|code| OptionCode::from(u16::from_be_bytes([code[0], code[1]])))
+                    .collect()
+            },
+        })
+    }
+}
+
 /// Identity Association for Temporary Addresses
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IATA {
@@ -259,6 +305,15 @@ pub struct IATA {
     // should this be Vec<DhcpOption> ?
     // the RFC suggests it 'encapsulates options'
     opts: DhcpOptions,
+}
+
+impl<'r> Decodable<'r> for IATA {
+    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+        Ok(IATA {
+            id: decoder.read_u32()?,
+            opts: DhcpOptions::decode(decoder)?,
+        })
+    }
 }
 
 /// Identity Association for Non-Temporary Addresses
@@ -271,6 +326,17 @@ pub struct IANA {
     opts: DhcpOptions,
 }
 
+impl<'r> Decodable<'r> for IANA {
+    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+        Ok(IANA {
+            id: decoder.read_u32()?,
+            t1: decoder.read_u32()?,
+            t2: decoder.read_u32()?,
+            opts: DhcpOptions::decode(decoder)?,
+        })
+    }
+}
+
 /// Identity Association Prefix Delegation
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IAPD {
@@ -279,6 +345,17 @@ pub struct IAPD {
     t2: u32,
     // 12 + opts.len()
     opts: DhcpOptions,
+}
+
+impl<'r> Decodable<'r> for IAPD {
+    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+        Ok(IAPD {
+            id: decoder.read_u32()?,
+            t1: decoder.read_u32()?,
+            t2: decoder.read_u32()?,
+            opts: DhcpOptions::decode(decoder)?,
+        })
+    }
 }
 
 /// Identity Association Prefix Delegation Prefix Option
@@ -291,6 +368,17 @@ pub struct IAPDPrefix {
     // 25 + opts.len()
     opts: DhcpOptions,
 }
+impl<'r> Decodable<'r> for IAPDPrefix {
+    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+        Ok(IAPDPrefix {
+            preferred_lifetime: decoder.read_u32()?,
+            valid_lifetime: decoder.read_u32()?,
+            prefix_len: decoder.read_u8()?,
+            prefix_ip: decoder.read::<16>()?.into(),
+            opts: DhcpOptions::decode(decoder)?,
+        })
+    }
+}
 
 /// Identity Association Address
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -302,6 +390,17 @@ pub struct IAAddr {
     // should this be DhcpOptions ?
     // the RFC suggests it 'encapsulates options'
     opts: DhcpOptions,
+}
+
+impl<'r> Decodable<'r> for IAAddr {
+    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+        Ok(IAAddr {
+            addr: decoder.read::<16>()?.into(),
+            preferred_life: decoder.read_u32()?,
+            valid_life: decoder.read_u32()?,
+            opts: DhcpOptions::decode(decoder)?,
+        })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -335,49 +434,21 @@ impl<'r> Decodable<'r> for DhcpOption {
             OptionCode::ClientId => DhcpOption::ClientId(decoder.read_slice(len)?.to_vec()),
             OptionCode::ServerId => DhcpOption::ServerId(decoder.read_slice(len)?.to_vec()),
             OptionCode::IANA => {
-                DhcpOption::IANA(IANA {
-                    id: decoder.read_u32()?,
-                    t1: decoder.read_u32()?,
-                    t2: decoder.read_u32()?,
-                    opts: {
-                        // TODO: we should probably impl Decodable for each struct type
-                        // individually, then create a new Decoder with a bounded buffer of
-                        // len bytes. that way we won't have to do this length manipulation
-                        // and decode can be called on individual items
-                        //
-                        // we need a new decoder but bounded to the len of where these
-                        // encapsulated opts end
-                        let mut opt_decoder = Decoder::new(decoder.read_slice(len - 12)?);
-                        DhcpOptions::decode(&mut opt_decoder)?
-                    },
-                })
+                let mut dec = Decoder::new(&decoder.read_slice(len)?);
+                DhcpOption::IANA(IANA::decode(&mut dec)?)
             }
-            OptionCode::IATA => DhcpOption::IATA(IATA {
-                id: decoder.read_u32()?,
-                opts: {
-                    let mut opt_decoder = Decoder::new(decoder.read_slice(len - 4)?);
-                    DhcpOptions::decode(&mut opt_decoder)?
-                },
-            }),
-            OptionCode::IAAddr => DhcpOption::IAAddr(IAAddr {
-                addr: decoder.read::<16>()?.into(),
-                preferred_life: decoder.read_u32()?,
-                valid_life: decoder.read_u32()?,
-                opts: {
-                    let mut opt_decoder = Decoder::new(decoder.read_slice(len - 24)?);
-                    DhcpOptions::decode(&mut opt_decoder)?
-                },
-            }),
-            OptionCode::ORO => DhcpOption::ORO(ORO {
-                opts: {
-                    decoder
-                        .read_slice(len)?
-                        .chunks_exact(2)
-                        // TODO: use .array_chunks::<2>() when stable
-                        .map(|code| OptionCode::from(u16::from_be_bytes([code[0], code[1]])))
-                        .collect()
-                },
-            }),
+            OptionCode::IATA => {
+                let mut dec = Decoder::new(&decoder.read_slice(len)?);
+                DhcpOption::IATA(IATA::decode(&mut dec)?)
+            }
+            OptionCode::IAAddr => {
+                let mut dec = Decoder::new(&decoder.read_slice(len)?);
+                DhcpOption::IAAddr(IAAddr::decode(&mut dec)?)
+            }
+            OptionCode::ORO => {
+                let mut dec = Decoder::new(&decoder.read_slice(len)?);
+                DhcpOption::ORO(ORO::decode(&mut dec)?)
+            }
             OptionCode::Preference => DhcpOption::Preference(Preference {
                 pref: decoder.read_u8()?,
             }),
@@ -387,13 +458,10 @@ impl<'r> Decodable<'r> for DhcpOption {
             OptionCode::RelayMsg => DhcpOption::RelayMsg(RelayMsg {
                 msg: decoder.read_slice(len)?.to_vec(),
             }),
-            OptionCode::Authentication => DhcpOption::Authentication(Authentication {
-                proto: decoder.read_u8()?,
-                algo: decoder.read_u8()?,
-                rdm: decoder.read_u8()?,
-                replay_detection: decoder.read_u64()?,
-                info: decoder.read_slice(len - 11)?.to_vec(),
-            }),
+            OptionCode::Authentication => {
+                let mut dec = Decoder::new(&decoder.read_slice(len)?);
+                DhcpOption::Authentication(Authentication::decode(&mut dec)?)
+            }
             OptionCode::ServerUnicast => DhcpOption::ServerUnicast(ServerUnicast {
                 addr: decoder.read::<16>()?.into(),
             }),
@@ -404,32 +472,17 @@ impl<'r> Decodable<'r> for DhcpOption {
             OptionCode::RapidCommit => DhcpOption::RapidCommit,
             OptionCode::UserClass => {
                 let buf = decoder.read_slice(len)?;
-                let mut class_dec = Decoder::new(buf);
-                let mut data = Vec::new();
-                while let Ok(len) = class_dec.read_u16() {
-                    // if we can read the len and the string
-                    match class_dec.read_string(len as usize) {
-                        Ok(s) => data.push(s),
-                        // push, otherwise stop
-                        _ => break,
-                    }
-                }
-                DhcpOption::UserClass(UserClass { data })
+                DhcpOption::UserClass(UserClass {
+                    data: decode_strings(&mut Decoder::new(buf)),
+                })
             }
             OptionCode::VendorClass => {
                 let num = decoder.read_u32()?;
                 let buf = decoder.read_slice(len - 4)?;
-                let mut class_dec = Decoder::new(buf);
-                let mut data = Vec::new();
-                while let Ok(len) = class_dec.read_u16() {
-                    // if we can read the len and the string
-                    match class_dec.read_string(len as usize) {
-                        Ok(s) => data.push(s),
-                        // push, otherwise stop
-                        _ => break,
-                    }
-                }
-                DhcpOption::VendorClass(VendorClass { num, data })
+                DhcpOption::VendorClass(VendorClass {
+                    num,
+                    data: decode_strings(&mut Decoder::new(buf)),
+                })
             }
             OptionCode::VendorOpts => DhcpOption::VendorOpts(VendorOpts {
                 num: decoder.read_u32()?,
@@ -446,25 +499,14 @@ impl<'r> Decodable<'r> for DhcpOption {
             }),
             OptionCode::ReconfAccept => DhcpOption::ReconfAccept,
             OptionCode::DNSNameServer => DhcpOption::DNSNameServer(decoder.read_ipv6s(len)?),
-            OptionCode::IAPD => DhcpOption::IAPD(IAPD {
-                id: decoder.read_u32()?,
-                t1: decoder.read_u32()?,
-                t2: decoder.read_u32()?,
-                opts: {
-                    let mut opt_decoder = Decoder::new(decoder.read_slice(len - 12)?);
-                    DhcpOptions::decode(&mut opt_decoder)?
-                },
-            }),
-            OptionCode::IAPDPrefix => DhcpOption::IAPDPrefix(IAPDPrefix {
-                preferred_lifetime: decoder.read_u32()?,
-                valid_lifetime: decoder.read_u32()?,
-                prefix_len: decoder.read_u8()?,
-                prefix_ip: decoder.read::<16>()?.into(),
-                opts: {
-                    let mut opt_decoder = Decoder::new(decoder.read_slice(len - 25)?);
-                    DhcpOptions::decode(&mut opt_decoder)?
-                },
-            }),
+            OptionCode::IAPD => {
+                let mut dec = Decoder::new(decoder.read_slice(len)?);
+                DhcpOption::IAPD(IAPD::decode(&mut dec)?)
+            }
+            OptionCode::IAPDPrefix => {
+                let mut dec = Decoder::new(decoder.read_slice(len)?);
+                DhcpOption::IAPDPrefix(IAPDPrefix::decode(&mut dec)?)
+            }
             // not yet implemented
             OptionCode::DomainSearchList => DhcpOption::Unknown(UnknownOption {
                 code: code.into(),
@@ -649,52 +691,53 @@ impl<'a> Encodable<'a> for DhcpOption {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum OptionCode {
-    // 1
+    /// 1
     ClientId, // should duid for this be bytes or string?
-    // 2
+    /// 2
     ServerId,
-    // 3
+    /// 3
     IANA,
-    // 4
+    /// 4
     IATA,
-    // 5
+    /// 5
     IAAddr,
-    // 6
+    /// 6
     ORO,
-    // 7
+    /// 7
     Preference,
-    // 8
+    /// 8
     ElapsedTime,
-    // 9
+    /// 9
     RelayMsg,
-    // 11
+    /// 11
     Authentication,
-    // 12
+    /// 12
     ServerUnicast,
-    // 13
+    /// 13
     StatusCode,
-    // 14
+    /// 14
     RapidCommit,
-    // 15
+    /// 15
     UserClass,
-    // 16
+    /// 16
     VendorClass,
-    // 17
+    /// 17
     VendorOpts,
-    // 18
+    /// 18
     InterfaceId,
-    // 19
+    /// 19
     ReconfMsg,
-    // 20
+    /// 20
     ReconfAccept,
-    // 23
+    /// 23
     DNSNameServer,
-    // 24
+    /// 24
     DomainSearchList,
-    // 25
+    /// 25
     IAPD,
-    // 26
+    /// 26
     IAPDPrefix,
+    /// an unknown or unimplemented option type
     Unknown(u16),
 }
 

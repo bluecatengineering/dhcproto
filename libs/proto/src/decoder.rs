@@ -1,3 +1,4 @@
+//! Decodable trait & Decoder
 use crate::error::{DecodeError, DecodeResult};
 
 use std::{
@@ -14,13 +15,15 @@ pub trait Decodable<'r>: Sized {
     /// Read the type from the stream
     fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self>;
 
-    // Returns the object in binary form
+    /// Returns the object in binary form
     fn from_bytes(bytes: &'r [u8]) -> DecodeResult<Self> {
         let mut decoder = Decoder::new(bytes);
         Self::decode(&mut decoder)
     }
 }
 
+/// Decoder type. Holds buffer that data is read
+/// from and index of position in buffer
 #[derive(Debug)]
 pub struct Decoder<'a> {
     buffer: &'a [u8],
@@ -28,6 +31,7 @@ pub struct Decoder<'a> {
 }
 
 impl<'a> Decoder<'a> {
+    /// Create a new Decoder
     pub fn new(buffer: &'a [u8]) -> Self {
         Decoder { buffer, index: 0 }
     }
@@ -115,11 +119,13 @@ impl<'a> Decoder<'a> {
         Ok(slice)
     }
 
+    /// Read a utf-8 encoded String
     pub fn read_string(&mut self, len: usize) -> DecodeResult<String> {
         let slice = self.read_slice(len)?;
         Ok(str::from_utf8(slice)?.to_owned())
     }
 
+    /// Read an ipv4 addr
     pub fn read_ipv4(&mut self, length: usize) -> DecodeResult<Ipv4Addr> {
         if length != 4 {
             return Err(DecodeError::NotEnoughBytes);
@@ -128,6 +134,7 @@ impl<'a> Decoder<'a> {
         Ok([bytes[0], bytes[1], bytes[2], bytes[3]].into())
     }
 
+    /// Read a list of ipv4 addrs
     pub fn read_ipv4s(&mut self, length: usize) -> DecodeResult<Vec<Ipv4Addr>> {
         // must be multiple of 4
         if length % 4 != 0 {
@@ -140,6 +147,7 @@ impl<'a> Decoder<'a> {
             .collect())
     }
 
+    /// Read a list of ipv6 addrs
     pub fn read_ipv6s(&mut self, length: usize) -> DecodeResult<Vec<Ipv6Addr>> {
         // must be multiple of 16
         if length % 16 != 0 {
@@ -153,6 +161,7 @@ impl<'a> Decoder<'a> {
             .collect::<Result<Vec<Ipv6Addr>, _>>()?)
     }
 
+    /// Read a list of ipv4 pairs
     pub fn read_pair_ipv4s(&mut self, length: usize) -> DecodeResult<Vec<(Ipv4Addr, Ipv4Addr)>> {
         // must be multiple of 8
         if length % 8 != 0 {
@@ -170,6 +179,7 @@ impl<'a> Decoder<'a> {
             .collect())
     }
 
+    /// Read a bool
     pub fn read_bool(&mut self) -> DecodeResult<bool> {
         Ok(self.read_u8()? == 1)
     }

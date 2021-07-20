@@ -1,3 +1,4 @@
+//! Encodable trait & Encoder
 use crate::error::{EncodeError, EncodeResult};
 
 /// A trait for types which are deserializable to DHCP binary formats
@@ -6,6 +7,9 @@ pub trait Encodable<'a> {
     fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()>;
 }
 
+/// Encoder type, holds a mut ref to a buffer
+/// that it will write data to and an offset
+/// of the next position to write
 #[derive(Debug)]
 pub struct Encoder<'a> {
     buffer: &'a mut Vec<u8>,
@@ -13,10 +17,12 @@ pub struct Encoder<'a> {
 }
 
 impl<'a> Encoder<'a> {
+    /// Create a new Encoder from a mutable buffer
     pub fn new(buffer: &'a mut Vec<u8>) -> Self {
         Self { buffer, offset: 0 }
     }
 
+    /// Get a reference to the underlying buffer
     pub fn buffer(&self) -> &[u8] {
         &self.buffer
     }
@@ -48,6 +54,7 @@ impl<'a> Encoder<'a> {
         Ok(())
     }
 
+    /// Write const number of bytes to buffer
     pub fn write<const N: usize>(&mut self, bytes: [u8; N]) -> EncodeResult<()> {
         // TODO: refactor this and above method?
         // only difference is zip & extend
@@ -73,21 +80,27 @@ impl<'a> Encoder<'a> {
         Ok(())
     }
 
+    /// write a u8
     pub fn write_u8(&mut self, data: u8) -> EncodeResult<()> {
         self.write(data.to_be_bytes())
     }
+    /// write a u16
     pub fn write_u16(&mut self, data: u16) -> EncodeResult<()> {
         self.write(data.to_be_bytes())
     }
+    /// write a u32
     pub fn write_u32(&mut self, data: u32) -> EncodeResult<()> {
         self.write(data.to_be_bytes())
     }
+    /// write a u128
     pub fn write_u128(&mut self, data: u128) -> EncodeResult<()> {
         self.write(data.to_be_bytes())
     }
+    /// write a u64
     pub fn write_u64(&mut self, data: u64) -> EncodeResult<()> {
         self.write(data.to_be_bytes())
     }
+    /// write a i32
     pub fn write_i32(&mut self, data: i32) -> EncodeResult<()> {
         self.write(data.to_be_bytes())
     }

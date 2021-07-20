@@ -4,10 +4,14 @@ use crate::{
     error::{DecodeResult, EncodeResult},
 };
 
+/// Opcode of Message
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Opcode {
+    /// BootRequest - https://datatracker.ietf.org/doc/html/rfc1534#section-2
     BootRequest,
+    /// BootReply - https://datatracker.ietf.org/doc/html/rfc1534#section-2
     BootReply,
+    /// Unknown or not yet implemented
     Unknown(u8),
 }
 

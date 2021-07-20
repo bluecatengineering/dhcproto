@@ -1,3 +1,4 @@
+//! DHCPv4 Message type
 use std::net::Ipv4Addr;
 
 mod flags;
@@ -7,8 +8,7 @@ mod options;
 
 // re-export submodules from proto::msg
 pub use self::{flags::*, htype::*, opcode::*, options::*};
-
-use crate::{
+pub use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
     error::*,

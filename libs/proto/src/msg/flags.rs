@@ -4,10 +4,12 @@ use crate::{
     error::{DecodeResult, EncodeResult},
 };
 
+/// Represents available flags on message
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Flags(u16);
 
 impl Flags {
+    /// Create new Flags from u16
     pub fn new(n: u16) -> Self {
         Flags(n)
     }

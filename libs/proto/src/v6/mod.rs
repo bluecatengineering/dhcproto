@@ -1,9 +1,10 @@
+//! DHCPv6 Message type
 mod options;
 
 // re-export submodules from proto::msg
 pub use self::options::*;
 
-use crate::{
+pub use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
     error::*,
@@ -63,6 +64,30 @@ pub struct Message {
     opts: DhcpOptions,
 }
 
+impl Message {
+    /// Get the message's message type.
+    pub fn msg_type(&self) -> MessageType {
+        self.msg_type
+    }
+
+    /// Get the message's transaction id.
+    pub fn transaction_id(&self) -> [u8; 3] {
+        self.xid
+    }
+
+    /// Get a reference to the message's options.
+    pub fn opts(&self) -> &DhcpOptions {
+        &self.opts
+    }
+
+    /// Get a mutable reference to the message's options.
+    pub fn opts_mut(&mut self) -> &mut DhcpOptions {
+        &mut self.opts
+    }
+}
+
+/// DHCPv6 message types
+/// https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum MessageType {
     // RFC 3315
