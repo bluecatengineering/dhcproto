@@ -69,7 +69,7 @@
 //! ```
 #![warn(
     missing_debug_implementations,
-    missing_docs,
+    // TODO: missing_docs,
     missing_copy_implementations,
     rust_2018_idioms,
     unreachable_pub,
