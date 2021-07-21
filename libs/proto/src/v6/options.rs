@@ -1,4 +1,5 @@
-use std::net::Ipv6Addr;
+use core::slice;
+use std::{net::Ipv6Addr, vec};
 
 use crate::{
     decoder::{Decodable, Decoder},
@@ -20,6 +21,29 @@ use crate::{
 /// https://datatracker.ietf.org/doc/html/rfc8415#section-21
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DhcpOptions(Vec<DhcpOption>);
+
+impl DhcpOptions {
+    /// get the first element matching this option code
+    pub fn get(&self, code: OptionCode) -> Option<&DhcpOption> {
+        let i = self.0.iter().position(|x| OptionCode::from(x) == code)?;
+        self.0.get(i)
+    }
+    /// get the first element matching this option code
+    pub fn get_mut(&mut self, code: OptionCode) -> Option<&mut DhcpOption> {
+        let i = self.0.iter().position(|x| OptionCode::from(x) == code)?;
+        self.0.get_mut(i)
+    }
+    /// push a new option into the list of opts
+    pub fn push(&mut self, opt: DhcpOption) {
+        self.0.push(opt)
+    }
+    pub fn iter(&self) -> impl Iterator<Item = &DhcpOption> {
+        self.0.iter()
+    }
+    pub fn iter_mut(&mut self) -> slice::IterMut<'_, DhcpOption> {
+        self.0.iter_mut()
+    }
+}
 
 /// DHCPv6 option types
 #[derive(Debug, Clone, PartialEq, Eq)]

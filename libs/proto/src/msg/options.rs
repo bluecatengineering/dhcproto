@@ -1,4 +1,8 @@
-use std::{collections::HashMap, iter, net::Ipv4Addr};
+use std::{
+    collections::{hash_map, HashMap},
+    iter,
+    net::Ipv4Addr,
+};
 
 use crate::{
     decoder::{Decodable, Decoder},
@@ -10,6 +14,31 @@ use crate::{
 /// This implemention of options ignores PAD bytes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DhcpOptions(HashMap<OptionCode, DhcpOption>);
+
+impl DhcpOptions {
+    pub fn get(&self, code: OptionCode) -> Option<&DhcpOption> {
+        self.0.get(&code)
+    }
+    pub fn get_mut(&mut self, code: OptionCode) -> Option<&mut DhcpOption> {
+        self.0.get_mut(&code)
+    }
+    pub fn insert(&mut self, code: OptionCode, opt: DhcpOption) -> Option<DhcpOption> {
+        self.0.insert(code, opt)
+    }
+    pub fn iter(&self) -> hash_map::Iter<'_, OptionCode, DhcpOption> {
+        self.0.iter()
+    }
+    pub fn iter_mut(&mut self) -> hash_map::IterMut<'_, OptionCode, DhcpOption> {
+        self.0.iter_mut()
+    }
+    pub fn msg_type(&self) -> Option<MessageType> {
+        let opt = self.get(OptionCode::MessageType)?;
+        match opt {
+            DhcpOption::MessageType(mtype) => Some(*mtype),
+            _ => unreachable!("cannot return different option for MessageType"),
+        }
+    }
+}
 
 impl<'r> Decodable<'r> for DhcpOptions {
     fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
@@ -426,7 +455,7 @@ pub enum DhcpOption {
     /// 54 Server Identifier
     ServerIdentifier(Ipv4Addr),
     /// 55 Parameter Request List
-    ParameterRequestList(Vec<u8>),
+    ParameterRequestList(Vec<OptionCode>),
     /// 56 Message
     Message(String),
     /// 57 Maximum DHCP Message Size
@@ -696,7 +725,13 @@ impl<'r> Decodable<'r> for DhcpOption {
             }
             OptionCode::ParameterRequestList => {
                 let length = decoder.read_u8()?;
-                ParameterRequestList(decoder.read_slice(length as usize)?.to_vec())
+                ParameterRequestList(
+                    decoder
+                        .read_slice(length as usize)?
+                        .into_iter()
+                        .map(|code| (*code).into())
+                        .collect(),
+                )
             }
             OptionCode::Message => {
                 let length = decoder.read_u8()?;
@@ -827,13 +862,17 @@ impl<'a> Encodable<'a> for DhcpOption {
                 e.write_u8(4)?;
                 e.write_u32(*num)?
             }
-            VendorExtensions(bytes)
-            | ParameterRequestList(bytes)
-            | ClassIdentifier(bytes)
-            | ClientIdentifier(bytes) => {
+            VendorExtensions(bytes) | ClassIdentifier(bytes) | ClientIdentifier(bytes) => {
                 e.write_u8(code.into())?;
                 e.write_u8(bytes.len() as u8)?;
                 e.write_slice(bytes)?
+            }
+            ParameterRequestList(codes) => {
+                e.write_u8(code.into())?;
+                e.write_u8(codes.len() as u8)?;
+                for code in codes {
+                    e.write_u8((*code).into())?;
+                }
             }
             NetBiosNodeType(ntype) => {
                 e.write_u8(code.into())?;
