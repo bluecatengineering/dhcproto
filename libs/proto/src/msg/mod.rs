@@ -159,6 +159,12 @@ impl Message {
     pub fn opts_mut(&mut self) -> &mut DhcpOptions {
         &mut self.opts
     }
+
+    pub fn to_vec(&self) -> EncodeResult<Vec<u8>> {
+        let mut buffer = Vec::with_capacity(512);
+        self.encode(&mut Encoder::new(&mut buffer))?;
+        Ok(buffer)
+    }
 }
 
 impl<'r> Decodable<'r> for Message {
