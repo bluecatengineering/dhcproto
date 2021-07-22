@@ -159,16 +159,10 @@ impl Message {
     pub fn opts_mut(&mut self) -> &mut DhcpOptions {
         &mut self.opts
     }
-
-    pub fn to_vec(&self) -> EncodeResult<Vec<u8>> {
-        let mut buffer = Vec::with_capacity(512);
-        self.encode(&mut Encoder::new(&mut buffer))?;
-        Ok(buffer)
-    }
 }
 
-impl<'r> Decodable<'r> for Message {
-    fn decode(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for Message {
+    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(Message {
             opcode: Opcode::decode(decoder)?,
             htype: decoder.read_u8()?.into(),
@@ -191,8 +185,8 @@ impl<'r> Decodable<'r> for Message {
     }
 }
 
-impl<'a> Encodable<'a> for Message {
-    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()> {
+impl Encodable for Message {
+    fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
         self.opcode.encode(e)?;
         self.htype.encode(e)?;
         e.write_u8(self.hlen)?;

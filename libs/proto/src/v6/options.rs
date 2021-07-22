@@ -257,8 +257,8 @@ pub struct Authentication {
     info: Vec<u8>,
 }
 
-impl<'r> Decodable<'r> for Authentication {
-    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for Authentication {
+    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         let len = decoder.buffer().len();
         Ok(Authentication {
             proto: decoder.read_u8()?,
@@ -305,8 +305,8 @@ pub struct ORO {
     opts: Vec<OptionCode>,
 }
 
-impl<'r> Decodable<'r> for ORO {
-    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for ORO {
+    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         let len = decoder.buffer().len();
         Ok(ORO {
             opts: {
@@ -331,8 +331,8 @@ pub struct IATA {
     opts: DhcpOptions,
 }
 
-impl<'r> Decodable<'r> for IATA {
-    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for IATA {
+    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(IATA {
             id: decoder.read_u32()?,
             opts: DhcpOptions::decode(decoder)?,
@@ -350,8 +350,8 @@ pub struct IANA {
     opts: DhcpOptions,
 }
 
-impl<'r> Decodable<'r> for IANA {
-    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for IANA {
+    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(IANA {
             id: decoder.read_u32()?,
             t1: decoder.read_u32()?,
@@ -371,8 +371,8 @@ pub struct IAPD {
     opts: DhcpOptions,
 }
 
-impl<'r> Decodable<'r> for IAPD {
-    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for IAPD {
+    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(IAPD {
             id: decoder.read_u32()?,
             t1: decoder.read_u32()?,
@@ -392,8 +392,8 @@ pub struct IAPDPrefix {
     // 25 + opts.len()
     opts: DhcpOptions,
 }
-impl<'r> Decodable<'r> for IAPDPrefix {
-    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for IAPDPrefix {
+    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(IAPDPrefix {
             preferred_lifetime: decoder.read_u32()?,
             valid_lifetime: decoder.read_u32()?,
@@ -416,8 +416,8 @@ pub struct IAAddr {
     opts: DhcpOptions,
 }
 
-impl<'r> Decodable<'r> for IAAddr {
-    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for IAAddr {
+    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(IAAddr {
             addr: decoder.read::<16>()?.into(),
             preferred_life: decoder.read_u32()?,
@@ -434,8 +434,8 @@ pub struct UnknownOption {
     bytes: Vec<u8>,
 }
 
-impl<'r> Decodable<'r> for DhcpOptions {
-    fn decode(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for DhcpOptions {
+    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         let mut opts = Vec::new();
         while let Ok(opt) = DhcpOption::decode(decoder) {
             opts.push(opt);
@@ -444,14 +444,14 @@ impl<'r> Decodable<'r> for DhcpOptions {
     }
 }
 
-impl<'a> Encodable<'a> for DhcpOptions {
-    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()> {
+impl Encodable for DhcpOptions {
+    fn encode(&self, e: &'_ mut Encoder<'_>) -> EncodeResult<()> {
         self.0.iter().map(|opt| opt.encode(e)).try_for_each(|n| n)
     }
 }
 
-impl<'r> Decodable<'r> for DhcpOption {
-    fn decode(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for DhcpOption {
+    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         let code = decoder.read_u16()?.into();
         let len = decoder.read_u16()? as usize;
         Ok(match code {
@@ -545,8 +545,8 @@ impl<'r> Decodable<'r> for DhcpOption {
         })
     }
 }
-impl<'a> Encodable<'a> for DhcpOption {
-    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()> {
+impl Encodable for DhcpOption {
+    fn encode(&self, e: &'_ mut Encoder<'_>) -> EncodeResult<()> {
         let code: OptionCode = self.into();
         e.write_u16(code.into())?;
         match self {

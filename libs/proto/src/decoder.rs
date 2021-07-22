@@ -11,12 +11,12 @@ use std::{
 };
 
 /// A trait for types which are serializable to and from DHCP binary formats
-pub trait Decodable<'r>: Sized {
+pub trait Decodable: Sized {
     /// Read the type from the stream
-    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self>;
+    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self>;
 
     /// Returns the object in binary form
-    fn from_bytes(bytes: &'r [u8]) -> DecodeResult<Self> {
+    fn from_bytes(bytes: &[u8]) -> DecodeResult<Self> {
         let mut decoder = Decoder::new(bytes);
         Self::decode(&mut decoder)
     }

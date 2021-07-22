@@ -15,14 +15,14 @@ pub enum Opcode {
     Unknown(u8),
 }
 
-impl<'r> Decodable<'r> for Opcode {
-    fn decode(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for Opcode {
+    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(decoder.read_u8()?.into())
     }
 }
 
-impl<'a> Encodable<'a> for Opcode {
-    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()> {
+impl Encodable for Opcode {
+    fn encode(&self, e: &'_ mut Encoder<'_>) -> EncodeResult<()> {
         e.write_u8((*self).into())
     }
 }

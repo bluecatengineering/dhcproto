@@ -2,11 +2,17 @@
 use crate::error::{EncodeError, EncodeResult};
 
 /// A trait for types which are deserializable to DHCP binary formats
-pub trait Encodable<'a> {
+pub trait Encodable {
     /// Read the type from the stream
-    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()>;
-}
+    fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()>;
 
+    fn to_vec(&self) -> EncodeResult<Vec<u8>> {
+        let mut buffer = Vec::with_capacity(512);
+        let mut encoder = Encoder::new(&mut buffer);
+        self.encode(&mut encoder)?;
+        Ok(buffer)
+    }
+}
 /// Encoder type, holds a mut ref to a buffer
 /// that it will write data to and an offset
 /// of the next position to write

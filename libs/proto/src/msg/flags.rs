@@ -46,14 +46,14 @@ impl From<Flags> for u16 {
     }
 }
 
-impl<'r> Decodable<'r> for Flags {
-    fn decode(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for Flags {
+    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(decoder.read_u16()?.into())
     }
 }
 
-impl<'a> Encodable<'a> for Flags {
-    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()> {
+impl Encodable for Flags {
+    fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
         e.write_u16((*self).into())
     }
 }

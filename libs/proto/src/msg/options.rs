@@ -40,8 +40,8 @@ impl DhcpOptions {
     }
 }
 
-impl<'r> Decodable<'r> for DhcpOptions {
-    fn decode(decoder: &'_ mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for DhcpOptions {
+    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         // represented as a vector in the actual message
         let mut opts = HashMap::new();
         // should we error the whole parser if we fail to parse an
@@ -61,8 +61,8 @@ impl<'r> Decodable<'r> for DhcpOptions {
     }
 }
 
-impl<'a> Encodable<'a> for DhcpOptions {
-    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()> {
+impl Encodable for DhcpOptions {
+    fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
         if self.0.is_empty() {
             Ok(())
         } else {
@@ -515,8 +515,8 @@ impl From<NodeType> for u8 {
     }
 }
 
-impl<'r> Decodable<'r> for DhcpOption {
-    fn decode(decoder: &mut Decoder<'r>) -> DecodeResult<Self> {
+impl Decodable for DhcpOption {
+    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         use DhcpOption::*;
         // read the code first, determines the variant
 
@@ -728,7 +728,7 @@ impl<'r> Decodable<'r> for DhcpOption {
                 ParameterRequestList(
                     decoder
                         .read_slice(length as usize)?
-                        .into_iter()
+                        .iter()
                         .map(|code| (*code).into())
                         .collect(),
                 )
@@ -768,8 +768,8 @@ impl<'r> Decodable<'r> for DhcpOption {
     }
 }
 
-impl<'a> Encodable<'a> for DhcpOption {
-    fn encode(&self, e: &'_ mut Encoder<'a>) -> EncodeResult<()> {
+impl Encodable for DhcpOption {
+    fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
         use DhcpOption::*;
 
         let code: OptionCode = self.into();
