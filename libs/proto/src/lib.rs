@@ -5,7 +5,7 @@
 //! ## DHCPv4
 //!
 //! ```rust
-//! use dhcproto::msg::{Message, Encoder, Decoder, Decodable, Encodable};
+//! use dhcproto::v4::{Message, Encoder, Decoder, Decodable, Encodable};
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!        // decode
 //!        let bytes = dhcp_offer();
@@ -82,5 +82,5 @@
 pub mod decoder;
 pub mod encoder;
 pub mod error;
-pub mod msg;
+pub mod v4;
 pub mod v6;

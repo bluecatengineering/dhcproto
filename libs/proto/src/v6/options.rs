@@ -1,5 +1,5 @@
 use core::slice;
-use std::{net::Ipv6Addr, vec};
+use std::net::Ipv6Addr;
 
 use crate::{
     decoder::{Decodable, Decoder},
