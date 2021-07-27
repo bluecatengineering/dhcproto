@@ -12,7 +12,7 @@ use crate::{
 
 /// Options for DHCP. Defined as a HashMap for quick access
 /// This implemention of options ignores PAD bytes.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct DhcpOptions(HashMap<OptionCode, DhcpOption>);
 
 impl DhcpOptions {

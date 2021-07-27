@@ -7,7 +7,7 @@ use crate::{
 };
 
 /// Represents available flags on message
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Default, Clone, PartialEq, Eq)]
 pub struct Flags(u16);
 
 impl fmt::Debug for Flags {
@@ -33,6 +33,11 @@ impl Flags {
     pub fn broadcast(&self) -> bool {
         (self.0 & 0x80_00) >> 15 == 1
     }
+    /// set the broadcast bit, returns a new Flags
+    pub fn set_broadcast(mut self) -> Self {
+        self.0 |= 0x80_00;
+        self
+    }
 }
 
 impl From<u16> for Flags {
@@ -55,5 +60,21 @@ impl Decodable for Flags {
 impl Encodable for Flags {
     fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
         e.write_u16((*self).into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_broadcast() {
+        let flag = Flags::default();
+        assert_eq!(flag.0, 0);
+        let flag = flag.set_broadcast();
+        assert_eq!(flag.0, 0x80_00);
+
+        let flag = Flags::new(0x00_20).set_broadcast();
+        assert_eq!(flag.0, 0x80_20);
     }
 }

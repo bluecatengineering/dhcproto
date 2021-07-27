@@ -1,6 +1,8 @@
 //! DHCPv6 Message type
 mod options;
 
+use std::convert::TryInto;
+
 // re-export submodules from proto::msg
 pub use self::options::*;
 
@@ -70,14 +72,41 @@ impl Message {
         self.msg_type
     }
 
+    /// Set message type
+    pub fn set_msg_type(&mut self, msg_type: MessageType) -> &mut Self {
+        self.msg_type = msg_type;
+        self
+    }
+
     /// Get the message's transaction id.
-    pub fn transaction_id(&self) -> [u8; 3] {
+    pub fn xid(&self) -> [u8; 3] {
         self.xid
+    }
+
+    /// Set transaction id
+    pub fn set_xid(&mut self, xid: [u8; 3]) -> &mut Self {
+        self.xid = xid;
+        self
+    }
+
+    /// Set transaction id from u32, will only use lowest 3 bytes
+    pub fn set_xid_num(&mut self, xid: u32) -> &mut Self {
+        let arr = xid.to_be_bytes();
+        self.xid = arr[1..]
+            .try_into()
+            .expect("this conversion shouldnt be able to fail");
+        self
     }
 
     /// Get a reference to the message's options.
     pub fn opts(&self) -> &DhcpOptions {
         &self.opts
+    }
+
+    /// Set DHCP opts
+    pub fn set_opts(&mut self, opts: DhcpOptions) -> &mut Self {
+        self.opts = opts;
+        self
     }
 
     /// Get a mutable reference to the message's options.

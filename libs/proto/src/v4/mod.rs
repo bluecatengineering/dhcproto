@@ -1,5 +1,5 @@
 //! DHCPv4 Message type
-use std::net::Ipv4Addr;
+use std::{convert::TryInto, net::Ipv4Addr};
 
 mod flags;
 mod htype;
@@ -80,14 +80,99 @@ pub struct Message {
 }
 
 impl Message {
+    /// returns a new Message with OpCode set to BootReply and a new random id
+    /// # Panic
+    ///   panics if chaddr is greater len than 16
+    pub fn new(
+        ciaddr: Ipv4Addr,
+        yiaddr: Ipv4Addr,
+        siaddr: Ipv4Addr,
+        giaddr: Ipv4Addr,
+        chaddr: &[u8],
+    ) -> Self {
+        assert!(chaddr.len() <= 16);
+
+        // copy our chaddr into static array
+        let mut new_chaddr = [0; 16];
+        new_chaddr.copy_from_slice(chaddr);
+
+        Self {
+            opcode: Opcode::BootReply,
+            htype: HType::Eth,
+            hlen: chaddr.len() as u8,
+            hops: 0,
+            xid: rand::random(),
+            secs: 0,
+            flags: Flags::default().set_broadcast(),
+            ciaddr,
+            yiaddr,
+            siaddr,
+            giaddr,
+            chaddr: new_chaddr,
+            sname: None,
+            file: None,
+            magic: MAGIC,
+            opts: DhcpOptions::default(),
+        }
+    }
+
+    /// returns a new Message with OpCode set to BootReply
+    /// # Panic
+    ///   panics if chaddr is greater len than 16
+    pub fn new_with_id(
+        xid: u32,
+        ciaddr: Ipv4Addr,
+        yiaddr: Ipv4Addr,
+        siaddr: Ipv4Addr,
+        giaddr: Ipv4Addr,
+        chaddr: &[u8],
+    ) -> Self {
+        assert!(chaddr.len() <= 16);
+
+        // copy our chaddr into static array
+        let mut new_chaddr = [0; 16];
+        new_chaddr.copy_from_slice(chaddr);
+
+        Self {
+            opcode: Opcode::BootReply,
+            htype: HType::Eth,
+            hlen: chaddr.len() as u8,
+            hops: 0,
+            xid,
+            secs: 0,
+            flags: Flags::default().set_broadcast(),
+            ciaddr,
+            yiaddr,
+            siaddr,
+            giaddr,
+            chaddr: new_chaddr,
+            sname: None,
+            file: None,
+            magic: MAGIC,
+            opts: DhcpOptions::default(),
+        }
+    }
+
     /// Get the message's opcode.
     pub fn opcode(&self) -> Opcode {
         self.opcode
     }
 
+    /// Set the message's opcode.
+    pub fn set_opcode(&mut self, opcode: Opcode) -> &mut Self {
+        self.opcode = opcode;
+        self
+    }
+
     /// Get the message's htype.
-    pub fn htype(&self) -> &HType {
+    pub fn htype(&mut self) -> &HType {
         &self.htype
+    }
+
+    /// Set the message's htype.
+    pub fn set_htype(&mut self, htype: HType) -> &mut Self {
+        self.htype = htype;
+        self
     }
 
     /// Get the message's hlen.
@@ -100,19 +185,44 @@ impl Message {
         self.hops
     }
 
+    /// Set the message's hops.
+    pub fn set_hops(&mut self, hops: u8) -> &mut Self {
+        self.hops = hops;
+        self
+    }
+
     /// Get the message's chaddr.
     pub fn chaddr(&self) -> &[u8] {
         &self.chaddr[..(self.hlen as usize)]
+    }
+
+    /// Set the message's hops.
+    pub fn set_chaddr(&mut self, chaddr: &[u8]) -> &mut Self {
+        let mut new_chaddr = [0; 16];
+        new_chaddr.copy_from_slice(chaddr);
+        self.hlen = chaddr.len() as u8;
+        self.chaddr = new_chaddr;
+        self
     }
 
     /// Get the message's giaddr.
     pub fn giaddr(&self) -> Ipv4Addr {
         self.giaddr
     }
+    /// Set the message's giaddr.
+    pub fn set_giaddr<I: Into<Ipv4Addr>>(&mut self, giaddr: I) -> &mut Self {
+        self.giaddr = giaddr.into();
+        self
+    }
 
     /// Get the message's siaddr.
     pub fn siaddr(&self) -> Ipv4Addr {
         self.siaddr
+    }
+    /// Set the message's siaddr.
+    pub fn set_siaddr<I: Into<Ipv4Addr>>(&mut self, siaddr: I) -> &mut Self {
+        self.siaddr = siaddr.into();
+        self
     }
 
     /// Get the message's yiaddr.
@@ -120,9 +230,21 @@ impl Message {
         self.yiaddr
     }
 
+    /// Set the message's siaddr.
+    pub fn set_yiaddr<I: Into<Ipv4Addr>>(&mut self, yiaddr: I) -> &mut Self {
+        self.yiaddr = yiaddr.into();
+        self
+    }
+
     /// Get the message's ciaddr.
     pub fn ciaddr(&self) -> Ipv4Addr {
         self.ciaddr
+    }
+
+    /// Set the message's siaddr.
+    pub fn set_ciaddr<I: Into<Ipv4Addr>>(&mut self, ciaddr: I) -> &mut Self {
+        self.ciaddr = ciaddr.into();
+        self
     }
 
     /// Get the message's flags.
@@ -130,29 +252,65 @@ impl Message {
         self.flags
     }
 
+    /// Set the message's flags.
+    pub fn set_flags(&mut self, flags: Flags) -> &mut Self {
+        self.flags = flags;
+        self
+    }
+
     /// Get the message's secs.
     pub fn secs(&self) -> u16 {
         self.secs
     }
-
+    /// Set the message's secs.
+    pub fn set_secs(&mut self, secs: u16) -> &mut Self {
+        self.secs = secs;
+        self
+    }
     /// Get the message's xid.
     pub fn xid(&self) -> u32 {
         self.xid
     }
-
+    /// Set the message's xid.
+    pub fn set_xid(&mut self, xid: u32) -> &mut Self {
+        self.xid = xid;
+        self
+    }
     /// Get a reference to the message's file.
     pub fn file(&self) -> Option<&String> {
         self.file.as_ref()
     }
-
+    /// Set the message's file.
+    /// # Panic
+    ///     will panic if file is greater than 128 bytes long
+    pub fn set_file<S: Into<String>>(&mut self, file: S) -> &mut Self {
+        let file = file.into();
+        assert!(file.len() <= 128);
+        self.file = Some(file);
+        self
+    }
     /// Get a reference to the message's sname.
     pub fn sname(&self) -> Option<&String> {
         self.sname.as_ref()
     }
-
+    /// Set the message's sname.
+    /// # Panic
+    ///     will panic if sname is greater than 64 bytes long
+    pub fn set_sname<S: Into<String>>(&mut self, sname: S) -> &mut Self {
+        let sname = sname.into();
+        assert!(sname.len() <= 64);
+        self.sname = Some(sname);
+        self
+    }
     /// Get a reference to the message's opts.
     pub fn opts(&self) -> &DhcpOptions {
         &self.opts
+    }
+
+    /// Set the DHCP options
+    pub fn set_opts(&mut self, opts: DhcpOptions) -> &mut Self {
+        self.opts = opts;
+        self
     }
 
     /// Get a mutable reference to the message's options.
