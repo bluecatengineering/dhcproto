@@ -90,30 +90,7 @@ impl Message {
         giaddr: Ipv4Addr,
         chaddr: &[u8],
     ) -> Self {
-        assert!(chaddr.len() <= 16);
-
-        // copy our chaddr into static array
-        let mut new_chaddr = [0; 16];
-        new_chaddr.copy_from_slice(chaddr);
-
-        Self {
-            opcode: Opcode::BootReply,
-            htype: HType::Eth,
-            hlen: chaddr.len() as u8,
-            hops: 0,
-            xid: rand::random(),
-            secs: 0,
-            flags: Flags::default().set_broadcast(),
-            ciaddr,
-            yiaddr,
-            siaddr,
-            giaddr,
-            chaddr: new_chaddr,
-            sname: None,
-            file: None,
-            magic: MAGIC,
-            opts: DhcpOptions::default(),
-        }
+        Self::new_with_id(rand::random(), ciaddr, yiaddr, siaddr, giaddr, chaddr)
     }
 
     /// returns a new Message with OpCode set to BootReply
@@ -131,7 +108,8 @@ impl Message {
 
         // copy our chaddr into static array
         let mut new_chaddr = [0; 16];
-        new_chaddr.copy_from_slice(chaddr);
+        let len = chaddr.len();
+        new_chaddr[..len].copy_from_slice(chaddr);
 
         Self {
             opcode: Opcode::BootReply,
