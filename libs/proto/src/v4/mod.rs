@@ -80,7 +80,7 @@ pub struct Message {
 }
 
 impl Message {
-    /// returns a new Message with OpCode set to BootReply and a new random id
+    /// returns a new Message with OpCode set to BootRequest and a new random id
     /// # Panic
     ///   panics if chaddr is greater len than 16
     pub fn new(
@@ -93,7 +93,7 @@ impl Message {
         Self::new_with_id(rand::random(), ciaddr, yiaddr, siaddr, giaddr, chaddr)
     }
 
-    /// returns a new Message with OpCode set to BootReply
+    /// returns a new Message with OpCode set to BootRequest
     /// # Panic
     ///   panics if chaddr is greater len than 16
     pub fn new_with_id(
@@ -112,7 +112,7 @@ impl Message {
         new_chaddr[..len].copy_from_slice(chaddr);
 
         Self {
-            opcode: Opcode::BootReply,
+            opcode: Opcode::BootRequest,
             htype: HType::Eth,
             hlen: chaddr.len() as u8,
             hops: 0,
@@ -132,38 +132,42 @@ impl Message {
     }
 
     /// Get the message's opcode.
+    /// op code / message type
     pub fn opcode(&self) -> Opcode {
         self.opcode
     }
 
     /// Set the message's opcode.
+    /// op code / message type
     pub fn set_opcode(&mut self, opcode: Opcode) -> &mut Self {
         self.opcode = opcode;
         self
     }
 
-    /// Get the message's htype.
+    /// Get the message's hardware type.
     pub fn htype(&mut self) -> &HType {
         &self.htype
     }
 
-    /// Set the message's htype.
+    /// Set the message's hardware type.
     pub fn set_htype(&mut self, htype: HType) -> &mut Self {
         self.htype = htype;
         self
     }
 
-    /// Get the message's hlen.
+    /// Get the message's hardware len (len of chaddr).
     pub fn hlen(&self) -> u8 {
         self.hlen
     }
 
     /// Get the message's hops.
+    /// Client sets to zero, optionally used by relay agents when booting via a relay agent.
     pub fn hops(&self) -> u8 {
         self.hops
     }
 
     /// Set the message's hops.
+    /// Client sets to zero, optionally used by relay agents when booting via a relay agent.
     pub fn set_hops(&mut self, hops: u8) -> &mut Self {
         self.hops = hops;
         self
@@ -184,42 +188,51 @@ impl Message {
     }
 
     /// Get the message's giaddr.
+    /// Gateway IP
     pub fn giaddr(&self) -> Ipv4Addr {
         self.giaddr
     }
     /// Set the message's giaddr.
+    /// Gateway IP
     pub fn set_giaddr<I: Into<Ipv4Addr>>(&mut self, giaddr: I) -> &mut Self {
         self.giaddr = giaddr.into();
         self
     }
 
     /// Get the message's siaddr.
+    /// Server IP
     pub fn siaddr(&self) -> Ipv4Addr {
         self.siaddr
     }
     /// Set the message's siaddr.
+    /// Server IP
     pub fn set_siaddr<I: Into<Ipv4Addr>>(&mut self, siaddr: I) -> &mut Self {
         self.siaddr = siaddr.into();
         self
     }
 
     /// Get the message's yiaddr.
+    /// Your IP
+    /// In an OFFER this is the ip the server is offering
     pub fn yiaddr(&self) -> Ipv4Addr {
         self.yiaddr
     }
 
     /// Set the message's siaddr.
+    /// Your IP
     pub fn set_yiaddr<I: Into<Ipv4Addr>>(&mut self, yiaddr: I) -> &mut Self {
         self.yiaddr = yiaddr.into();
         self
     }
 
     /// Get the message's ciaddr.
+    /// Client IP
     pub fn ciaddr(&self) -> Ipv4Addr {
         self.ciaddr
     }
 
     /// Set the message's siaddr.
+    /// Client IP
     pub fn set_ciaddr<I: Into<Ipv4Addr>>(&mut self, ciaddr: I) -> &mut Self {
         self.ciaddr = ciaddr.into();
         self
@@ -246,10 +259,12 @@ impl Message {
         self
     }
     /// Get the message's xid.
+    /// Transaction ID, a random number chosen by the client
     pub fn xid(&self) -> u32 {
         self.xid
     }
     /// Set the message's xid.
+    /// Transaction ID, a random number chosen by the client
     pub fn set_xid(&mut self, xid: u32) -> &mut Self {
         self.xid = xid;
         self

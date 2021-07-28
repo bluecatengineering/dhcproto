@@ -22,8 +22,8 @@ impl DhcpOptions {
     pub fn get_mut(&mut self, code: OptionCode) -> Option<&mut DhcpOption> {
         self.0.get_mut(&code)
     }
-    pub fn insert(&mut self, code: OptionCode, opt: DhcpOption) -> Option<DhcpOption> {
-        self.0.insert(code, opt)
+    pub fn insert(&mut self, opt: DhcpOption) -> Option<DhcpOption> {
+        self.0.insert((&opt).into(), opt)
     }
     pub fn iter(&self) -> hash_map::Iter<'_, OptionCode, DhcpOption> {
         self.0.iter()
