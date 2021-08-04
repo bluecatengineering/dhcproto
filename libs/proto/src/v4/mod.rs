@@ -161,8 +161,8 @@ impl Message {
     }
 
     /// Get the message's hardware type.
-    pub fn htype(&mut self) -> &HType {
-        &self.htype
+    pub fn htype(&self) -> HType {
+        self.htype
     }
 
     /// Set the message's hardware type.
