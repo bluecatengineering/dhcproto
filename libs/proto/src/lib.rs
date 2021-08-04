@@ -79,6 +79,9 @@
 #![deny(broken_intra_doc_links)]
 #![allow(clippy::cognitive_complexity)]
 
+pub use decoder::{Decodable, Decoder};
+pub use encoder::{Encodable, Encoder};
+
 pub mod decoder;
 pub mod encoder;
 pub mod error;
