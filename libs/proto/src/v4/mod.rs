@@ -79,6 +79,29 @@ pub struct Message {
     opts: DhcpOptions,
 }
 
+impl Default for Message {
+    fn default() -> Self {
+        Self {
+            opcode: Opcode::BootRequest,
+            htype: HType::Eth,
+            hlen: 0,
+            hops: 0,
+            xid: rand::random(),
+            secs: 0,
+            flags: Flags::default(),
+            ciaddr: Ipv4Addr::UNSPECIFIED,
+            yiaddr: Ipv4Addr::UNSPECIFIED,
+            siaddr: Ipv4Addr::UNSPECIFIED,
+            giaddr: Ipv4Addr::UNSPECIFIED,
+            chaddr: [0; 16],
+            sname: None,
+            file: None,
+            magic: MAGIC,
+            opts: DhcpOptions::default(),
+        }
+    }
+}
+
 impl Message {
     /// returns a new Message with OpCode set to BootRequest and a new random id
     /// # Panic
@@ -112,22 +135,15 @@ impl Message {
         new_chaddr[..len].copy_from_slice(chaddr);
 
         Self {
-            opcode: Opcode::BootRequest,
-            htype: HType::Eth,
             hlen: chaddr.len() as u8,
-            hops: 0,
             xid,
-            secs: 0,
             flags: Flags::default().set_broadcast(),
             ciaddr,
             yiaddr,
             siaddr,
             giaddr,
             chaddr: new_chaddr,
-            sname: None,
-            file: None,
-            magic: MAGIC,
-            opts: DhcpOptions::default(),
+            ..Self::default()
         }
     }
 
