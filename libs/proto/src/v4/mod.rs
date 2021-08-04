@@ -1,5 +1,5 @@
 //! DHCPv4 Message type
-use std::{convert::TryInto, net::Ipv4Addr};
+use std::net::Ipv4Addr;
 
 mod flags;
 mod htype;
