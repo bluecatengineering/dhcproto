@@ -137,7 +137,7 @@ impl Message {
         Self {
             hlen: chaddr.len() as u8,
             xid,
-            flags: Flags::default().set_broadcast(),
+            flags: Flags::default(),
             ciaddr,
             yiaddr,
             siaddr,
