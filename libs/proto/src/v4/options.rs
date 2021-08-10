@@ -16,27 +16,40 @@ use crate::{
 pub struct DhcpOptions(HashMap<OptionCode, DhcpOption>);
 
 impl DhcpOptions {
+    /// Get the data for a particular OptionCode
     pub fn get(&self, code: OptionCode) -> Option<&DhcpOption> {
         self.0.get(&code)
     }
+    /// Get the mutable data for a particular OptionCode
     pub fn get_mut(&mut self, code: OptionCode) -> Option<&mut DhcpOption> {
         self.0.get_mut(&code)
     }
+    /// insert a new option
     pub fn insert(&mut self, opt: DhcpOption) -> Option<DhcpOption> {
         self.0.insert((&opt).into(), opt)
     }
+    /// iterate over entries
     pub fn iter(&self) -> hash_map::Iter<'_, OptionCode, DhcpOption> {
         self.0.iter()
     }
+    /// iterate mutably over entries
     pub fn iter_mut(&mut self) -> hash_map::IterMut<'_, OptionCode, DhcpOption> {
         self.0.iter_mut()
     }
+    /// return message type
     pub fn msg_type(&self) -> Option<MessageType> {
         let opt = self.get(OptionCode::MessageType)?;
         match opt {
             DhcpOption::MessageType(mtype) => Some(*mtype),
             _ => unreachable!("cannot return different option for MessageType"),
         }
+    }
+    /// determine if options contains a specific message type
+    pub fn has_msg_type(&self, opt: MessageType) -> Option<bool> {
+        if let DhcpOption::MessageType(msg) = self.get(OptionCode::MessageType)? {
+            return Some(*msg == opt);
+        }
+        Some(false)
     }
 }
 
