@@ -24,6 +24,10 @@ impl DhcpOptions {
     pub fn get_mut(&mut self, code: OptionCode) -> Option<&mut DhcpOption> {
         self.0.get_mut(&code)
     }
+    /// remove option
+    pub fn remove(&mut self, code: OptionCode) -> Option<DhcpOption> {
+        self.0.remove(&code)
+    }
     /// insert a new option
     pub fn insert(&mut self, opt: DhcpOption) -> Option<DhcpOption> {
         self.0.insert((&opt).into(), opt)

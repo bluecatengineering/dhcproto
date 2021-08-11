@@ -8,15 +8,9 @@ use crate::{
     v6::MessageType,
 };
 
-// TODO: read the RFC a few times and it's a little unclear to me
-// if there if the definition of "singleton" refers to top-level
-// or includes "encapsulated options". For instance, IANA has nested
-// opts, if there's only one IANA allowed on each level then a map
-// is okay. If we need to allow multiple IANA's per level, then
-// we need a list.
-// Also, implementations in the wild seem to use a hashmap for
-// dhcpv6 opts. So?
-// see: https://datatracker.ietf.org/doc/html/rfc8415#section-24
+// server can send multiple IA_NA options to request multiple addresses
+// this means we cannot represent is as a hashmap
+// https://datatracker.ietf.org/doc/html/rfc8415#section-6.6
 
 /// https://datatracker.ietf.org/doc/html/rfc8415#section-21
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,13 +19,20 @@ pub struct DhcpOptions(Vec<DhcpOption>);
 impl DhcpOptions {
     /// get the first element matching this option code
     pub fn get(&self, code: OptionCode) -> Option<&DhcpOption> {
-        let i = self.0.iter().position(|x| OptionCode::from(x) == code)?;
-        self.0.get(i)
+        self.0
+            .get(self.0.iter().position(|x| OptionCode::from(x) == code)?)
     }
     /// get the first element matching this option code
     pub fn get_mut(&mut self, code: OptionCode) -> Option<&mut DhcpOption> {
         let i = self.0.iter().position(|x| OptionCode::from(x) == code)?;
         self.0.get_mut(i)
+    }
+    /// remove the first element with a matching option code
+    pub fn remove(&mut self, code: OptionCode) -> Option<DhcpOption> {
+        Some(
+            self.0
+                .remove(self.0.iter().position(|x| OptionCode::from(x) == code)?),
+        )
     }
     /// push a new option into the list of opts
     pub fn push(&mut self, opt: DhcpOption) {
