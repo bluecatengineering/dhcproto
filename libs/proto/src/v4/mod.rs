@@ -254,6 +254,15 @@ impl Message {
         self
     }
 
+    /// clear addrs
+    pub fn clear_addrs(&mut self) -> &mut Self {
+        self.ciaddr = Ipv4Addr::UNSPECIFIED;
+        self.yiaddr = Ipv4Addr::UNSPECIFIED;
+        self.siaddr = Ipv4Addr::UNSPECIFIED;
+        self.giaddr = Ipv4Addr::UNSPECIFIED;
+        self
+    }
+
     /// Get the message's flags.
     pub fn flags(&self) -> Flags {
         self.flags
