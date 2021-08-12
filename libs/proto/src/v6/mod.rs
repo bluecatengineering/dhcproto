@@ -12,6 +12,9 @@ pub use crate::{
     error::*,
 };
 
+pub const SERVER_PORT: u16 = 547;
+pub const CLIENT_PORT: u16 = 546;
+
 /// See RFC 8415 for updated DHCPv6 info
 /// [DHCP for Ipv6](https://datatracker.ietf.org/doc/html/rfc8415)
 ///
