@@ -30,7 +30,7 @@ impl<'a> Encoder<'a> {
 
     /// Get a reference to the underlying buffer
     pub fn buffer(&self) -> &[u8] {
-        &self.buffer
+        self.buffer
     }
 
     /// write bytes to buffer

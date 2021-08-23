@@ -447,7 +447,7 @@ impl Decodable for DhcpOptions {
 
 impl Encodable for DhcpOptions {
     fn encode(&self, e: &'_ mut Encoder<'_>) -> EncodeResult<()> {
-        self.0.iter().map(|opt| opt.encode(e)).try_for_each(|n| n)
+        self.0.iter().try_for_each(|opt| opt.encode(e))
     }
 }
 
@@ -459,19 +459,19 @@ impl Decodable for DhcpOption {
             OptionCode::ClientId => DhcpOption::ClientId(decoder.read_slice(len)?.to_vec()),
             OptionCode::ServerId => DhcpOption::ServerId(decoder.read_slice(len)?.to_vec()),
             OptionCode::IANA => {
-                let mut dec = Decoder::new(&decoder.read_slice(len)?);
+                let mut dec = Decoder::new(decoder.read_slice(len)?);
                 DhcpOption::IANA(IANA::decode(&mut dec)?)
             }
             OptionCode::IATA => {
-                let mut dec = Decoder::new(&decoder.read_slice(len)?);
+                let mut dec = Decoder::new(decoder.read_slice(len)?);
                 DhcpOption::IATA(IATA::decode(&mut dec)?)
             }
             OptionCode::IAAddr => {
-                let mut dec = Decoder::new(&decoder.read_slice(len)?);
+                let mut dec = Decoder::new(decoder.read_slice(len)?);
                 DhcpOption::IAAddr(IAAddr::decode(&mut dec)?)
             }
             OptionCode::ORO => {
-                let mut dec = Decoder::new(&decoder.read_slice(len)?);
+                let mut dec = Decoder::new(decoder.read_slice(len)?);
                 DhcpOption::ORO(ORO::decode(&mut dec)?)
             }
             OptionCode::Preference => DhcpOption::Preference(Preference {
@@ -484,7 +484,7 @@ impl Decodable for DhcpOption {
                 msg: decoder.read_slice(len)?.to_vec(),
             }),
             OptionCode::Authentication => {
-                let mut dec = Decoder::new(&decoder.read_slice(len)?);
+                let mut dec = Decoder::new(decoder.read_slice(len)?);
                 DhcpOption::Authentication(Authentication::decode(&mut dec)?)
             }
             OptionCode::ServerUnicast => DhcpOption::ServerUnicast(ServerUnicast {
@@ -616,7 +616,7 @@ impl Encodable for DhcpOption {
             }
             DhcpOption::RelayMsg(RelayMsg { msg }) => {
                 e.write_u16(msg.len() as u16)?;
-                e.write_slice(&msg)?;
+                e.write_slice(msg)?;
             }
             DhcpOption::Authentication(Authentication {
                 proto,

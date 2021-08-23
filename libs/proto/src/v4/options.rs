@@ -8,6 +8,7 @@ use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
     error::{DecodeResult, EncodeResult},
+    v4::relay,
 };
 
 /// Options for DHCP. Defined as a HashMap for quick access
@@ -88,8 +89,7 @@ impl Encodable for DhcpOptions {
             self.0
                 .iter()
                 .chain(iter::once((&OptionCode::End, &DhcpOption::End)))
-                .map(|(_, opt)| opt.encode(e))
-                .try_for_each(|n| n)
+                .try_for_each(|(_, opt)| opt.encode(e))
             // TODO: no padding added for now, is it necessary?
             // apparently it's "normally" added to pad out to word sizes
             // but test packet captures are often padded to 60 bytes
@@ -217,6 +217,8 @@ pub enum OptionCode {
     ClassIdentifier,
     /// 61 Client Identifier
     ClientIdentifier,
+    /// 82 Relay Agent Information
+    RelayAgentInformation,
     /// Unknown option
     Unknown(u8),
     /// 255 End
@@ -285,6 +287,7 @@ impl From<u8> for OptionCode {
             59 => Rebinding,
             60 => ClassIdentifier,
             61 => ClientIdentifier,
+            82 => RelayAgentInformation,
             255 => End,
             // TODO: implement more
             n => Unknown(n),
@@ -354,6 +357,7 @@ impl From<OptionCode> for u8 {
             Rebinding => 59,
             ClassIdentifier => 60,
             ClientIdentifier => 61,
+            RelayAgentInformation => 82,
             End => 255,
             // TODO: implement more
             Unknown(n) => n,
@@ -485,6 +489,8 @@ pub enum DhcpOption {
     ClassIdentifier(Vec<u8>),
     /// 61 Client Identifier
     ClientIdentifier(Vec<u8>),
+    /// 82 Relay Agent Information - https://datatracker.ietf.org/doc/html/rfc3046
+    RelayAgentInformation(relay::RelayAgentInformation),
     /// Unknown option
     Unknown(UnknownOption),
     /// 255 End
@@ -774,6 +780,11 @@ impl Decodable for DhcpOption {
                 let length = decoder.read_u8()?;
                 ClientIdentifier(decoder.read_slice(length as usize)?.to_vec())
             }
+            OptionCode::RelayAgentInformation => {
+                let length = decoder.read_u8()?;
+                let mut dec = Decoder::new(decoder.read_slice(length as usize)?);
+                RelayAgentInformation(relay::RelayAgentInformation::decode(&mut dec)?)
+            }
             OptionCode::End => End,
             // not yet implemented
             OptionCode::Unknown(code) => {
@@ -896,11 +907,19 @@ impl Encodable for DhcpOption {
                 e.write_u8(1)?;
                 e.write_u8((*ntype).into())?
             }
-
             MessageType(mtype) => {
                 e.write_u8(code.into())?;
                 e.write_u8(1)?;
                 e.write_u8((*mtype).into())?
+            }
+            RelayAgentInformation(relay) => {
+                let mut buf = Vec::new();
+                let mut opt_enc = Encoder::new(&mut buf);
+                relay.encode(&mut opt_enc)?;
+                e.write_u8(code.into())?;
+                // write len
+                e.write_u8(buf.len() as u8)?;
+                e.write_slice(&buf)?
             }
             // not yet implemented
             Unknown(opt) => {
@@ -975,6 +994,7 @@ impl From<&DhcpOption> for OptionCode {
             Rebinding(_) => OptionCode::Rebinding,
             ClassIdentifier(_) => OptionCode::ClassIdentifier,
             ClientIdentifier(_) => OptionCode::ClientIdentifier,
+            RelayAgentInformation(_) => OptionCode::RelayAgentInformation,
             End => OptionCode::End,
             // TODO: implement more
             Unknown(n) => OptionCode::Unknown(n.code),

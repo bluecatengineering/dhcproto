@@ -5,6 +5,7 @@ mod flags;
 mod htype;
 mod opcode;
 mod options;
+pub mod relay;
 
 // re-export submodules from proto::msg
 pub use self::{flags::*, htype::*, opcode::*, options::*};
@@ -303,7 +304,7 @@ impl Message {
     }
     /// Set the message's file.
     /// # Panic
-    ///     will panic if file is greater than 128 bytes long
+    /// panics if file is greater than 128 bytes long
     pub fn set_file<S: Into<String>>(&mut self, file: S) -> &mut Self {
         let file = file.into();
         assert!(file.len() <= 128);
@@ -316,7 +317,7 @@ impl Message {
     }
     /// Set the message's sname.
     /// # Panic
-    ///     will panic if sname is greater than 64 bytes long
+    /// panics will if sname is greater than 64 bytes long
     pub fn set_sname<S: Into<String>>(&mut self, sname: S) -> &mut Self {
         let sname = sname.into();
         assert!(sname.len() <= 64);
