@@ -1,11 +1,16 @@
+[package]
+name = "dhcproto"
+version = "0.2.0"
+authors = ["Ian Laidlaw <ilaidlaw@bluecatnetworks.com>", "Evan Cameron <cameron.evan@gmail.com>"]
+edition = "2018"
+description = """
+DHCProto is a complete dhcp encoding/decoding library for DHCPv4/DHCPv6
+"""
+categories = ["network-programming", "encoding","parser-implementations"]
+keywords = ["dhcp","dhcpv4","dhcpv6"]
+license = "MIT"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[profile.release]
-opt-level = 3
-
-[profile.dev]
-opt-level = 0
-
-[workspace]
-members = [
-    "libs/proto",
-]
+[dependencies]
+thiserror = "1.0"
+rand = "0.8"
