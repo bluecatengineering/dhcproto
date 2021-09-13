@@ -17,7 +17,9 @@ pub use crate::{
 
 const MAGIC: [u8; 4] = [99, 130, 83, 99];
 
+/// default dhcpv4 server port
 pub const SERVER_PORT: u16 = 67;
+/// default dhcpv4 client port
 pub const CLIENT_PORT: u16 = 68;
 
 /// [Dynamic Host Configuration Protocol](https://tools.ietf.org/html/rfc2131#section-2)

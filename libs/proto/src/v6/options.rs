@@ -38,9 +38,11 @@ impl DhcpOptions {
     pub fn push(&mut self, opt: DhcpOption) {
         self.0.push(opt)
     }
+    /// return a reference to an iterator
     pub fn iter(&self) -> impl Iterator<Item = &DhcpOption> {
         self.0.iter()
     }
+    /// return a mutable ref to an iterator
     pub fn iter_mut(&mut self) -> slice::IterMut<'_, DhcpOption> {
         self.0.iter_mut()
     }
@@ -97,11 +99,13 @@ pub enum DhcpOption {
     Unknown(UnknownOption),
 }
 
+/// wrapper around interface id
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InterfaceId {
     id: String,
 }
 
+/// vendor options
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VendorOpts {
     num: u32,
@@ -109,11 +113,13 @@ pub struct VendorOpts {
     opts: DhcpOptions,
 }
 
+/// reconfigure message
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct ReconfMsg {
     msg_type: MessageType,
 }
 
+/// vendor class
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VendorClass {
     num: u32,
@@ -121,6 +127,7 @@ pub struct VendorClass {
     // each item in data is [len (2 bytes) | data]
 }
 
+/// user class
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UserClass {
     data: Vec<String>,
@@ -175,6 +182,7 @@ pub enum Status {
     ServerShuttingDown,
     DNSUpdateNotSupported,
     ExcessiveTimeSkew,
+    /// unknown/unimplemented message type
     Unknown(u16),
 }
 
@@ -428,6 +436,7 @@ impl Decodable for IAAddr {
     }
 }
 
+/// fallback for options not yet implemented
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnknownOption {
     code: u16,
@@ -714,6 +723,7 @@ impl Encodable for DhcpOption {
     }
 }
 
+/// option code type
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum OptionCode {
     /// 1

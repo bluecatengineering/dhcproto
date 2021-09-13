@@ -1,7 +1,9 @@
+//!
 use std::collections::HashMap;
 
 use crate::{Decodable, Encodable};
 
+/// Collection of relay agent information
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelayAgentInformation(HashMap<RelayCode, Info>);
 
@@ -30,11 +32,17 @@ pub struct Info {
 }
 
 impl Info {
+    /// return the relay code
     pub fn code(&self) -> RelayCode {
         self.code
     }
+    /// return the data for this code
     pub fn data(&self) -> &[u8] {
         &self.data
+    }
+    /// take ownership and return the parts of this
+    pub fn into_parts(self) -> (RelayCode, Vec<u8>) {
+        (self.code, self.data)
     }
 }
 
@@ -55,6 +63,7 @@ impl Encodable for Info {
     }
 }
 
+/// relay code, represented as a u8
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum RelayCode {
     AgentCircuitId,
@@ -69,6 +78,7 @@ pub enum RelayCode {
     ServerIdentifierOverride,
     VirtualSubnet,
     VirtualSubnetControl,
+    /// unknown/unimplemented message type
     Unknown(u8),
 }
 

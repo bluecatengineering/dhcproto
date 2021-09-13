@@ -6,6 +6,7 @@ pub trait Encodable {
     /// Read the type from the stream
     fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()>;
 
+    /// encode this type into a new `Vec`
     fn to_vec(&self) -> EncodeResult<Vec<u8>> {
         let mut buffer = Vec::with_capacity(512);
         let mut encoder = Encoder::new(&mut buffer);

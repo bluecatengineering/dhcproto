@@ -12,7 +12,9 @@ pub use crate::{
     error::*,
 };
 
+/// default dhcpv6 server port
 pub const SERVER_PORT: u16 = 547;
+/// default dhcpv6 client port
 pub const CLIENT_PORT: u16 = 546;
 
 /// See RFC 8415 for updated DHCPv6 info
@@ -123,31 +125,53 @@ impl Message {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum MessageType {
     // RFC 3315
+    /// client solicit - https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
     Solicit,
+    /// server advertise - https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
     Advertise,
+    /// request - https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
     Request,
+    /// confirm - https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
     Confirm,
+    /// renew - https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
     Renew,
+    /// rebind - https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
     Rebind,
+    /// reply - https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
     Reply,
+    /// release message type - https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
     Release,
+    /// decline - https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
     Decline,
+    /// reconfigure - https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
     Reconfigure,
+    /// information request - https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
     InformationRequest,
+    /// relay forward - https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
     RelayForw,
+    /// relay reply - https://datatracker.ietf.org/doc/html/rfc8415#section-7.3
     RelayRepl,
     // RFC 5007
+    /// lease query - https://datatracker.ietf.org/doc/html/rfc5007#section-4.2.1
     LeaseQuery,
+    /// lease query reply - https://datatracker.ietf.org/doc/html/rfc5007#section-4.2.2
     LeaseQueryReply,
     // RFC 5460
+    /// lease query done - https://datatracker.ietf.org/doc/html/rfc5460#section-5.2.2
     LeaseQueryDone,
+    /// lease query data - https://datatracker.ietf.org/doc/html/rfc5460#section-5.2.1
     LeaseQueryData,
     // RFC 6977
+    /// reconfigure request - https://datatracker.ietf.org/doc/html/rfc6977#section-6.2.1
     ReconfigureRequest,
+    /// reconfigure reply - https://datatracker.ietf.org/doc/html/rfc6977#section-6.2.2
     ReconfigureReply,
     // RFC 7341
+    /// dhcpv4 query - https://datatracker.ietf.org/doc/html/rfc7341#section-6.2
     DHCPv4Query,
+    /// dhcpv4 response - https://datatracker.ietf.org/doc/html/rfc7341#section-6.2
     DHCPv4Response,
+    /// unknown/unimplemented message type
     Unknown(u8),
 }
 

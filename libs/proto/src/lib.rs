@@ -1,3 +1,18 @@
+#![warn(
+    missing_debug_implementations,
+    // missing_docs, // some variants still missing docs
+    missing_copy_implementations,
+    rust_2018_idioms,
+    unreachable_pub,
+    non_snake_case,
+    non_upper_case_globals
+)]
+#![allow(clippy::cognitive_complexity)]
+#![deny(rustdoc::broken_intra_doc_links)]
+#![doc(test(
+    no_crate_inject,
+    attr(deny(warnings, rust_2018_idioms), allow(dead_code, unused_variables))
+))]
 //! # dhcproto
 //!
 //!  A DHCP parser and encoder for DHCPv4 and DHCPv6. `dhcproto` aims to be a functionally complete DHCP implementation.
@@ -67,17 +82,6 @@
 //! #        ]
 //! #    }
 //! ```
-#![warn(
-    missing_debug_implementations,
-    // TODO: missing_docs,
-    missing_copy_implementations,
-    rust_2018_idioms,
-    unreachable_pub,
-    non_snake_case,
-    non_upper_case_globals
-)]
-#![deny(broken_intra_doc_links)]
-#![allow(clippy::cognitive_complexity)]
 
 pub use decoder::{Decodable, Decoder};
 pub use encoder::{Encodable, Encoder};
