@@ -489,7 +489,7 @@ pub enum DhcpOption {
     ClassIdentifier(Vec<u8>),
     /// 61 Client Identifier
     ClientIdentifier(Vec<u8>),
-    /// 82 Relay Agent Information - https://datatracker.ietf.org/doc/html/rfc3046
+    /// 82 Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>
     RelayAgentInformation(relay::RelayAgentInformation),
     /// Unknown option
     Unknown(UnknownOption),
@@ -1010,7 +1010,7 @@ pub struct UnknownOption {
 }
 
 /// The DHCP message type
-/// https://datatracker.ietf.org/doc/html/rfc2131#section-3.1
+/// <https://datatracker.ietf.org/doc/html/rfc2131#section-3.1>
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum MessageType {
     /// DHCPDiscover

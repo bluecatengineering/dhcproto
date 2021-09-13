@@ -22,15 +22,15 @@
 //! ```rust
 //! use dhcproto::v4::{Message, Encoder, Decoder, Decodable, Encodable};
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!        // decode
-//!        let bytes = dhcp_offer();
-//!        let msg = Message::decode(&mut Decoder::new(&bytes))?;
-//!        // now encode
-//!        let mut buf = Vec::new();
-//!        let mut e = Encoder::new(&mut buf);
-//!        msg.encode(&mut e)?;
+//! // decode
+//! let bytes = dhcp_offer();
+//! let msg = Message::decode(&mut Decoder::new(&bytes))?;
+//! // now encode
+//! let mut buf = Vec::new();
+//! let mut e = Encoder::new(&mut buf);
+//! msg.encode(&mut e)?;
 //! # Ok(())
-//! }
+//! # }
 //!     #   fn dhcp_offer() -> Vec<u8> {
 //!     #   vec![
 //!     #       0x02, 0x01, 0x06, 0x00, 0x00, 0x00, 0x15, 0x5c, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00,
@@ -64,15 +64,15 @@
 //! ```rust
 //! use dhcproto::v6::{Message, Encoder, Decoder, Decodable, Encodable};
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!        // decode
-//!        let bytes = solicit();
-//!        let msg = Message::decode(&mut Decoder::new(&bytes))?;
-//!        // now encode
-//!        let mut buf = Vec::new();
-//!        let mut e = Encoder::new(&mut buf);
-//!        msg.encode(&mut e)?;
+//! // decode
+//! let bytes = solicit();
+//! let msg = Message::decode(&mut Decoder::new(&bytes))?;
+//! // now encode
+//! let mut buf = Vec::new();
+//! let mut e = Encoder::new(&mut buf);
+//! msg.encode(&mut e)?;
 //! # Ok(())
-//! }
+//! # }
 //! #    fn solicit() -> Vec<u8> {
 //! #        vec![
 //! #            0x01, 0x10, 0x08, 0x74, 0x00, 0x01, 0x00, 0x0e, 0x00, 0x01, 0x00, 0x01, 0x1c, 0x39,

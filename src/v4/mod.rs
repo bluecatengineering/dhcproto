@@ -55,7 +55,7 @@ pub const CLIENT_PORT: u16 = 68;
 pub struct Message {
     /// op code / message type
     opcode: Opcode,
-    /// Hardware address type: https://tools.ietf.org/html/rfc3232
+    /// Hardware address type: <https://tools.ietf.org/html/rfc3232>
     htype: HType,
     /// Hardware address length
     hlen: u8,

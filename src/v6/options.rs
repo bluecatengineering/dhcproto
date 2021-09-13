@@ -10,9 +10,9 @@ use crate::{
 
 // server can send multiple IA_NA options to request multiple addresses
 // this means we cannot represent is as a hashmap
-// https://datatracker.ietf.org/doc/html/rfc8415#section-6.6
+// <https://datatracker.ietf.org/doc/html/rfc8415#section-6.6>
 
-/// https://datatracker.ietf.org/doc/html/rfc8415#section-21
+/// <https://datatracker.ietf.org/doc/html/rfc8415#section-21>
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DhcpOptions(Vec<DhcpOption>);
 
@@ -51,49 +51,49 @@ impl DhcpOptions {
 /// DHCPv6 option types
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DhcpOption {
-    /// 1 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.2
+    /// 1 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.2>
     ClientId(Vec<u8>), // should duid for this be bytes or string?
-    /// 2 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.3
+    /// 2 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.3>
     ServerId(Vec<u8>),
-    /// 3 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.4
+    /// 3 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.4>
     IANA(IANA),
-    /// 4 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.5
+    /// 4 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.5>
     IATA(IATA),
-    /// 5 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.6
+    /// 5 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.6>
     IAAddr(IAAddr),
-    /// 6 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.7
+    /// 6 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.7>
     ORO(ORO),
-    /// 7 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.8
+    /// 7 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.8>
     Preference(Preference),
-    /// 8 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.9
+    /// 8 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.9>
     ElapsedTime(ElapsedTime),
-    /// 9 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.10
+    /// 9 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.10>
     RelayMsg(RelayMsg),
-    /// 11 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.11
+    /// 11 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.11>
     Authentication(Authentication),
-    /// 12 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.12
+    /// 12 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.12>
     ServerUnicast(ServerUnicast),
-    /// 13 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.13
+    /// 13 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.13>
     StatusCode(StatusCode),
-    /// 14 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.14
+    /// 14 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.14>
     RapidCommit,
-    /// 15 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.15
+    /// 15 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.15>
     UserClass(UserClass),
-    /// 16 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.16
+    /// 16 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.16>
     VendorClass(VendorClass),
-    /// 17 -  https://datatracker.ietf.org/doc/html/rfc8415#section-21.17
+    /// 17 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.17>
     VendorOpts(VendorOpts),
-    /// 18 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.18
+    /// 18 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.18>
     InterfaceId(InterfaceId),
-    /// 19 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.19
+    /// 19 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.19>
     ReconfMsg(ReconfMsg),
-    /// 20 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.20
+    /// 20 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.20>
     ReconfAccept,
-    /// 23 - https://datatracker.ietf.org/doc/html/rfc3646
+    /// 23 - <https://datatracker.ietf.org/doc/html/rfc3646>
     DNSNameServer(Vec<Ipv6Addr>),
-    /// 25 - https://datatracker.ietf.org/doc/html/rfc8415#section-21.21
+    /// 25 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.21>
     IAPD(IAPD),
-    /// 26 - https://datatracker.ietf.org/doc/html/rfc3633#section-10
+    /// 26 - <https://datatracker.ietf.org/doc/html/rfc3633#section-10>
     IAPDPrefix(IAPDPrefix),
     /// An unknown or unimplemented option type
     Unknown(UnknownOption),
@@ -307,7 +307,7 @@ pub struct Preference {
 }
 
 /// Option Request Option
-/// https://datatracker.ietf.org/doc/html/rfc8415#section-21.7
+/// <https://datatracker.ietf.org/doc/html/rfc8415#section-21.7>
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ORO {
     // 2 * num opts
