@@ -4,7 +4,7 @@ version = "0.2.0"
 authors = ["Ian Laidlaw <ilaidlaw@bluecatnetworks.com>", "Evan Cameron <cameron.evan@gmail.com>"]
 edition = "2018"
 description = """
-DHCProto is a complete dhcp encoding/decoding library for DHCPv4/DHCPv6
+A DHCP parser and encoder for DHCPv4/DHCPv6. `dhcproto` aims to be a functionally complete DHCP implementation.
 """
 categories = ["network-programming", "encoding","parser-implementations"]
 keywords = ["dhcp","dhcpv4","dhcpv6"]
