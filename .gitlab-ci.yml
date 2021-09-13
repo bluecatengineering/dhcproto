@@ -1,44 +1,28 @@
-# To contribute improvements to CI/CD templates, please follow the Development guide at:
-# https://docs.gitlab.com/ee/development/cicd/templates.html
-# This specific template is located at:
-# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Rust.gitlab-ci.yml
-
-# Official language image. Look for the different tagged releases at:
-# https://hub.docker.com/r/library/rust/tags/
 image: "rust:latest"
 
-# Optional: Pick zero or more services to be used on all builds.
-# Only needed when using a docker container to run your tests in.
-# Check out: http://docs.gitlab.com/ee/ci/docker/using_docker_images.html#what-is-a-service
-# services:
-#   - mysql:latest
-#   - redis:latest
-#   - postgres:latest
+default:
+  before_script:
+    - rustc --version 
+    - cargo --version
 
-# Optional: Install a C compiler, cmake and git into the container.
-# You will often need this when you (or any of your dependencies) depends on C code.
-# before_script:
-#   - apt-get update -yqq
-#   - apt-get install -yqq --no-install-recommends build-essential
+stages:
+  - test
 
-# Use cargo to test the project
-test:cargo:
+test-code:
+  stage: test
   script:
-    - rustc --version && cargo --version  # Print version info for debugging
-    - cargo test --workspace --verbose
+    - cargo test
+    - cargo install cargo-tarpaulin
+    - cargo tarpaulin --ignore-tests
 
-lint:clippy:
+lint-code:
+  stage: test
   script:
-    - rustc --version && cargo --version  # Print version info for debugging
-    - cargo clippy --all
-
-lint:fmt:
+    - rustup component add clippy
+    - cargo clippy -- -D warnings
+    
+format-code:
+  stage: test
   script:
-    - rustc --version && cargo --version  # Print version info for debugging
+    - rustup component add rustfmt
     - cargo fmt -- --check
-  
-build:cargo:
-  script:
-    - rustc --version && cargo --version  # Print version info for debugging
-    - cargo build
- 
