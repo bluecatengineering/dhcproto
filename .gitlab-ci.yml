@@ -12,8 +12,9 @@ test-code:
   stage: test
   script:
     - cargo test
-    - cargo install cargo-tarpaulin
-    - cargo tarpaulin --ignore-tests
+    # TODO: work to get code coverage added
+    # - cargo install cargo-tarpaulin
+    # - cargo tarpaulin --ignore-tests
 
 lint-code:
   stage: test
