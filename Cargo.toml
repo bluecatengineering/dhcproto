@@ -7,6 +7,7 @@ description = """
 A DHCP parser and encoder for DHCPv4/DHCPv6. `dhcproto` aims to be a functionally complete DHCP implementation.
 """
 categories = ["network-programming", "encoding","parser-implementations"]
+repository = "https://github.com/bluecatengineering/dhcproto"
 keywords = ["dhcp","dhcpv4","dhcpv6"]
 license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
