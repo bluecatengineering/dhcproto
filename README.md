@@ -2,6 +2,10 @@
 
 A DHCP parser and encoder for DHCPv4/DHCPv6. `dhcproto` aims to be a functionally complete DHCP implementation. Many common option types are implemented, PRs are welcome to flesh out missing types.
 
+## crates.io
+
+https://crates.io/crates/dhcproto
+
 ## Minimum Rust Version
 
 This crate const generics, Rust 1.53 is required
