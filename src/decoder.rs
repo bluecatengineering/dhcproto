@@ -130,8 +130,8 @@ impl<'a> Decoder<'a> {
         if length != 4 {
             return Err(DecodeError::NotEnoughBytes);
         }
-        let bytes = self.read_slice(length as usize)?;
-        Ok([bytes[0], bytes[1], bytes[2], bytes[3]].into())
+        let bytes = self.read::<4>()?;
+        Ok(bytes.into())
     }
 
     /// Read a list of ipv4 addrs
