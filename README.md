@@ -8,7 +8,7 @@ https://crates.io/crates/dhcproto
 
 ## Minimum Rust Version
 
-This crate const generics, Rust 1.53 is required
+This crate uses const generics, Rust 1.53 is required
 
 ## RFCs
 
