@@ -1,4 +1,57 @@
-//! DHCPv6 Message type
+//! # DHCPv6
+//!
+//! This module provides types and utility functions for encoding/decoding a DHCPv4 message.
+//!
+//! ## Example - constructing messages
+//!
+//! ```rust
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! use dhcproto::{v6, Encodable, Encoder};
+//! // arbitrary DUID
+//! let duid = vec![
+//!     29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44,
+//! ];
+//! // construct a new Message with a random xid
+//! let mut msg = v6::Message::new(v6::MessageType::Solicit);
+//! // set an option
+//! msg.opts_mut()
+//!     .push(v6::DhcpOption::ClientId(duid));
+//!
+//! // now encode to bytes
+//! let mut buf = Vec::new();
+//! let mut e = Encoder::new(&mut buf);
+//! msg.encode(&mut e)?;
+//!
+//! // buf now has the contents of the encoded DHCP message
+//! # Ok(()) }
+//! ```
+//!
+//! ## Example - encoding/decoding messages
+//!
+//! ```rust
+//! # fn solicit() -> Vec<u8> {
+//! #     vec![
+//! #         0x01, 0x10, 0x08, 0x74, 0x00, 0x01, 0x00, 0x0e, 0x00, 0x01, 0x00, 0x01, 0x1c, 0x39,
+//! #         0xcf, 0x88, 0x08, 0x00, 0x27, 0xfe, 0x8f, 0x95, 0x00, 0x06, 0x00, 0x04, 0x00, 0x17,
+//! #         0x00, 0x18, 0x00, 0x08, 0x00, 0x02, 0x00, 0x00, 0x00, 0x19, 0x00, 0x0c, 0x27, 0xfe,
+//! #         0x8f, 0x95, 0x00, 0x00, 0x0e, 0x10, 0x00, 0x00, 0x15, 0x18,
+//! #     ]
+//! # }
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! use dhcproto::{v6::Message, Decoder, Decodable, Encoder, Encodable};
+//! // example message
+//! let solicit = solicit();
+//! // decode
+//! let msg = Message::decode(&mut Decoder::new(&solicit))?;
+//! // now encode
+//! let mut buf = Vec::new();
+//! let mut e = Encoder::new(&mut buf);
+//! msg.encode(&mut e)?;
+//!
+//! assert_eq!(solicit, buf);
+//! # Ok(()) }
+//! ```
+//!
 mod options;
 
 use std::convert::TryInto;
@@ -71,7 +124,34 @@ pub struct Message {
     opts: DhcpOptions,
 }
 
+impl Default for Message {
+    fn default() -> Self {
+        Self {
+            msg_type: MessageType::Solicit,
+            xid: rand::random(),
+            opts: DhcpOptions::new(),
+        }
+    }
+}
+
 impl Message {
+    /// returns a new `Message` with a random xid and empty opt section
+    pub fn new(msg_type: MessageType) -> Self {
+        Self {
+            msg_type,
+            ..Self::default()
+        }
+    }
+
+    /// returns a new `Message` with a given xid and message type and empty opt section
+    pub fn new_with_id(msg_type: MessageType, xid: [u8; 3]) -> Self {
+        Self {
+            msg_type,
+            xid,
+            ..Self::default()
+        }
+    }
+
     /// Get the message's message type.
     pub fn msg_type(&self) -> MessageType {
         self.msg_type
@@ -94,12 +174,12 @@ impl Message {
         self
     }
 
-    /// Set transaction id from u32, will only use lowest 3 bytes
+    /// Set transaction id from u32, will only use first 3 bytes
     pub fn set_xid_num(&mut self, xid: u32) -> &mut Self {
         let arr = xid.to_be_bytes();
-        self.xid = arr[1..]
+        self.xid = arr[..3]
             .try_into()
-            .expect("this conversion shouldnt be able to fail");
+            .expect("a u32 has 4 bytes so this shouldn't fail");
         self
     }
 

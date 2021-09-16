@@ -13,10 +13,14 @@ use crate::{
 // <https://datatracker.ietf.org/doc/html/rfc8415#section-6.6>
 
 /// <https://datatracker.ietf.org/doc/html/rfc8415#section-21>
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct DhcpOptions(Vec<DhcpOption>);
 
 impl DhcpOptions {
+    /// construct empty DhcpOptions
+    pub fn new() -> Self {
+        Self::default()
+    }
     /// get the first element matching this option code
     pub fn get(&self, code: OptionCode) -> Option<&DhcpOption> {
         self.0
