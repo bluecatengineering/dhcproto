@@ -1,4 +1,83 @@
-//! DHCPv4 Message type
+//! # DHCPv4
+//!
+//! This module provides types and utility functions for encoding/decoding a DHCPv4 message.
+//!
+//! ## Example - constructing messages
+//!
+//! ```rust
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! use dhcproto::{v4, Encodable, Encoder};
+//! // arbitrary hardware addr
+//! let chaddr = vec![
+//!     29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44,
+//! ];
+//! // construct a new Message
+//! let mut msg = v4::Message::default();
+//! msg.set_flags(v4::Flags::default().set_broadcast()) // set broadcast to true
+//!     .set_chaddr(&chaddr) // set chaddr
+//!     .opts_mut()
+//!     .insert(v4::DhcpOption::MessageType(v4::MessageType::Discover)); // set msg type
+//!
+//! // set some more options
+//! msg.opts_mut()
+//!     .insert(v4::DhcpOption::ParameterRequestList(vec![
+//!         v4::OptionCode::SubnetMask,
+//!         v4::OptionCode::Router,
+//!         v4::OptionCode::DomainNameServer,
+//!         v4::OptionCode::DomainName,
+//!     ]));
+//! msg.opts_mut()
+//!     .insert(v4::DhcpOption::ClientIdentifier(chaddr));
+//!
+//! // now encode to bytes
+//! let mut buf = Vec::new();
+//! let mut e = Encoder::new(&mut buf);
+//! msg.encode(&mut e)?;
+//!
+//! // buf now has the contents of the encoded DHCP message
+//! # Ok(()) }
+//! ```
+//!
+//! ## Example - decoding messages
+//!
+//! ```rust
+//! #  fn bootreq() -> Vec<u8> {
+//! #        vec![
+//! #            1u8, // op
+//! #            2,   // htype
+//! #            3,   // hlen
+//! #            4,   // ops
+//! #            5, 6, 7, 8, // xid
+//! #            9, 10, // secs
+//! #            11, 12, // flags
+//! #            13, 14, 15, 16, // ciaddr
+//! #            17, 18, 19, 20, // yiaddr
+//! #            21, 22, 23, 24, // siaddr
+//! #            25, 26, 27, 28, // giaddr
+//! #            29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, // chaddr
+//! #            45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
+//! #            67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+//! #            89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
+//! #            0, // sname: "-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijk",
+//! #            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+//! #            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+//! #            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+//! #            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+//! #            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+//! #            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+//! #            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+//! #            109, 0, 0, 0, 0, 0, 0, 0,
+//! #            0, // file: "mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}m",
+//! #            99, 130, 83, 99, // magic cookie
+//! #        ]
+//! #    }
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! use dhcproto::{v4::Message, Decoder, Decodable};
+//! let offer = bootreq();
+//! let msg = Message::decode(&mut Decoder::new(&offer))?;
+//! # Ok(()) }
+//! ```
+//!
 use std::net::Ipv4Addr;
 
 mod flags;
