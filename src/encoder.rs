@@ -126,15 +126,19 @@ impl<'a> Encoder<'a> {
         }
         Ok(())
     }
-    /// Writes string to buffer and pads with 0 bytes up to some fill_len
+    /// Writes value to buffer and pads with 0 bytes up to some fill_len
     /// if String is None then write fill_len 0 bytes
     ///
     /// Returns
     ///    Err - if bytes.len() is greater then fill_len
-    pub fn write_fill_string(&mut self, s: &Option<String>, fill_len: usize) -> EncodeResult<()> {
+    pub fn write_fill<T: AsRef<[u8]>>(
+        &mut self,
+        s: &Option<T>,
+        fill_len: usize,
+    ) -> EncodeResult<()> {
         match s {
             Some(sname) => {
-                let bytes = sname.as_bytes();
+                let bytes = sname.as_ref();
                 self.write_fill_bytes(bytes, fill_len)?;
             }
             None => {

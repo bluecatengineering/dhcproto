@@ -93,16 +93,23 @@ impl<'a> Decoder<'a> {
         }
     }
 
-    /// read `MAX` length bytes and read into utf-8 encoded `String`
-    pub fn read_const_string<const MAX: usize>(&mut self) -> DecodeResult<Option<String>> {
+    pub fn read_nul_bytes<const MAX: usize>(&mut self) -> DecodeResult<Option<Vec<u8>>> {
         let bytes = self.read::<MAX>()?;
         let nul_idx = bytes.iter().position(|&b| b == 0);
         match nul_idx {
             Some(n) if n == 0 => Ok(None),
-            Some(n) => Ok(Some(str::from_utf8(&bytes[..=n])?.to_owned())),
+            Some(n) => Ok(Some(bytes[..=n].to_vec())),
             // TODO: error?
             None => Ok(None),
         }
+    }
+
+    /// read `MAX` length bytes and read into utf-8 encoded `String`
+    pub fn read_nul_string<const MAX: usize>(&mut self) -> DecodeResult<Option<String>> {
+        Ok(self
+            .read_nul_bytes::<MAX>()?
+            .map(|ref bytes| str::from_utf8(bytes).map(|s| s.to_owned()))
+            .transpose()?)
     }
 
     /// read a slice of bytes determined at runtime

@@ -78,7 +78,7 @@
 //! # Ok(()) }
 //! ```
 //!
-use std::net::Ipv4Addr;
+use std::{net::Ipv4Addr, str::Utf8Error};
 
 mod flags;
 mod htype;
@@ -157,9 +157,9 @@ pub struct Message {
     /// Client hardware address
     chaddr: [u8; 16],
     /// Server hostname
-    sname: Option<String>,
+    sname: Option<Vec<u8>>,
     // File name
-    file: Option<String>,
+    fname: Option<Vec<u8>>,
     magic: [u8; 4],
     opts: DhcpOptions,
 }
@@ -180,7 +180,7 @@ impl Default for Message {
             giaddr: Ipv4Addr::UNSPECIFIED,
             chaddr: [0; 16],
             sname: None,
-            file: None,
+            fname: None,
             magic: MAGIC,
             opts: DhcpOptions::default(),
         }
@@ -379,30 +379,54 @@ impl Message {
         self.xid = xid;
         self
     }
-    /// Get a reference to the message's file.
-    pub fn file(&self) -> Option<&String> {
-        self.file.as_ref()
+    /// Get a reference to the message's fname. No particular encoding is enforced.
+    pub fn fname(&self) -> Option<&[u8]> {
+        self.fname.as_deref()
     }
-    /// Set the message's file.
+    /// Get a reference to the message's fname, UTF-8 encoded
+    pub fn fname_str(&self) -> Option<Result<&str, Utf8Error>> {
+        self.fname().map(std::str::from_utf8)
+    }
+    /// Set the message's fname using a UTF-8 string
     /// # Panic
     /// panics if file is greater than 128 bytes long
-    pub fn set_file<S: Into<String>>(&mut self, file: S) -> &mut Self {
-        let file = file.into();
+    pub fn set_fname_str<S: AsRef<str>>(&mut self, file: S) -> &mut Self {
+        let file = file.as_ref().as_bytes();
         assert!(file.len() <= 128);
-        self.file = Some(file);
+        self.fname = Some(file.to_vec());
         self
     }
-    /// Get a reference to the message's sname.
-    pub fn sname(&self) -> Option<&String> {
-        self.sname.as_ref()
+    /// Set the message's fname. No particular encoding is enforced.
+    /// # Panic
+    /// panics if file is greater than 128 bytes long
+    pub fn set_fname(&mut self, file: &[u8]) -> &mut Self {
+        assert!(file.len() <= 128);
+        self.fname = Some(file.to_vec());
+        self
     }
-    /// Set the message's sname.
+    /// Get a reference to the message's sname. No particular encoding is enforced.
+    pub fn sname(&self) -> Option<&[u8]> {
+        self.sname.as_deref()
+    }
+    /// Get a reference to the message's sname as a UTF-8 encoded string.
+    pub fn sname_str(&self) -> Option<Result<&str, Utf8Error>> {
+        self.sname().map(std::str::from_utf8)
+    }
+    /// Set the message's sname. No particular encoding is enforced.
     /// # Panic
     /// panics will if sname is greater than 64 bytes long
-    pub fn set_sname<S: Into<String>>(&mut self, sname: S) -> &mut Self {
-        let sname = sname.into();
+    pub fn set_sname(&mut self, sname: &[u8]) -> &mut Self {
         assert!(sname.len() <= 64);
-        self.sname = Some(sname);
+        self.sname = Some(sname.to_vec());
+        self
+    }
+    /// Set the message's sname using a UTF-8 string
+    /// # Panic
+    /// panics will if sname is greater than 64 bytes long
+    pub fn set_sname_str<S: AsRef<str>>(&mut self, sname: S) -> &mut Self {
+        let sname = sname.as_ref().as_bytes();
+        assert!(sname.len() <= 64);
+        self.sname = Some(sname.to_vec());
         self
     }
     /// Get a reference to the message's opts.
@@ -437,8 +461,8 @@ impl Decodable for Message {
             siaddr: decoder.read_u32()?.into(),
             giaddr: decoder.read_u32()?.into(),
             chaddr: decoder.read::<16>()?,
-            sname: decoder.read_const_string::<64>()?,
-            file: decoder.read_const_string::<128>()?,
+            sname: decoder.read_nul_bytes::<64>()?,
+            fname: decoder.read_nul_bytes::<128>()?,
             // TODO: check magic bytes against expected?
             magic: decoder.read::<4>()?,
             opts: DhcpOptions::decode(decoder)?,
@@ -460,8 +484,8 @@ impl Encodable for Message {
         e.write_u32(self.siaddr.into())?;
         e.write_u32(self.giaddr.into())?;
         e.write_slice(&self.chaddr[..])?;
-        e.write_fill_string(&self.sname, 64)?;
-        e.write_fill_string(&self.file, 128)?;
+        e.write_fill(&self.sname, 64)?;
+        e.write_fill(&self.fname, 128)?;
 
         e.write(self.magic)?;
         self.opts.encode(e)?;
