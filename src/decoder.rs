@@ -22,18 +22,16 @@ pub trait Decodable: Sized {
     }
 }
 
-/// Decoder type. Holds buffer that data is read
-/// from and index of position in buffer
+/// Decoder type. Wraps a buffer which only contains bytes that have not been read yet
 #[derive(Debug)]
 pub struct Decoder<'a> {
     buffer: &'a [u8],
-    index: usize,
 }
 
 impl<'a> Decoder<'a> {
     /// Create a new Decoder
     pub fn new(buffer: &'a [u8]) -> Self {
-        Decoder { buffer, index: 0 }
+        Decoder { buffer }
     }
 
     /// read a u8
@@ -71,14 +69,12 @@ impl<'a> Decoder<'a> {
 
     /// read a `N` bytes into slice
     pub fn read<const N: usize>(&mut self) -> DecodeResult<[u8; N]> {
-        let end = self.index.checked_add(N).ok_or(DecodeError::AddOverflow)?;
-        let bytes = self
-            .buffer
-            .get(self.index..end)
-            .ok_or(DecodeError::EndOfBuffer { index: end })?
-            .try_into()?;
-        self.index = end;
-        Ok(bytes)
+        if N > self.buffer.len() {
+            return Err(DecodeError::NotEnoughBytes);
+        }
+        let (slice, remaining) = self.buffer.split_at(N);
+        self.buffer = remaining;
+        Ok(slice.try_into().unwrap())
     }
 
     /// read a `MAX` length bytes into nul terminated `CString`
@@ -114,15 +110,11 @@ impl<'a> Decoder<'a> {
 
     /// read a slice of bytes determined at runtime
     pub fn read_slice(&mut self, len: usize) -> DecodeResult<&'a [u8]> {
-        let end = self
-            .index
-            .checked_add(len)
-            .ok_or(DecodeError::AddOverflow)?;
-        let slice = self
-            .buffer
-            .get(self.index..end)
-            .ok_or(DecodeError::EndOfBuffer { index: end })?;
-        self.index = end;
+        if len > self.buffer.len() {
+            return Err(DecodeError::NotEnoughBytes);
+        }
+        let (slice, remaining) = self.buffer.split_at(len);
+        self.buffer = remaining;
         Ok(slice)
     }
 
@@ -193,6 +185,6 @@ impl<'a> Decoder<'a> {
 
     /// return slice of buffer start at index of unread data
     pub fn buffer(&self) -> &[u8] {
-        &self.buffer[self.index..]
+        self.buffer
     }
 }
