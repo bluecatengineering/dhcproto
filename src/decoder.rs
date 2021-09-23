@@ -74,6 +74,7 @@ impl<'a> Decoder<'a> {
         }
         let (slice, remaining) = self.buffer.split_at(N);
         self.buffer = remaining;
+        // can't panic-- condition checked above
         Ok(slice.try_into().unwrap())
     }
 
