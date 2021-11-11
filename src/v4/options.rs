@@ -220,7 +220,7 @@ pub enum OptionCode {
     ClientIdentifier,
     /// 82 Relay Agent Information
     RelayAgentInformation,
-    /// 118 Subnet option
+    /// 118 Subnet option - <https://datatracker.ietf.org/doc/html/rfc3011>
     SubnetSelection,
     /// Unknown option
     Unknown(u8),
@@ -496,7 +496,7 @@ pub enum DhcpOption {
     ClientIdentifier(Vec<u8>),
     /// 82 Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>
     RelayAgentInformation(relay::RelayAgentInformation),
-    /// 118 Subnet selection
+    /// 118 Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>
     SubnetSelection(Ipv4Addr),
     /// Unknown option
     Unknown(UnknownOption),
