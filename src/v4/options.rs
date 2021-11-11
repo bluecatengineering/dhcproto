@@ -70,6 +70,7 @@ impl Decodable for DhcpOptions {
                 DhcpOption::End => {
                     break;
                 }
+                DhcpOption::Pad => {}
                 _ => {
                     opts.insert(OptionCode::from(&opt), opt);
                 }
@@ -219,6 +220,8 @@ pub enum OptionCode {
     ClientIdentifier,
     /// 82 Relay Agent Information
     RelayAgentInformation,
+    /// 118 Subnet option
+    SubnetSelection,
     /// Unknown option
     Unknown(u8),
     /// 255 End
@@ -288,6 +291,7 @@ impl From<u8> for OptionCode {
             60 => ClassIdentifier,
             61 => ClientIdentifier,
             82 => RelayAgentInformation,
+            118 => SubnetSelection,
             255 => End,
             // TODO: implement more
             n => Unknown(n),
@@ -358,6 +362,7 @@ impl From<OptionCode> for u8 {
             ClassIdentifier => 60,
             ClientIdentifier => 61,
             RelayAgentInformation => 82,
+            SubnetSelection => 118,
             End => 255,
             // TODO: implement more
             Unknown(n) => n,
@@ -491,6 +496,8 @@ pub enum DhcpOption {
     ClientIdentifier(Vec<u8>),
     /// 82 Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>
     RelayAgentInformation(relay::RelayAgentInformation),
+    /// 118 Subnet selection
+    SubnetSelection(Ipv4Addr),
     /// Unknown option
     Unknown(UnknownOption),
     /// 255 End
@@ -785,6 +792,10 @@ impl Decodable for DhcpOption {
                 let mut dec = Decoder::new(decoder.read_slice(length as usize)?);
                 RelayAgentInformation(relay::RelayAgentInformation::decode(&mut dec)?)
             }
+            OptionCode::SubnetSelection => {
+                let len = decoder.read_u8()?; // always 4
+                SubnetSelection(decoder.read_ipv4(len as usize)?)
+            }
             OptionCode::End => End,
             // not yet implemented
             OptionCode::Unknown(code) => {
@@ -814,7 +825,8 @@ impl Encodable for DhcpOption {
             | BroadcastAddr(addr)
             | RouterSolicitationAddr(addr)
             | RequestedIpAddress(addr)
-            | ServerIdentifier(addr) => {
+            | ServerIdentifier(addr)
+            | SubnetSelection(addr) => {
                 e.write_u8(code.into())?;
                 e.write_u8(4)?;
                 e.write_u32((*addr).into())?
@@ -995,6 +1007,7 @@ impl From<&DhcpOption> for OptionCode {
             ClassIdentifier(_) => OptionCode::ClassIdentifier,
             ClientIdentifier(_) => OptionCode::ClientIdentifier,
             RelayAgentInformation(_) => OptionCode::RelayAgentInformation,
+            SubnetSelection(_) => OptionCode::SubnetSelection,
             End => OptionCode::End,
             // TODO: implement more
             Unknown(n) => OptionCode::Unknown(n.code),
