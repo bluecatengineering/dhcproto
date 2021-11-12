@@ -32,10 +32,14 @@ pub struct DhcpOptions(HashMap<OptionCode, DhcpOption>);
 
 impl DhcpOptions {
     /// Get the data for a particular [`OptionCode`]
+    ///
+    /// [`OptionCode`]: crate::v4::OptionCode
     pub fn get(&self, code: OptionCode) -> Option<&DhcpOption> {
         self.0.get(&code)
     }
-    /// Get the mutable data for a particular OptionCode
+    /// Get the mutable data for a particular [`OptionCode`]
+    ///
+    /// [`OptionCode`]: crate::v4::OptionCode
     pub fn get_mut(&mut self, code: OptionCode) -> Option<&mut DhcpOption> {
         self.0.get_mut(&code)
     }
@@ -43,7 +47,9 @@ impl DhcpOptions {
     pub fn remove(&mut self, code: OptionCode) -> Option<DhcpOption> {
         self.0.remove(&code)
     }
-    /// insert a new option
+    /// insert a new [`DhcpOption`]
+    ///
+    /// [`DhcpOption`]: crate::v4::DhcpOption
     pub fn insert(&mut self, opt: DhcpOption) -> Option<DhcpOption> {
         self.0.insert((&opt).into(), opt)
     }
