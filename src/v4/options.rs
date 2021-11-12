@@ -801,7 +801,7 @@ impl Decodable for DhcpOption {
             OptionCode::Unknown(code) => {
                 let length = decoder.read_u8()?;
                 let bytes = decoder.read_slice(length as usize)?.to_vec();
-                Unknown(UnknownOption { code, bytes })
+                Unknown(UnknownOption { code, data: bytes })
             }
         })
     }
@@ -937,8 +937,8 @@ impl Encodable for DhcpOption {
             Unknown(opt) => {
                 e.write_u8(code.into())?;
                 // length of bytes stored in Vec
-                e.write_u8(opt.bytes.len() as u8)?;
-                e.write_slice(&opt.bytes)?
+                e.write_u8(opt.data.len() as u8)?;
+                e.write_slice(&opt.data)?
             }
         };
         Ok(())
@@ -1019,21 +1019,27 @@ impl From<&DhcpOption> for OptionCode {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnknownOption {
     code: u8,
-    bytes: Vec<u8>,
+    data: Vec<u8>,
 }
 
 impl UnknownOption {
+    pub fn new(code: OptionCode, data: Vec<u8>) -> Self {
+        Self {
+            code: code.into(),
+            data,
+        }
+    }
     /// return the relay code
     pub fn code(&self) -> OptionCode {
         self.code.into()
     }
     /// return the data for this code
     pub fn data(&self) -> &[u8] {
-        &self.bytes
+        &self.data
     }
     /// take ownership and return the parts of this
     pub fn into_parts(self) -> (OptionCode, Vec<u8>) {
-        (self.code.into(), self.bytes)
+        (self.code.into(), self.data)
     }
 }
 
@@ -1186,7 +1192,7 @@ mod tests {
         test_opt(
             DhcpOption::Unknown(UnknownOption {
                 code: 91,
-                bytes: vec![1, 2, 3, 4],
+                data: vec![1, 2, 3, 4],
             }),
             vec![91, 4, 1, 2, 3, 4],
         )?;

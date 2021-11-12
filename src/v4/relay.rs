@@ -136,14 +136,14 @@ impl Decodable for RelayInfo {
                 let bytes = d.read_slice(length as usize)?.to_vec();
                 Unknown(UnknownInfo {
                     code: code.into(),
-                    bytes,
+                    data: bytes,
                 })
             }
             // not yet implemented
             RelayCode::Unknown(code) => {
                 let length = d.read_u8()?;
                 let bytes = d.read_slice(length as usize)?.to_vec();
-                Unknown(UnknownInfo { code, bytes })
+                Unknown(UnknownInfo { code, data: bytes })
             }
         })
     }
@@ -169,14 +169,14 @@ impl Encodable for RelayInfo {
                 e.write_u32((*addr).into())?
             }
             RelayAgentFlags(flags) => {
-                e.write_u8(0)?;
+                e.write_u8(1)?;
                 e.write_u8((*flags).into())?
             }
             // not yet implemented
             Unknown(opt) => {
                 // length of bytes stored in Vec
-                e.write_u8(opt.bytes.len() as u8)?;
-                e.write_slice(&opt.bytes)?
+                e.write_u8(opt.data.len() as u8)?;
+                e.write_slice(&opt.data)?
             }
         };
         Ok(())
@@ -230,21 +230,27 @@ impl From<RelayFlags> for u8 {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnknownInfo {
     code: u8,
-    bytes: Vec<u8>,
+    data: Vec<u8>,
 }
 
 impl UnknownInfo {
+    pub fn new(code: RelayCode, data: Vec<u8>) -> Self {
+        Self {
+            code: code.into(),
+            data,
+        }
+    }
     /// return the relay code
     pub fn code(&self) -> RelayCode {
         self.code.into()
     }
     /// return the data for this code
     pub fn data(&self) -> &[u8] {
-        &self.bytes
+        &self.data
     }
     /// take ownership and return the parts of this
     pub fn into_parts(self) -> (RelayCode, Vec<u8>) {
-        (self.code.into(), self.bytes)
+        (self.code.into(), self.data)
     }
 }
 
@@ -367,6 +373,24 @@ mod tests {
         test_opt(
             RelayInfo::AgentCircuitId(vec![0, 1, 2, 3, 4]),
             vec![1, 5, 0, 1, 2, 3, 4],
+        )?;
+
+        Ok(())
+    }
+    #[test]
+    fn test_flags() -> Result<()> {
+        test_opt(
+            RelayInfo::RelayAgentFlags(RelayFlags::default().set_unicast()),
+            vec![10, 1, 0x80],
+        )?;
+
+        Ok(())
+    }
+    #[test]
+    fn test_unknown() -> Result<()> {
+        test_opt(
+            RelayInfo::Unknown(UnknownInfo::new(RelayCode::Unknown(149), vec![1, 2, 3, 4])),
+            vec![149, 4, 1, 2, 3, 4],
         )?;
 
         Ok(())
