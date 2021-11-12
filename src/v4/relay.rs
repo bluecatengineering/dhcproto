@@ -1,9 +1,5 @@
 //!
-use std::{
-    collections::{hash_map, HashMap},
-    fmt,
-    net::Ipv4Addr,
-};
+use std::{collections::HashMap, fmt, net::Ipv4Addr};
 
 use crate::{Decodable, Encodable};
 
@@ -29,11 +25,11 @@ impl RelayAgentInformation {
         self.0.insert((&info).into(), info)
     }
     /// iterate over entries
-    pub fn iter(&self) -> hash_map::Iter<'_, RelayCode, RelayInfo> {
+    pub fn iter(&self) -> impl Iterator<Item = (&RelayCode, &RelayInfo)> {
         self.0.iter()
     }
     /// iterate mutably over entries
-    pub fn iter_mut(&mut self) -> hash_map::IterMut<'_, RelayCode, RelayInfo> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&RelayCode, &mut RelayInfo)> {
         self.0.iter_mut()
     }
 }
@@ -88,8 +84,6 @@ impl Decodable for RelayInfo {
     fn decode(d: &mut crate::Decoder<'_>) -> super::DecodeResult<Self> {
         use RelayInfo::*;
         // read the code first, determines the variant
-
-        // pad has no length, so we can't read len up here
         Ok(match d.read_u8()?.into() {
             RelayCode::AgentCircuitId => {
                 let len = d.read_u8()? as usize;

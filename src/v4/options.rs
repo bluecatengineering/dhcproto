@@ -34,11 +34,11 @@ impl DhcpOptions {
         self.0.insert((&opt).into(), opt)
     }
     /// iterate over entries
-    pub fn iter(&self) -> hash_map::Iter<'_, OptionCode, DhcpOption> {
+    pub fn iter(&self) -> impl Iterator<Item = (&OptionCode, &DhcpOption)> {
         self.0.iter()
     }
     /// iterate mutably over entries
-    pub fn iter_mut(&mut self) -> hash_map::IterMut<'_, OptionCode, DhcpOption> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&OptionCode, &mut DhcpOption)> {
         self.0.iter_mut()
     }
     /// return message type
