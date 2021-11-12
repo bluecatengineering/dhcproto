@@ -1,8 +1,4 @@
-use std::{
-    collections::{hash_map, HashMap},
-    iter,
-    net::Ipv4Addr,
-};
+use std::{collections::HashMap, iter, net::Ipv4Addr};
 
 use crate::{
     decoder::{Decodable, Decoder},
