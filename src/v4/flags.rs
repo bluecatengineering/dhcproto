@@ -31,7 +31,7 @@ impl Flags {
     }
     /// get the status of the broadcast flag
     pub fn broadcast(&self) -> bool {
-        (self.0 & 0x80_00) >> 15 == 1
+        (self.0 & 0x80_00) >> (u16::BITS - 1) == 1
     }
     /// set the broadcast bit, returns a new Flags
     pub fn set_broadcast(mut self) -> Self {
@@ -73,6 +73,7 @@ mod tests {
         assert_eq!(flag.0, 0);
         let flag = flag.set_broadcast();
         assert_eq!(flag.0, 0x80_00);
+        assert!(flag.broadcast());
 
         let flag = Flags::new(0x00_20).set_broadcast();
         assert_eq!(flag.0, 0x80_20);
