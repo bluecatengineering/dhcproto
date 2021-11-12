@@ -60,7 +60,7 @@ pub enum RelayInfo {
     AgentCircuitId(Vec<u8>),
     /// 2 - <https://datatracker.ietf.org/doc/html/rfc3046>
     AgentRemoteId(Vec<u8>),
-    /// 3 - <https://datatracker.ietf.org/doc/html/rfc3256>
+    /// 4 - <https://datatracker.ietf.org/doc/html/rfc3256>
     DocsisDeviceClass(u32),
     /// 5 - <https://datatracker.ietf.org/doc/html/rfc3527>
     LinkSelection(Ipv4Addr),
@@ -102,6 +102,7 @@ impl Decodable for RelayInfo {
                 AgentCircuitId(data)
             }
             RelayCode::DocsisDeviceClass => {
+                let _ = d.read_u8()?;
                 let device_id = d.read_u32()?;
                 DocsisDeviceClass(device_id)
             }
@@ -148,34 +149,10 @@ impl Decodable for RelayInfo {
     }
 }
 
-// pub struct VirtualSubnet {
-//     code: VssInfo,
-// }
-
-// pub enum VssInfo {
-//     NvtVpnId,
-//     VpnId,
-//     Unassigned,
-//     GlobalVpn,
-// }
-
-// impl From<u8> for VssInfo {
-//     fn from(n: u8) -> Self {
-//         match n {
-//             0 => VssInfo::NvtVpnId,
-//             1 => VssInfo::VpnId,
-//             2..=254 => VssInfo::Unassigned,
-//             255 => VssInfo::GlobalVpn,
-//         }
-//     }
-// }
-
 impl Encodable for RelayInfo {
     fn encode(&self, e: &mut crate::Encoder<'_>) -> super::EncodeResult<()> {
         use RelayInfo::*;
-
         let code: RelayCode = self.into();
-
         e.write_u8(code.into())?;
         match self {
             AgentCircuitId(id) | AgentRemoteId(id) | SubscriberId(id) => {
@@ -229,7 +206,7 @@ impl RelayFlags {
     }
     /// get the status of the unicast flag
     pub fn unicast(&self) -> bool {
-        (self.0 & 0x80) >> 7 == 1
+        (self.0 & 0x80) >> (u8::BITS - 1) == 1
     }
     /// set the unicast bit, returns a new Flags
     pub fn set_unicast(mut self) -> Self {
@@ -333,15 +310,16 @@ impl From<RelayCode> for u8 {
 
 impl From<&RelayInfo> for RelayCode {
     fn from(info: &RelayInfo) -> Self {
+        use RelayInfo::*;
         match info {
-            RelayInfo::AgentCircuitId(_) => RelayCode::AgentCircuitId,
-            RelayInfo::AgentRemoteId(_) => RelayCode::AgentRemoteId,
-            RelayInfo::DocsisDeviceClass(_) => RelayCode::DocsisDeviceClass,
-            RelayInfo::LinkSelection(_) => RelayCode::LinkSelection,
-            RelayInfo::SubscriberId(_) => RelayCode::SubscriberId,
-            RelayInfo::RelayAgentFlags(_) => RelayCode::RelayAgentFlags,
-            RelayInfo::ServerIdentifierOverride(_) => RelayCode::ServerIdentifierOverride,
-            RelayInfo::Unknown(unknown) => RelayCode::Unknown(unknown.code),
+            AgentCircuitId(_) => RelayCode::AgentCircuitId,
+            AgentRemoteId(_) => RelayCode::AgentRemoteId,
+            DocsisDeviceClass(_) => RelayCode::DocsisDeviceClass,
+            LinkSelection(_) => RelayCode::LinkSelection,
+            SubscriberId(_) => RelayCode::SubscriberId,
+            RelayAgentFlags(_) => RelayCode::RelayAgentFlags,
+            ServerIdentifierOverride(_) => RelayCode::ServerIdentifierOverride,
+            Unknown(unknown) => RelayCode::Unknown(unknown.code),
         }
     }
 }
@@ -375,18 +353,6 @@ mod tests {
         assert_eq!(buf, opt);
         Ok(())
     }
-    // #[test]
-    // fn test_opts() -> Result<()> {
-    //     let input = binput();
-    //     println!("{:?}", input);
-    //     let opts = DhcpOptions::decode(&mut Decoder::new(&input))?;
-
-    //     let mut output = Vec::new();
-    //     let _len = opts.encode(&mut Encoder::new(&mut output))?;
-    //     // not comparing len as we don't add PAD bytes
-    //     // assert_eq!(input.len(), len);
-    //     Ok(())
-    // }
 
     #[test]
     fn test_ip() -> Result<()> {
