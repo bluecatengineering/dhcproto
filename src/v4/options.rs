@@ -7,13 +7,31 @@ use crate::{
     v4::relay,
 };
 
-/// Options for DHCP. Defined as a HashMap for quick access
-/// This implemention of options ignores PAD bytes.
+/// Options for DHCP. This implemention of options ignores PAD bytes.
+///
+/// ex
+/// ```rust
+/// use dhcproto::v4;
+///
+/// let mut msg = v4::Message::default();
+///  msg.opts_mut()
+///     .insert(v4::DhcpOption::MessageType(v4::MessageType::Discover));
+///  msg.opts_mut().insert(v4::DhcpOption::ClientIdentifier(
+///      vec![0, 1, 2, 3, 4, 5],
+///  ));
+///  msg.opts_mut()
+///      .insert(v4::DhcpOption::ParameterRequestList(vec![
+///          v4::OptionCode::SubnetMask,
+///          v4::OptionCode::Router,
+///          v4::OptionCode::DomainNameServer,
+///          v4::OptionCode::DomainName,
+///       ]));
+/// ```
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct DhcpOptions(HashMap<OptionCode, DhcpOption>);
 
 impl DhcpOptions {
-    /// Get the data for a particular OptionCode
+    /// Get the data for a particular [`OptionCode`]
     pub fn get(&self, code: OptionCode) -> Option<&DhcpOption> {
         self.0.get(&code)
     }

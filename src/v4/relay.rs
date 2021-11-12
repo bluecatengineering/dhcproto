@@ -4,23 +4,44 @@ use std::{collections::HashMap, fmt, net::Ipv4Addr};
 use crate::{Decodable, Encodable};
 
 /// Collection of relay agent information
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// You can create/modify it, then insert into a message opts section
+/// in [`DhcpOption::RelayAgentInformation`]
+///
+/// ```rust
+/// use dhcproto::v4::{self, relay::{RelayInfo, RelayAgentInformation}};
+///
+/// let mut info = RelayAgentInformation::default();
+/// info.insert(RelayInfo::LinkSelection("1.2.3.4".parse().unwrap()));
+/// let mut msg = v4::Message::default();
+/// msg.opts_mut()
+///     .insert(v4::DhcpOption::RelayAgentInformation(info));
+/// ```
+///
+/// [`DhcpOption::RelayAgentInformation`]: crate::v4::DhcpOption::RelayAgentInformation
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct RelayAgentInformation(HashMap<RelayCode, RelayInfo>);
 
 impl RelayAgentInformation {
-    /// Get the data for a particular RelayCode
+    /// Get the data for a particular [`RelayCode`]
+    ///
+    /// [`RelayCode`]: crate::v4::relay::RelayCode
     pub fn get(&self, code: RelayCode) -> Option<&RelayInfo> {
         self.0.get(&code)
     }
-    /// Get the mutable data for a particular OptionCode
+    /// Get the mutable data for a particular [`RelayCode`]
+    ///
+    /// [`RelayCode`]: crate::v4::relay::RelayCode
     pub fn get_mut(&mut self, code: RelayCode) -> Option<&mut RelayInfo> {
         self.0.get_mut(&code)
     }
-    /// remove option
+    /// remove sub option
     pub fn remove(&mut self, code: RelayCode) -> Option<RelayInfo> {
         self.0.remove(&code)
     }
-    /// insert a new option
+    /// insert a new [`RelayInfo`]
+    ///
+    /// [`RelayInfo`]: crate::v4::relay::RelayInfo
     pub fn insert(&mut self, info: RelayInfo) -> Option<RelayInfo> {
         self.0.insert((&info).into(), info)
     }
