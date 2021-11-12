@@ -1,4 +1,3 @@
-use core::slice;
 use std::net::Ipv6Addr;
 
 use crate::{
@@ -47,7 +46,7 @@ impl DhcpOptions {
         self.0.iter()
     }
     /// return a mutable ref to an iterator
-    pub fn iter_mut(&mut self) -> slice::IterMut<'_, DhcpOption> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut DhcpOption> {
         self.0.iter_mut()
     }
 }
