@@ -27,7 +27,7 @@ impl fmt::Display for Flags {
 impl Flags {
     /// Create new Flags from u16
     pub fn new(n: u16) -> Self {
-        Flags(n)
+        Self(n)
     }
     /// get the status of the broadcast flag
     pub fn broadcast(&self) -> bool {
@@ -42,7 +42,7 @@ impl Flags {
 
 impl From<u16> for Flags {
     fn from(n: u16) -> Self {
-        Flags(n)
+        Self(n)
     }
 }
 impl From<Flags> for u16 {

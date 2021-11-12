@@ -1022,6 +1022,21 @@ pub struct UnknownOption {
     bytes: Vec<u8>,
 }
 
+impl UnknownOption {
+    /// return the relay code
+    pub fn code(&self) -> OptionCode {
+        self.code.into()
+    }
+    /// return the data for this code
+    pub fn data(&self) -> &[u8] {
+        &self.bytes
+    }
+    /// take ownership and return the parts of this
+    pub fn into_parts(self) -> (OptionCode, Vec<u8>) {
+        (self.code.into(), self.bytes)
+    }
+}
+
 /// The DHCP message type
 /// <https://datatracker.ietf.org/doc/html/rfc2131#section-3.1>
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
