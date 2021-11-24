@@ -1,0 +1,36 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- added clear/is_empty/retain to v4 opts & relay agent sub opts
+
+## [0.4.1]
+
+### Added
+
+- expose methods so one can actually create RelayInfo/RelayAgentInformation
+- methods to get the data out of various Unknown variants for opts/relay
+- added option 118 subnet selection
+- return impl Iterator for relay/opt iterator methods
+- more docs for opts/relay info
+
+### Changed
+
+- `DhcpOption` variants added for v4
+- some opt method return types have changed `iter()`/`iter_mut()`
+
+## [0.3.0]
+
+### Added
+
+### Changed
+
+- `sname`/`fname` types changed from `String` to `[u8]`
+- perf improved for `Decoder`
