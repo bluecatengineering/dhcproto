@@ -53,6 +53,21 @@ impl RelayAgentInformation {
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (&RelayCode, &mut RelayInfo)> {
         self.0.iter_mut()
     }
+    /// clear all options
+    pub fn clear(&mut self) {
+        self.0.clear()
+    }
+    /// Returns `true` if there are no options
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+    /// Retans only the elements specified by the predicate
+    pub fn retain<F>(&mut self, pred: F)
+    where
+        F: FnMut(&OptionCode, &mut DhcpOption) -> bool,
+    {
+        self.0.retain(pred)
+    }
 }
 
 impl Decodable for RelayAgentInformation {
