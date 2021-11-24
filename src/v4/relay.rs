@@ -64,7 +64,7 @@ impl RelayAgentInformation {
     /// Retans only the elements specified by the predicate
     pub fn retain<F>(&mut self, pred: F)
     where
-        F: FnMut(&OptionCode, &mut DhcpOption) -> bool,
+        F: FnMut(&RelayCode, &mut RelayInfo) -> bool,
     {
         self.0.retain(pred)
     }
