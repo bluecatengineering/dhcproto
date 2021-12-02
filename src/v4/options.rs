@@ -654,11 +654,11 @@ impl Decodable for DhcpOption {
             }
             OptionCode::RootPath => {
                 let length = decoder.read_u8()?;
-                DomainName(decoder.read_string(length as usize)?)
+                RootPath(decoder.read_string(length as usize)?)
             }
             OptionCode::ExtensionsPath => {
                 let length = decoder.read_u8()?;
-                DomainName(decoder.read_string(length as usize)?)
+                ExtensionsPath(decoder.read_string(length as usize)?)
             }
             OptionCode::IpForwarding => {
                 let _ = decoder.read_u8()?;
@@ -730,7 +730,7 @@ impl Decodable for DhcpOption {
             }
             OptionCode::NISDomain => {
                 let length = decoder.read_u8()?;
-                DomainName(decoder.read_string(length as usize)?)
+                NISDomain(decoder.read_string(length as usize)?)
             }
             OptionCode::NIS => {
                 let length = decoder.read_u8()?;
