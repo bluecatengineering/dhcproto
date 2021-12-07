@@ -9,7 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- added clear/is_empty/retain to v4 opts & relay agent sub opts
+## [0.5.0]
+
+### Added
+
+- added `clear`/`is_empty`/`retain` to v4 opts & relay agent sub-opts
+
+### Fixed
+
+- **breaking** options enum for `v4::DhcpOption` was decoding into the wrong variants for a few types
 
 ## [0.4.1]
 
