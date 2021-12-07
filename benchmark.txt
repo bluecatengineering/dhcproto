@@ -1,0 +1,118 @@
+
+running 25 tests
+test encoder::tests::basic_encode ... ignored
+test v4::flags::tests::test_broadcast ... ignored
+test v4::options::tests::test_byte ... ignored
+test v4::options::tests::test_ip ... ignored
+test v4::options::tests::test_ips ... ignored
+test v4::options::tests::test_mtype ... ignored
+test v4::options::tests::test_ntype ... ignored
+test v4::options::tests::test_num ... ignored
+test v4::options::tests::test_opts ... ignored
+test v4::options::tests::test_pair_ips ... ignored
+test v4::options::tests::test_str ... ignored
+test v4::options::tests::test_unknown ... ignored
+test v4::relay::tests::test_flags ... ignored
+test v4::relay::tests::test_ip ... ignored
+test v4::relay::tests::test_str ... ignored
+test v4::relay::tests::test_unicast ... ignored
+test v4::relay::tests::test_unknown ... ignored
+test v4::tests::decode_bootreq ... ignored
+test v4::tests::decode_discover ... ignored
+test v4::tests::decode_offer ... ignored
+test v4::tests::decode_offer_two ... ignored
+test v6::tests::decode_advertise ... ignored
+test v6::tests::decode_reply ... ignored
+test v6::tests::decode_request ... ignored
+test v6::tests::decode_solicit ... ignored
+
+test result: ok. 0 passed; 0 failed; 25 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+WARNING: HTML report generation will become a non-default optional feature in Criterion.rs 0.4.0.
+This feature is being moved to cargo-criterion (https://github.com/bheisler/cargo-criterion) and will be optional in a future version of Criterion.rs. To silence this warning, either switch to cargo-criterion or enable the 'html_reports' feature in your Cargo.toml.
+
+Benchmarking decode/decode_offer
+Benchmarking decode/decode_offer: Warming up for 3.0000 s
+Benchmarking decode/decode_offer: Collecting 100 samples in estimated 5.0030 s (7.2M iterations)
+Benchmarking decode/decode_offer: Analyzing
+decode/decode_offer     time:   [687.12 ns 691.30 ns 697.27 ns]
+                        change: [+1.3053% +2.0502% +3.0897%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 11 outliers among 100 measurements (11.00%)
+  3 (3.00%) high mild
+  8 (8.00%) high severe
+Benchmarking decode/decode_bootreq
+Benchmarking decode/decode_bootreq: Warming up for 3.0000 s
+Benchmarking decode/decode_bootreq: Collecting 100 samples in estimated 5.0002 s (45M iterations)
+Benchmarking decode/decode_bootreq: Analyzing
+decode/decode_bootreq   time:   [109.46 ns 109.87 ns 110.38 ns]
+                        change: [-1.6418% -0.7012% +0.2216%] (p = 0.16 > 0.05)
+                        No change in performance detected.
+Found 6 outliers among 100 measurements (6.00%)
+  1 (1.00%) high mild
+  5 (5.00%) high severe
+Benchmarking decode/decode_discover
+Benchmarking decode/decode_discover: Warming up for 3.0000 s
+Benchmarking decode/decode_discover: Collecting 100 samples in estimated 5.0005 s (15M iterations)
+Benchmarking decode/decode_discover: Analyzing
+decode/decode_discover  time:   [326.31 ns 327.24 ns 328.21 ns]
+                        change: [+0.6315% +1.0727% +1.5019%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+Benchmarking decode/decode_other_offer
+Benchmarking decode/decode_other_offer: Warming up for 3.0000 s
+Benchmarking decode/decode_other_offer: Collecting 100 samples in estimated 5.0030 s (7.0M iterations)
+Benchmarking decode/decode_other_offer: Analyzing
+decode/decode_other_offer
+                        time:   [714.31 ns 716.09 ns 718.85 ns]
+                        change: [-2.1253% -1.6953% -1.2804%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+
+WARNING: HTML report generation will become a non-default optional feature in Criterion.rs 0.4.0.
+This feature is being moved to cargo-criterion (https://github.com/bheisler/cargo-criterion) and will be optional in a future version of Criterion.rs. To silence this warning, either switch to cargo-criterion or enable the 'html_reports' feature in your Cargo.toml.
+
+Benchmarking encode/encode_offer
+Benchmarking encode/encode_offer: Warming up for 3.0000 s
+Benchmarking encode/encode_offer: Collecting 100 samples in estimated 5.0030 s (5.0M iterations)
+Benchmarking encode/encode_offer: Analyzing
+encode/encode_offer     time:   [956.79 ns 960.49 ns 966.92 ns]
+                        change: [+2.6209% +3.0151% +3.5842%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high severe
+Benchmarking encode/encode_bootreq
+Benchmarking encode/encode_bootreq: Warming up for 3.0000 s
+Benchmarking encode/encode_bootreq: Collecting 100 samples in estimated 5.0000 s (82M iterations)
+Benchmarking encode/encode_bootreq: Analyzing
+encode/encode_bootreq   time:   [60.788 ns 61.000 ns 61.247 ns]
+                        change: [+2.4986% +3.3414% +4.2871%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 9 outliers among 100 measurements (9.00%)
+  7 (7.00%) high mild
+  2 (2.00%) high severe
+Benchmarking encode/encode_discover
+Benchmarking encode/encode_discover: Warming up for 3.0000 s
+Benchmarking encode/encode_discover: Collecting 100 samples in estimated 5.0009 s (4.6M iterations)
+Benchmarking encode/encode_discover: Analyzing
+encode/encode_discover  time:   [1.0672 us 1.0691 us 1.0710 us]
+                        change: [-0.3938% +0.0516% +0.4081%] (p = 0.82 > 0.05)
+                        No change in performance detected.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+Benchmarking encode/encode_other_offer
+Benchmarking encode/encode_other_offer: Warming up for 3.0000 s
+Benchmarking encode/encode_other_offer: Collecting 100 samples in estimated 5.0010 s (5.1M iterations)
+Benchmarking encode/encode_other_offer: Analyzing
+encode/encode_other_offer
+                        time:   [958.78 ns 961.12 ns 963.98 ns]
+                        change: [-0.7008% +0.0792% +0.8962%] (p = 0.85 > 0.05)
+                        No change in performance detected.
+Found 7 outliers among 100 measurements (7.00%)
+  3 (3.00%) high mild
+  4 (4.00%) high severe
+

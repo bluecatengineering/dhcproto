@@ -85,7 +85,6 @@ impl<'a> Decoder<'a> {
         match nul_idx {
             Some(n) if n == 0 => Ok(None),
             Some(n) => Ok(Some(CStr::from_bytes_with_nul(&bytes[..=n])?.to_owned())),
-            // TODO: error?
             None => Ok(None),
         }
     }
@@ -96,7 +95,6 @@ impl<'a> Decoder<'a> {
         match nul_idx {
             Some(n) if n == 0 => Ok(None),
             Some(n) => Ok(Some(bytes[..=n].to_vec())),
-            // TODO: error?
             None => Ok(None),
         }
     }
