@@ -1064,15 +1064,15 @@ impl UnknownOption {
             data,
         }
     }
-    /// return the relay code
+    /// return the option code
     pub fn code(&self) -> OptionCode {
         self.code.into()
     }
-    /// return the data for this code
+    /// return the data for this option
     pub fn data(&self) -> &[u8] {
         &self.data
     }
-    /// take ownership and return the parts of this
+    /// consume into parts
     pub fn into_parts(self) -> (OptionCode, Vec<u8>) {
         (self.code.into(), self.data)
     }
