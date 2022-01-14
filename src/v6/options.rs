@@ -121,24 +121,24 @@ pub struct VendorOpts {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VendorClass {
     pub num: u32,
-    pub data: Vec<String>,
+    pub data: Vec<Vec<u8>>,
     // each item in data is [len (2 bytes) | data]
 }
 
 /// user class
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UserClass {
-    pub data: Vec<String>,
+    pub data: Vec<Vec<u8>>,
     // each item in data is [len (2 bytes) | data]
 }
 
 #[inline]
-fn decode_strings(decoder: &'_ mut Decoder<'_>) -> Vec<String> {
+fn decode_data(decoder: &'_ mut Decoder<'_>) -> Vec<Vec<u8>> {
     let mut data = Vec::new();
     while let Ok(len) = decoder.read_u16() {
         // if we can read the len and the string
-        match decoder.read_string(len as usize) {
-            Ok(s) => data.push(s),
+        match decoder.read_slice(len as usize) {
+            Ok(s) => data.push(s.to_vec()),
             // push, otherwise stop
             _ => break,
         }
@@ -511,7 +511,7 @@ impl Decodable for DhcpOption {
             OptionCode::UserClass => {
                 let buf = decoder.read_slice(len)?;
                 DhcpOption::UserClass(UserClass {
-                    data: decode_strings(&mut Decoder::new(buf)),
+                    data: decode_data(&mut Decoder::new(buf)),
                 })
             }
             OptionCode::VendorClass => {
@@ -519,7 +519,7 @@ impl Decodable for DhcpOption {
                 let buf = decoder.read_slice(len - 4)?;
                 DhcpOption::VendorClass(VendorClass {
                     num,
-                    data: decode_strings(&mut Decoder::new(buf)),
+                    data: decode_data(&mut Decoder::new(buf)),
                 })
             }
             OptionCode::VendorOpts => DhcpOption::VendorOpts(VendorOpts {
@@ -655,7 +655,7 @@ impl Encodable for DhcpOption {
                 e.write_u16(data.len() as u16)?;
                 for s in data {
                     e.write_u16(s.len() as u16)?;
-                    e.write_slice(s.as_bytes())?;
+                    e.write_slice(s)?;
                 }
             }
             DhcpOption::VendorClass(VendorClass { num, data }) => {
@@ -663,7 +663,7 @@ impl Encodable for DhcpOption {
                 e.write_u32(*num)?;
                 for s in data {
                     e.write_u16(s.len() as u16)?;
-                    e.write_slice(s.as_bytes())?;
+                    e.write_slice(s)?;
                 }
             }
             DhcpOption::VendorOpts(VendorOpts { num, opts }) => {
