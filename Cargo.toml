@@ -1,8 +1,8 @@
 [package]
 name = "dhcproto"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Ian Laidlaw <ilaidlaw@bluecatnetworks.com>", "Evan Cameron <cameron.evan@gmail.com>"]
-edition = "2018"
+edition = "2021"
 description = """
 A DHCP parser and encoder for DHCPv4/DHCPv6. `dhcproto` aims to be a functionally complete DHCP implementation.
 """
