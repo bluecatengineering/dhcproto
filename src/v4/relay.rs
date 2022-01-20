@@ -155,9 +155,7 @@ impl Decodable for RelayInfo {
                 ServerIdentifierOverride(d.read_ipv4(len)?)
             }
             // we have codes for these but not full type definitions yet
-            code
-            @
-            (RelayCode::Authentication
+            code @ (RelayCode::Authentication
             | RelayCode::VirtualSubnet
             | RelayCode::VirtualSubnetControl
             | RelayCode::RadiusAttributes
