@@ -1096,6 +1096,8 @@ pub enum MessageType {
     Nak,
     /// DHCPRelease
     Release,
+    /// DHCPInform
+    Inform,
     /// an unknown message type
     Unknown(u8),
 }
@@ -1110,6 +1112,7 @@ impl From<u8> for MessageType {
             5 => MessageType::Ack,
             6 => MessageType::Nak,
             7 => MessageType::Release,
+            8 => MessageType::Inform,
             n => MessageType::Unknown(n),
         }
     }
@@ -1124,6 +1127,7 @@ impl From<MessageType> for u8 {
             MessageType::Ack => 5,
             MessageType::Nak => 6,
             MessageType::Release => 7,
+            MessageType::Inform => 8,
             MessageType::Unknown(n) => n,
         }
     }
