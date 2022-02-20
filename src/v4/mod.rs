@@ -282,7 +282,11 @@ impl Message {
     /// Set the message's hops.
     pub fn set_chaddr(&mut self, chaddr: &[u8]) -> &mut Self {
         let mut new_chaddr = [0; 16];
-        new_chaddr.copy_from_slice(chaddr);
+        if chaddr.len() >= 16 {
+            new_chaddr.copy_from_slice(&chaddr[..16]);
+        } else {
+            new_chaddr[..chaddr.len()].copy_from_slice(chaddr);
+        }
         self.hlen = chaddr.len() as u8;
         self.chaddr = new_chaddr;
         self
