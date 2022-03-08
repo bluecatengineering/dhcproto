@@ -3,8 +3,11 @@ use crate::{
     encoder::{Encodable, Encoder},
     error::{DecodeResult, EncodeResult},
 };
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// Opcode of Message
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Opcode {
     /// BootRequest - <https://datatracker.ietf.org/doc/html/rfc1534#section-2>

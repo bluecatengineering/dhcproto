@@ -4,7 +4,11 @@ use crate::{
     error::{DecodeResult, EncodeResult},
 };
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 /// Hardware type of message
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
 pub enum HType {
     /// 1 Ethernet

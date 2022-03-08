@@ -80,6 +80,9 @@
 //!
 use std::{net::Ipv4Addr, str::Utf8Error};
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 mod flags;
 mod htype;
 mod opcode;
@@ -130,6 +133,7 @@ pub const CLIENT_PORT: u16 = 68;
 /// |                          options (variable)                   |
 /// +---------------------------------------------------------------+
 /// ```
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Message {
     /// op code / message type
@@ -562,6 +566,15 @@ mod tests {
         );
         msg.set_chaddr(&[0, 1, 2, 3, 4, 5]);
         assert_eq!(msg.chaddr().len(), 6);
+        Ok(())
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_json() -> Result<()> {
+        let msg = Message::decode(&mut Decoder::new(&bootreq()))?;
+        let s = serde_json::to_string(&msg)?;
+        println!("{:?}", s);
         Ok(())
     }
 

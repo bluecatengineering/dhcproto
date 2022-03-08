@@ -6,7 +6,11 @@ use crate::{
     error::{DecodeResult, EncodeResult},
 };
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 /// Represents available flags on message
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Default, Clone, PartialEq, Eq)]
 pub struct Flags(u16);
 
