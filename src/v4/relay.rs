@@ -3,6 +3,9 @@ use std::{collections::HashMap, fmt, net::Ipv4Addr};
 
 use crate::{Decodable, Encodable};
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 /// Collection of relay agent information
 ///
 /// You can create/modify it, then insert into a message opts section
@@ -19,6 +22,7 @@ use crate::{Decodable, Encodable};
 /// ```
 ///
 /// [`DhcpOption::RelayAgentInformation`]: crate::v4::DhcpOption::RelayAgentInformation
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct RelayAgentInformation(HashMap<RelayCode, RelayInfo>);
 
@@ -86,6 +90,7 @@ impl Encodable for RelayAgentInformation {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelayInfo {
     /// 1 - <https://datatracker.ietf.org/doc/html/rfc3046>
@@ -210,6 +215,8 @@ impl Encodable for RelayInfo {
         Ok(())
     }
 }
+
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Default, Clone, PartialEq, Eq)]
 pub struct RelayFlags(u8);
 
@@ -255,6 +262,7 @@ impl From<RelayFlags> for u8 {
 }
 
 /// An as-of-yet unimplemented relay info
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnknownInfo {
     code: u8,
@@ -283,6 +291,7 @@ impl UnknownInfo {
 }
 
 /// relay code, represented as a u8
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum RelayCode {
     AgentCircuitId,

@@ -7,6 +7,9 @@ use crate::{
     v4::relay,
 };
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 /// Options for DHCP. This implemention of options ignores PAD bytes.
 ///
 /// ex
@@ -27,6 +30,7 @@ use crate::{
 ///          v4::OptionCode::DomainName,
 ///       ]));
 /// ```
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct DhcpOptions(HashMap<OptionCode, DhcpOption>);
 
@@ -135,6 +139,7 @@ impl Encodable for DhcpOptions {
 }
 
 /// Each option type is represented by an 8-bit code
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
 pub enum OptionCode {
     /// 0 Padding
@@ -406,6 +411,7 @@ impl From<OptionCode> for u8 {
 }
 
 /// DHCP Options
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DhcpOption {
     /// 0 Padding
@@ -540,6 +546,7 @@ pub enum DhcpOption {
 }
 
 /// NetBIOS allows several different node types
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum NodeType {
     /// Broadcast
@@ -1051,6 +1058,7 @@ impl From<&DhcpOption> for OptionCode {
 }
 
 /// An as-of-yet unimplemented option type
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnknownOption {
     code: u8,
@@ -1080,6 +1088,7 @@ impl UnknownOption {
 
 /// The DHCP message type
 /// <https://datatracker.ietf.org/doc/html/rfc2131#section-3.1>
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum MessageType {
     /// DHCPDiscover
