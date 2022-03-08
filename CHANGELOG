@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **breaking** DHCP Inform message variant
 
+### Changed
+
+- bug in `set_chaddr` where `hlen` was not set
+
+
 ## [0.6.0]
 
 ### Added

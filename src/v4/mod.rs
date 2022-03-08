@@ -94,7 +94,7 @@ pub use crate::{
     error::*,
 };
 
-const MAGIC: [u8; 4] = [99, 130, 83, 99];
+pub const MAGIC: [u8; 4] = [99, 130, 83, 99];
 
 /// default dhcpv4 server port
 pub const SERVER_PORT: u16 = 67;
@@ -220,7 +220,7 @@ impl Message {
         new_chaddr[..len].copy_from_slice(chaddr);
 
         Self {
-            hlen: chaddr.len() as u8,
+            hlen: len as u8,
             xid,
             flags: Flags::default(),
             ciaddr,
@@ -279,7 +279,7 @@ impl Message {
         &self.chaddr[..(self.hlen as usize)]
     }
 
-    /// Set the message's hops.
+    /// Set the message's chaddr. `chaddr` can only up to 16 bytes in length
     pub fn set_chaddr(&mut self, chaddr: &[u8]) -> &mut Self {
         let mut new_chaddr = [0; 16];
         if chaddr.len() >= 16 {
@@ -548,6 +548,20 @@ mod tests {
         let mut e = Encoder::new(&mut buf);
         msg.encode(&mut e)?;
         assert_eq!(buf, bootreq());
+        Ok(())
+    }
+
+    #[test]
+    fn test_set_chaddr() -> Result<()> {
+        let mut msg = Message::new(
+            Ipv4Addr::UNSPECIFIED,
+            Ipv4Addr::UNSPECIFIED,
+            Ipv4Addr::UNSPECIFIED,
+            Ipv4Addr::UNSPECIFIED,
+            &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        );
+        msg.set_chaddr(&[0, 1, 2, 3, 4, 5]);
+        assert_eq!(msg.chaddr().len(), 6);
         Ok(())
     }
 
