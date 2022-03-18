@@ -54,6 +54,9 @@
 //!
 mod options;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 use std::convert::TryInto;
 
 // re-export submodules from proto::msg
@@ -110,6 +113,7 @@ pub const CLIENT_PORT: u16 = 546;
 ///                           field (4 octets less than the size of the
 ///                           message).
 /// ```
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Message {
     /// message type
@@ -202,6 +206,7 @@ impl Message {
 
 /// DHCPv6 message types
 /// <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum MessageType {
     // RFC 3315
@@ -393,6 +398,17 @@ mod tests {
     #[test]
     fn decode_reply() -> Result<()> {
         decode_ipv6(reply(), MessageType::Reply)?;
+        Ok(())
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_json_v6() -> Result<()> {
+        let msg = Message::decode(&mut Decoder::new(&solicit()))?;
+        let s = serde_json::to_string_pretty(&msg)?;
+        println!("{s}");
+        let other = serde_json::from_str(&s)?;
+        assert_eq!(msg, other);
         Ok(())
     }
 

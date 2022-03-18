@@ -1,3 +1,6 @@
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 use std::net::Ipv6Addr;
 
 use crate::{
@@ -12,6 +15,7 @@ use crate::{
 // <https://datatracker.ietf.org/doc/html/rfc8415#section-6.6>
 
 /// <https://datatracker.ietf.org/doc/html/rfc8415#section-21>
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct DhcpOptions(Vec<DhcpOption>);
 
@@ -52,6 +56,7 @@ impl DhcpOptions {
 }
 
 /// DHCPv6 option types
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DhcpOption {
     /// 1 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.2>
@@ -110,6 +115,7 @@ pub struct InterfaceId {
 }
 
 /// vendor options
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VendorOpts {
     pub num: u32,
@@ -118,6 +124,7 @@ pub struct VendorOpts {
 }
 
 /// vendor class
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VendorClass {
     pub num: u32,
@@ -126,6 +133,7 @@ pub struct VendorClass {
 }
 
 /// user class
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UserClass {
     pub data: Vec<Vec<u8>>,
@@ -147,6 +155,7 @@ fn decode_data(decoder: &'_ mut Decoder<'_>) -> Vec<Vec<u8>> {
 }
 
 /// Server Unicast
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StatusCode {
     pub status: Status,
@@ -155,6 +164,7 @@ pub struct StatusCode {
 }
 
 /// Status code for Server Unicast
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Status {
     Success,
@@ -248,6 +258,7 @@ impl From<Status> for u16 {
 }
 
 /// Authentication
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Authentication {
     pub proto: u8,
@@ -272,6 +283,7 @@ impl Decodable for Authentication {
 }
 
 /// Relay Msg
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RelayMsg {
     /// DHCP-relay-message In a Relay-forward message, the received
@@ -297,6 +309,7 @@ impl RelayMsg {
 
 /// Option Request Option
 /// <https://datatracker.ietf.org/doc/html/rfc8415#section-21.7>
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ORO {
     // 2 * num opts
@@ -320,6 +333,7 @@ impl Decodable for ORO {
 }
 
 /// Identity Association for Temporary Addresses
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IATA {
     pub id: u32,
@@ -339,6 +353,7 @@ impl Decodable for IATA {
 }
 
 /// Identity Association for Non-Temporary Addresses
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IANA {
     pub id: u32,
@@ -360,6 +375,7 @@ impl Decodable for IANA {
 }
 
 /// Identity Association Prefix Delegation
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IAPD {
     pub id: u32,
@@ -381,6 +397,7 @@ impl Decodable for IAPD {
 }
 
 /// Identity Association Prefix Delegation Prefix Option
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IAPDPrefix {
     pub preferred_lifetime: u32,
@@ -404,6 +421,7 @@ impl Decodable for IAPDPrefix {
 }
 
 /// Identity Association Address
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IAAddr {
     pub addr: Ipv6Addr,
@@ -427,6 +445,7 @@ impl Decodable for IAAddr {
 }
 
 /// fallback for options not yet implemented
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnknownOption {
     code: u16,
@@ -721,6 +740,7 @@ impl Encodable for DhcpOption {
 }
 
 /// option code type
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum OptionCode {
     /// 1
