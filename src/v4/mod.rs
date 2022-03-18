@@ -572,9 +572,11 @@ mod tests {
     #[cfg(feature = "serde")]
     #[test]
     fn test_json() -> Result<()> {
-        let msg = Message::decode(&mut Decoder::new(&bootreq()))?;
-        let s = serde_json::to_string(&msg)?;
-        println!("{:?}", s);
+        let msg = Message::decode(&mut Decoder::new(&offer()))?;
+        let s = serde_json::to_string_pretty(&msg)?;
+        println!("{s}");
+        let other = serde_json::from_str(&s)?;
+        assert_eq!(msg, other);
         Ok(())
     }
 
