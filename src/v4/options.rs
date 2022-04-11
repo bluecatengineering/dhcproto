@@ -840,7 +840,7 @@ impl Decodable for DhcpOption {
                 RelayAgentInformation(relay::RelayAgentInformation::decode(&mut dec)?)
             }
             OptionCode::ClientLastTransactionTime => {
-                let _ = decoder.read_u8()?;
+                let _ = decoder.read_u8()?; // always 4
                 ClientLastTransactionTime(decoder.read_u32()?)
             }
             OptionCode::AssociatedIp => {
@@ -1294,10 +1294,10 @@ mod tests {
     fn test_unknown() -> Result<()> {
         test_opt(
             DhcpOption::Unknown(UnknownOption {
-                code: 91,
+                code: 97,
                 data: vec![1, 2, 3, 4],
             }),
-            vec![91, 4, 1, 2, 3, 4],
+            vec![97, 4, 1, 2, 3, 4],
         )?;
 
         Ok(())
