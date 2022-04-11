@@ -253,6 +253,10 @@ pub enum OptionCode {
     ClassIdentifier,
     /// 61 Client Identifier
     ClientIdentifier,
+    /// 91 client-last-transaction-time - https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1
+    ClientLastTransactionTime,
+    /// 92 associated-ip - https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1
+    AssociatedIp,
     /// 82 Relay Agent Information
     RelayAgentInformation,
     /// 118 Subnet option - <https://datatracker.ietf.org/doc/html/rfc3011>
@@ -326,6 +330,8 @@ impl From<u8> for OptionCode {
             60 => ClassIdentifier,
             61 => ClientIdentifier,
             82 => RelayAgentInformation,
+            91 => ClientLastTransactionTime,
+            92 => AssociatedIp,
             118 => SubnetSelection,
             255 => End,
             // TODO: implement more
@@ -397,6 +403,8 @@ impl From<OptionCode> for u8 {
             ClassIdentifier => 60,
             ClientIdentifier => 61,
             RelayAgentInformation => 82,
+            ClientLastTransactionTime => 91,
+            AssociatedIp => 92,
             SubnetSelection => 118,
             End => 255,
             // TODO: implement more
@@ -531,6 +539,10 @@ pub enum DhcpOption {
     ClientIdentifier(Vec<u8>),
     /// 82 Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>
     RelayAgentInformation(relay::RelayAgentInformation),
+    /// 91 client-last-transaction-time - https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1
+    ClientLastTransactionTime(u32),
+    /// 92 associated-ip - https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1
+    AssociatedIp(Vec<Ipv4Addr>),
     /// 118 Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>
     SubnetSelection(Ipv4Addr),
     /// Unknown option
@@ -827,6 +839,14 @@ impl Decodable for DhcpOption {
                 let mut dec = Decoder::new(decoder.read_slice(length as usize)?);
                 RelayAgentInformation(relay::RelayAgentInformation::decode(&mut dec)?)
             }
+            OptionCode::ClientLastTransactionTime => {
+                let _ = decoder.read_u8()?;
+                ClientLastTransactionTime(decoder.read_u32()?)
+            }
+            OptionCode::AssociatedIp => {
+                let length = decoder.read_u8()?;
+                AssociatedIp(decoder.read_ipv4s(length as usize)?)
+            }
             OptionCode::SubnetSelection => {
                 let len = decoder.read_u8()?; // always 4
                 SubnetSelection(decoder.read_ipv4(len as usize)?)
@@ -885,7 +905,8 @@ impl Encodable for DhcpOption {
             | NIS(ips)
             | NTPServers(ips)
             | NetBiosNameServers(ips)
-            | NetBiosDatagramDistributionServer(ips) => {
+            | NetBiosDatagramDistributionServer(ips)
+            | AssociatedIp(ips) => {
                 e.write_u8(code.into())?;
                 e.write_u8(ips.len() as u8 * 4)?;
                 for ip in ips {
@@ -932,7 +953,8 @@ impl Encodable for DhcpOption {
             | TcpKeepaliveInterval(num)
             | AddressLeaseTime(num)
             | Renewal(num)
-            | Rebinding(num) => {
+            | Rebinding(num)
+            | ClientLastTransactionTime(num) => {
                 e.write_u8(code.into())?;
                 e.write_u8(4)?;
                 e.write_u32(*num)?
@@ -1042,6 +1064,8 @@ impl From<&DhcpOption> for OptionCode {
             ClassIdentifier(_) => OptionCode::ClassIdentifier,
             ClientIdentifier(_) => OptionCode::ClientIdentifier,
             RelayAgentInformation(_) => OptionCode::RelayAgentInformation,
+            ClientLastTransactionTime(_) => OptionCode::ClientLastTransactionTime,
+            AssociatedIp(_) => OptionCode::AssociatedIp,
             SubnetSelection(_) => OptionCode::SubnetSelection,
             End => OptionCode::End,
             // TODO: implement more
@@ -1098,6 +1122,26 @@ pub enum MessageType {
     Release,
     /// DHCPInform
     Inform,
+    /// DHCPForceRenew - <https://www.rfc-editor.org/rfc/rfc3203.html>
+    ForceRenew,
+    /// DHCPLeaseQuery - <https://www.rfc-editor.org/rfc/rfc4388#section-6.1>
+    LeaseQuery,
+    /// DHCPLeaseUnassigned
+    LeaseUnassigned,
+    /// DHCPLeaseUnknown
+    LeaseUnknown,
+    /// DHCPLeaseActive
+    LeaseActive,
+    /// DHCPBulkLeaseQuery - <https://www.rfc-editor.org/rfc/rfc6926.html>
+    BulkLeaseQuery,
+    /// DHCPLeaseQueryDone
+    LeaseQueryDone,
+    /// DHCPActiveLeaseQuery - <https://www.rfc-editor.org/rfc/rfc7724.html>
+    ActiveLeaseQuery,
+    /// DHCPLeaseQueryStatus
+    LeaseQueryStatus,
+    /// DHCPTLS
+    Tls,
     /// an unknown message type
     Unknown(u8),
 }
@@ -1113,6 +1157,16 @@ impl From<u8> for MessageType {
             6 => MessageType::Nak,
             7 => MessageType::Release,
             8 => MessageType::Inform,
+            9 => MessageType::ForceRenew,
+            10 => MessageType::LeaseQuery,
+            11 => MessageType::LeaseUnassigned,
+            12 => MessageType::LeaseUnknown,
+            13 => MessageType::LeaseActive,
+            14 => MessageType::BulkLeaseQuery,
+            15 => MessageType::LeaseQueryDone,
+            16 => MessageType::ActiveLeaseQuery,
+            17 => MessageType::LeaseQueryStatus,
+            18 => MessageType::Tls,
             n => MessageType::Unknown(n),
         }
     }
@@ -1128,6 +1182,16 @@ impl From<MessageType> for u8 {
             MessageType::Nak => 6,
             MessageType::Release => 7,
             MessageType::Inform => 8,
+            MessageType::ForceRenew => 9,
+            MessageType::LeaseQuery => 10,
+            MessageType::LeaseUnassigned => 11,
+            MessageType::LeaseUnknown => 12,
+            MessageType::LeaseActive => 13,
+            MessageType::BulkLeaseQuery => 14,
+            MessageType::LeaseQueryDone => 15,
+            MessageType::ActiveLeaseQuery => 16,
+            MessageType::LeaseQueryStatus => 17,
+            MessageType::Tls => 18,
             MessageType::Unknown(n) => n,
         }
     }
