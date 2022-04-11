@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- dhcpv4 message variants 9-18 added, breaking change for `MessageType`
+- dhcpv4 added DhcpOption for ClientLastTransactionTime (91) & AssociatedIp (92)
+
 ## [0.7.0]
 
 ### Added
