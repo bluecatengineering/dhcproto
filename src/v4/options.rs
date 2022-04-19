@@ -84,12 +84,16 @@ impl DhcpOptions {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
-    /// Retans only the elements specified by the predicate
+    /// Retains only the elements specified by the predicate
     pub fn retain<F>(&mut self, pred: F)
     where
         F: FnMut(&OptionCode, &mut DhcpOption) -> bool,
     {
         self.0.retain(pred)
+    }
+    /// Returns number of options
+    pub fn len(&self) -> usize {
+        self.0.len()
     }
 }
 
@@ -107,6 +111,7 @@ impl Decodable for DhcpOptions {
                 }
                 DhcpOption::Pad => {}
                 _ => {
+                    // TODO: https://www.rfc-editor.org/rfc/rfc3396
                     opts.insert(OptionCode::from(&opt), opt);
                 }
             }
@@ -253,14 +258,22 @@ pub enum OptionCode {
     ClassIdentifier,
     /// 61 Client Identifier
     ClientIdentifier,
+    /// 82 Relay Agent Information
+    RelayAgentInformation,
     /// 91 client-last-transaction-time - https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1
     ClientLastTransactionTime,
     /// 92 associated-ip - https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1
     AssociatedIp,
-    /// 82 Relay Agent Information
-    RelayAgentInformation,
+    /// 93 Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>
+    ClientSystemArchitecture,
+    /// 94 Client Network Interface - <https://www.rfc-editor.org/rfc/rfc4578.html>
+    ClientNetworkInterface,
+    /// 97 Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>
+    ClientMachineIdentifier,
     /// 118 Subnet option - <https://datatracker.ietf.org/doc/html/rfc3011>
     SubnetSelection,
+    // /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
+    // DomainSearch,
     /// Unknown option
     Unknown(u8),
     /// 255 End
@@ -332,7 +345,11 @@ impl From<u8> for OptionCode {
             82 => RelayAgentInformation,
             91 => ClientLastTransactionTime,
             92 => AssociatedIp,
+            93 => ClientSystemArchitecture,
+            94 => ClientNetworkInterface,
+            97 => ClientMachineIdentifier,
             118 => SubnetSelection,
+            // 119 => DomainSearch,
             255 => End,
             // TODO: implement more
             n => Unknown(n),
@@ -405,7 +422,11 @@ impl From<OptionCode> for u8 {
             RelayAgentInformation => 82,
             ClientLastTransactionTime => 91,
             AssociatedIp => 92,
+            ClientSystemArchitecture => 93,
+            ClientNetworkInterface => 94,
+            ClientMachineIdentifier => 97,
             SubnetSelection => 118,
+            // DomainSearch => 119,
             End => 255,
             // TODO: implement more
             Unknown(n) => n,
@@ -543,12 +564,85 @@ pub enum DhcpOption {
     ClientLastTransactionTime(u32),
     /// 92 associated-ip - https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1
     AssociatedIp(Vec<Ipv4Addr>),
+    /// 93 Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>
+    ClientSystemArchitecture(Architecture),
+    /// 94 Client Network Interface - <https://www.rfc-editor.org/rfc/rfc4578.html>
+    ClientNetworkInterface((u8, u8, u8)),
+    /// 97 Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>
+    ClientMachineIdentifier(Vec<u8>),
     /// 118 Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>
     SubnetSelection(Ipv4Addr),
+    // /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
+    // DomainSearch(Vec<u8>),
     /// Unknown option
     Unknown(UnknownOption),
     /// 255 End
     End,
+}
+
+/// Architecture name from - <https://www.rfc-editor.org/rfc/rfc4578.html>
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Architecture {
+    /// Intel x86PC
+    Intelx86PC,
+    /// NEC/PC98
+    NECPC98,
+    /// EFI Itanium
+    Itanium,
+    /// DEC Alpha
+    DECAlpha,
+    /// Arc x86
+    Arcx86,
+    /// Intel Lean Client
+    IntelLeanClient,
+    /// EFI IA32
+    IA32,
+    /// EFI BC
+    BC,
+    /// EFI Xscale
+    Xscale,
+    /// EFI x86-64
+    X86_64,
+    /// Unknown
+    Unknown(u16),
+}
+
+impl From<u16> for Architecture {
+    fn from(n: u16) -> Self {
+        use Architecture::*;
+        match n {
+            0 => Intelx86PC,
+            1 => NECPC98,
+            2 => Itanium,
+            3 => DECAlpha,
+            4 => Arcx86,
+            5 => IntelLeanClient,
+            6 => IA32,
+            7 => BC,
+            8 => Xscale,
+            9 => X86_64,
+            _ => Unknown(n),
+        }
+    }
+}
+
+impl From<Architecture> for u16 {
+    fn from(n: Architecture) -> Self {
+        use Architecture::*;
+        match n {
+            Intelx86PC => 0,
+            NECPC98 => 1,
+            Itanium => 2,
+            DECAlpha => 3,
+            Arcx86 => 4,
+            IntelLeanClient => 5,
+            IA32 => 6,
+            BC => 7,
+            Xscale => 8,
+            X86_64 => 9,
+            Unknown(n) => n,
+        }
+    }
 }
 
 /// NetBIOS allows several different node types
@@ -847,10 +941,28 @@ impl Decodable for DhcpOption {
                 let length = decoder.read_u8()?;
                 AssociatedIp(decoder.read_ipv4s(length as usize)?)
             }
+            OptionCode::ClientSystemArchitecture => {
+                let _length = decoder.read_u8()?;
+                let ty = decoder.read_u16()?;
+                ClientSystemArchitecture(ty.into())
+            }
+            OptionCode::ClientNetworkInterface => {
+                let length = decoder.read_u8()?;
+                debug_assert!(length == 3);
+                ClientNetworkInterface((decoder.read_u8()?, decoder.read_u8()?, decoder.read_u8()?))
+            }
+            OptionCode::ClientMachineIdentifier => {
+                let length = decoder.read_u8()? as usize;
+                ClientMachineIdentifier(decoder.read_slice(length)?.to_vec())
+            }
             OptionCode::SubnetSelection => {
                 let len = decoder.read_u8()?; // always 4
                 SubnetSelection(decoder.read_ipv4(len as usize)?)
             }
+            // OptionCode::DomainSearch => {
+            //     let len = decoder.read_u8()?;
+            //     DomainSearch(decoder.read_slice(len as usize)?.to_vec())
+            // }
             OptionCode::End => End,
             // not yet implemented
             OptionCode::Unknown(code) => {
@@ -959,7 +1071,11 @@ impl Encodable for DhcpOption {
                 e.write_u8(4)?;
                 e.write_u32(*num)?
             }
-            VendorExtensions(bytes) | ClassIdentifier(bytes) | ClientIdentifier(bytes) => {
+            VendorExtensions(bytes)
+            | ClassIdentifier(bytes)
+            | ClientIdentifier(bytes)
+            // | DomainSearch(bytes)
+            | ClientMachineIdentifier(bytes) => {
                 e.write_u8(code.into())?;
                 e.write_u8(bytes.len() as u8)?;
                 e.write_slice(bytes)?
@@ -990,6 +1106,18 @@ impl Encodable for DhcpOption {
                 e.write_u8(buf.len() as u8)?;
                 e.write_slice(&buf)?
             }
+            ClientSystemArchitecture(arch) => {
+                e.write_u8(code.into())?;
+                e.write_u8(2)?;
+                e.write_u16((*arch).into())?;
+            }
+            ClientNetworkInterface((ty, major, minor)) => {
+                e.write_u8(code.into())?;
+                e.write_u8(3)?;
+                e.write_u8(*ty)?;
+                e.write_u8(*major)?;
+                e.write_u8(*minor)?;
+            }
             // not yet implemented
             Unknown(opt) => {
                 e.write_u8(code.into())?;
@@ -1001,6 +1129,7 @@ impl Encodable for DhcpOption {
         Ok(())
     }
 }
+
 impl From<&DhcpOption> for OptionCode {
     fn from(opt: &DhcpOption) -> Self {
         use DhcpOption::*;
@@ -1066,7 +1195,11 @@ impl From<&DhcpOption> for OptionCode {
             RelayAgentInformation(_) => OptionCode::RelayAgentInformation,
             ClientLastTransactionTime(_) => OptionCode::ClientLastTransactionTime,
             AssociatedIp(_) => OptionCode::AssociatedIp,
+            ClientSystemArchitecture(_) => OptionCode::ClientSystemArchitecture,
+            ClientNetworkInterface(_) => OptionCode::ClientNetworkInterface,
+            ClientMachineIdentifier(_) => OptionCode::ClientMachineIdentifier,
             SubnetSelection(_) => OptionCode::SubnetSelection,
+            // DomainSearch(_) => OptionCode::DomainSearch,
             End => OptionCode::End,
             // TODO: implement more
             Unknown(n) => OptionCode::Unknown(n.code),
@@ -1099,6 +1232,25 @@ impl UnknownOption {
     /// consume into parts
     pub fn into_parts(self) -> (OptionCode, Vec<u8>) {
         (self.code.into(), self.data)
+    }
+}
+
+impl Decodable for UnknownOption {
+    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
+        let code = decoder.read_u8()?;
+        let length = decoder.read_u8()?;
+        let bytes = decoder.read_slice(length as usize)?.to_vec();
+        Ok(UnknownOption { code, data: bytes })
+    }
+}
+
+impl Encodable for UnknownOption {
+    fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
+        // TODO: account for >255 len
+        e.write_u8(self.code)?;
+        e.write_u8(self.data.len() as u8)?;
+        e.write_slice(&self.data)?;
+        Ok(())
     }
 }
 
@@ -1216,7 +1368,7 @@ mod tests {
     }
     #[test]
     fn test_opts() -> Result<()> {
-        let input = binput();
+        let (input, len) = binput();
         println!("{:?}", input);
         let opts = DhcpOptions::decode(&mut Decoder::new(&input))?;
 
@@ -1224,6 +1376,7 @@ mod tests {
         let _len = opts.encode(&mut Encoder::new(&mut output))?;
         // not comparing len as we don't add PAD bytes
         // assert_eq!(input.len(), len);
+        assert_eq!(opts.len(), len);
         Ok(())
     }
     #[test]
@@ -1291,23 +1444,46 @@ mod tests {
         Ok(())
     }
     #[test]
-    fn test_unknown() -> Result<()> {
+    fn test_arch() -> Result<()> {
         test_opt(
-            DhcpOption::Unknown(UnknownOption {
-                code: 97,
-                data: vec![1, 2, 3, 4],
-            }),
-            vec![97, 4, 1, 2, 3, 4],
+            DhcpOption::ClientSystemArchitecture(Architecture::Intelx86PC),
+            vec![93, 2, 0, 0],
         )?;
 
         Ok(())
     }
 
-    fn binput() -> Vec<u8> {
-        vec![
-            53, 1, 2, 54, 4, 192, 168, 0, 1, 51, 4, 0, 0, 0, 60, 58, 4, 0, 0, 0, 30, 59, 4, 0, 0,
-            0, 52, 1, 4, 255, 255, 255, 0, 3, 4, 192, 168, 0, 1, 6, 8, 192, 168, 0, 1, 192, 168, 1,
-            1, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]
+    // #[test]
+    // fn test_domainsearch() -> Result<()> {
+    //     test_opt(
+    //         DhcpOption::DomainSearch("eng.apple.com. marketing.apple.com"),
+    //         vec![93, 2, 0, 0],
+    //     )?;
+
+    //     Ok(())
+    // }
+
+    #[test]
+    fn test_unknown() -> Result<()> {
+        test_opt(
+            DhcpOption::Unknown(UnknownOption {
+                code: 240,
+                data: vec![1, 2, 3, 4],
+            }),
+            vec![240, 4, 1, 2, 3, 4],
+        )?;
+
+        Ok(())
+    }
+
+    fn binput() -> (Vec<u8>, usize) {
+        (
+            vec![
+                53, 1, 2, 54, 4, 192, 168, 0, 1, 51, 4, 0, 0, 0, 60, 58, 4, 0, 0, 0, 30, 59, 4, 0,
+                0, 0, 52, 1, 4, 255, 255, 255, 0, 3, 4, 192, 168, 0, 1, 6, 8, 192, 168, 0, 1, 192,
+                168, 1, 1, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ],
+            8,
+        )
     }
 }

@@ -34,6 +34,11 @@ impl<'a> Decoder<'a> {
         Decoder { buffer }
     }
 
+    /// peek at the next byte without advancing the internal pointer
+    pub fn peek_u8(&self) -> DecodeResult<u8> {
+        Ok(u8::from_be_bytes(self.peek::<{ mem::size_of::<u8>() }>()?))
+    }
+
     /// read a u8
     pub fn read_u8(&mut self) -> DecodeResult<u8> {
         Ok(u8::from_be_bytes(self.read::<{ mem::size_of::<u8>() }>()?))
@@ -76,6 +81,15 @@ impl<'a> Decoder<'a> {
         self.buffer = remaining;
         // can't panic-- condition checked above
         Ok(slice.try_into().unwrap())
+    }
+
+    /// peek a `N` bytes into slice
+    pub fn peek<const N: usize>(&self) -> DecodeResult<[u8; N]> {
+        if N > self.buffer.len() {
+            return Err(DecodeError::NotEnoughBytes);
+        }
+        // can't panic-- condition checked above
+        Ok(self.buffer[..N].try_into().unwrap())
     }
 
     /// read a `MAX` length bytes into nul terminated `CString`
