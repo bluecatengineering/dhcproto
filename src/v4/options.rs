@@ -1,4 +1,4 @@
-use std::{collections::HashMap, iter, net::Ipv4Addr};
+use std::{borrow::Cow, collections::HashMap, iter, net::Ipv4Addr};
 
 use crate::{
     decoder::{Decodable, Decoder},
@@ -156,7 +156,7 @@ impl DhcpOptions {
     }
 }
 
-impl Decodable for DhcpOptions {
+impl Decodable<'_> for DhcpOptions {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         // represented as a vector in the actual message
         let mut opts = HashMap::new();
@@ -170,7 +170,6 @@ impl Decodable for DhcpOptions {
                 }
                 DhcpOption::Pad => {}
                 _ => {
-                    // TODO: https://www.rfc-editor.org/rfc/rfc3396
                     opts.insert(OptionCode::from(&opt), opt);
                 }
             }
@@ -844,334 +843,294 @@ impl From<NodeType> for u8 {
     }
 }
 
-impl Decodable for DhcpOption {
+#[inline]
+fn decode_inner(
+    code: OptionCode,
+    len: usize,
+    decoder: &mut Decoder<'_>,
+) -> DecodeResult<DhcpOption> {
+    use DhcpOption::*;
+    Ok(match code {
+        OptionCode::Pad => Pad,
+        OptionCode::SubnetMask => SubnetMask(decoder.read_ipv4(len)?),
+        OptionCode::TimeOffset => TimeOffset(decoder.read_i32()?),
+        OptionCode::Router => Router(decoder.read_ipv4s(len)?),
+        OptionCode::TimeServer => TimeServer(decoder.read_ipv4s(len)?),
+        OptionCode::NameServer => NameServer(decoder.read_ipv4s(len)?),
+        OptionCode::DomainNameServer => DomainNameServer(decoder.read_ipv4s(len)?),
+        OptionCode::LogServer => LogServer(decoder.read_ipv4s(len)?),
+        OptionCode::QuoteServer => QuoteServer(decoder.read_ipv4s(len)?),
+        OptionCode::LprServer => LprServer(decoder.read_ipv4s(len)?),
+        OptionCode::ImpressServer => ImpressServer(decoder.read_ipv4s(len)?),
+        OptionCode::ResourceLocationServer => ResourceLocationServer(decoder.read_ipv4s(len)?),
+        OptionCode::Hostname => Hostname(decoder.read_string(len)?),
+        OptionCode::BootFileSize => BootFileSize(decoder.read_u16()?),
+        OptionCode::MeritDumpFile => MeritDumpFile(decoder.read_string(len)?),
+        OptionCode::DomainName => DomainName(decoder.read_string(len)?),
+        OptionCode::SwapServer => SwapServer(decoder.read_ipv4(len)?),
+        OptionCode::RootPath => RootPath(decoder.read_string(len)?),
+        OptionCode::ExtensionsPath => ExtensionsPath(decoder.read_string(len)?),
+        OptionCode::IpForwarding => IpForwarding(decoder.read_bool()?),
+        OptionCode::NonLocalSrcRouting => NonLocalSrcRouting(decoder.read_bool()?),
+        OptionCode::MaxDatagramSize => MaxDatagramSize(decoder.read_u16()?),
+        OptionCode::DefaultIpTtl => DefaultIpTtl(decoder.read_u8()?),
+        OptionCode::InterfaceMtu => InterfaceMtu(decoder.read_u16()?),
+        OptionCode::AllSubnetsLocal => AllSubnetsLocal(decoder.read_bool()?),
+        OptionCode::BroadcastAddr => BroadcastAddr(decoder.read_ipv4(len)?),
+        OptionCode::PerformMaskDiscovery => PerformMaskDiscovery(decoder.read_bool()?),
+        OptionCode::MaskSupplier => MaskSupplier(decoder.read_bool()?),
+        OptionCode::PerformRouterDiscovery => PerformRouterDiscovery(decoder.read_bool()?),
+        OptionCode::RouterSolicitationAddr => RouterSolicitationAddr(decoder.read_ipv4(len)?),
+        OptionCode::StaticRoutingTable => StaticRoutingTable(decoder.read_pair_ipv4s(len)?),
+        OptionCode::ArpCacheTimeout => ArpCacheTimeout(decoder.read_u32()?),
+        OptionCode::EthernetEncapsulation => EthernetEncapsulation(decoder.read_bool()?),
+        OptionCode::DefaultTcpTtl => DefaultIpTtl(decoder.read_u8()?),
+        OptionCode::TcpKeepaliveInterval => TcpKeepaliveInterval(decoder.read_u32()?),
+        OptionCode::TcpKeepaliveGarbage => TcpKeepaliveGarbage(decoder.read_bool()?),
+        OptionCode::NISDomain => NISDomain(decoder.read_string(len)?),
+        OptionCode::NIS => NIS(decoder.read_ipv4s(len)?),
+        OptionCode::NTPServers => NTPServers(decoder.read_ipv4s(len)?),
+        OptionCode::VendorExtensions => VendorExtensions(decoder.read_slice(len)?.to_vec()),
+        OptionCode::NetBiosNameServers => NetBiosNameServers(decoder.read_ipv4s(len)?),
+        OptionCode::NetBiosDatagramDistributionServer => {
+            NetBiosDatagramDistributionServer(decoder.read_ipv4s(len)?)
+        }
+        OptionCode::NetBiosNodeType => NetBiosNodeType(decoder.read_u8()?.into()),
+        OptionCode::NetBiosScope => NetBiosScope(decoder.read_string(len)?),
+        OptionCode::XFontServer => XFontServer(decoder.read_ipv4s(len)?),
+        OptionCode::XDisplayManager => XDisplayManager(decoder.read_ipv4s(len)?),
+        OptionCode::RequestedIpAddress => RequestedIpAddress(decoder.read_ipv4(len)?),
+        OptionCode::AddressLeaseTime => AddressLeaseTime(decoder.read_u32()?),
+        OptionCode::OptionOverload => OptionOverload(decoder.read_u8()?),
+        OptionCode::MessageType => MessageType(decoder.read_u8()?.into()),
+        OptionCode::ServerIdentifier => ServerIdentifier(decoder.read_ipv4(len)?),
+        OptionCode::ParameterRequestList => ParameterRequestList(
+            decoder
+                .read_slice(len)?
+                .iter()
+                .map(|code| (*code).into())
+                .collect(),
+        ),
+        OptionCode::Message => Message(decoder.read_string(len)?),
+        OptionCode::MaxMessageSize => MaxMessageSize(decoder.read_u16()?),
+        OptionCode::Renewal => Renewal(decoder.read_u32()?),
+        OptionCode::Rebinding => Rebinding(decoder.read_u32()?),
+        OptionCode::ClassIdentifier => ClassIdentifier(decoder.read_slice(len)?.to_vec()),
+        OptionCode::ClientIdentifier => ClientIdentifier(decoder.read_slice(len)?.to_vec()),
+        OptionCode::RelayAgentInformation => {
+            let mut dec = Decoder::new(decoder.read_slice(len)?);
+            RelayAgentInformation(relay::RelayAgentInformation::decode(&mut dec)?)
+        }
+        OptionCode::ClientLastTransactionTime => ClientLastTransactionTime(decoder.read_u32()?),
+        OptionCode::AssociatedIp => AssociatedIp(decoder.read_ipv4s(len)?),
+        OptionCode::ClientSystemArchitecture => {
+            let ty = decoder.read_u16()?;
+            ClientSystemArchitecture(ty.into())
+        }
+        OptionCode::ClientNetworkInterface => {
+            debug_assert!(len == 3);
+            ClientNetworkInterface(decoder.read_u8()?, decoder.read_u8()?, decoder.read_u8()?)
+        }
+        OptionCode::ClientMachineIdentifier => {
+            ClientMachineIdentifier(decoder.read_slice(len)?.to_vec())
+        }
+        OptionCode::SubnetSelection => SubnetSelection(decoder.read_ipv4(len)?),
+        OptionCode::DomainSearch => {
+            let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
+            let mut names = Vec::new();
+            while let Ok(name) = Name::read(&mut name_decoder) {
+                names.push(Domain(name));
+            }
+
+            DomainSearch(names)
+        }
+        OptionCode::StatusCode => {
+            let code = decoder.read_u8()?.into();
+            // len - 1 because code is included in length
+            let message = decoder.read_string(len - 1)?;
+            BulkLeaseQueryStatusCode(code, message)
+        }
+        OptionCode::BaseTime => {
+            debug_assert!(len == 4);
+            BulkLeaseQueryBaseTime(decoder.read_u32()?)
+        }
+        OptionCode::StartTimeOfState => {
+            debug_assert!(len == 4);
+            BulkLeasQueryStartTimeOfState(decoder.read_u32()?)
+        }
+        OptionCode::QueryStartTime => {
+            debug_assert!(len == 4);
+            BulkLeaseQueryQueryStartTime(decoder.read_u32()?)
+        }
+        OptionCode::QueryEndTime => {
+            debug_assert!(len == 4);
+            BulkLeaseQueryQueryEndTime(decoder.read_u32()?)
+        }
+        OptionCode::DhcpState => BulkLeaseQueryDhcpState(decoder.read_u8()?.into()),
+        OptionCode::DataSource => {
+            BulkLeaseQueryDataSource(bulk_query::DataSourceFlags::new(decoder.read_u8()?))
+        }
+        OptionCode::End => End,
+        // not yet implemented
+        OptionCode::Unknown(code) => {
+            let data = decoder.read_slice(len)?.to_vec();
+            Unknown(UnknownOption { code, data })
+        }
+    })
+}
+
+impl Decodable<'_> for DhcpOption {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
+        #[derive(Debug)]
+        struct Opt<'a> {
+            code: u8,
+            // will contain code + len + value
+            buf: Cow<'a, [u8]>,
+        }
+
+        impl<'a> Opt<'a> {
+            #[inline]
+            fn as_option(&self) -> DecodeResult<DhcpOption> {
+                let mut opt_decoder = Decoder::new(&self.buf);
+                let code = opt_decoder.read_u8()?.into();
+                let _len = opt_decoder.read_u8()?; // throw out potentially invalid len
+
+                decode_inner(code, opt_decoder.buffer().len(), &mut opt_decoder)
+            }
+        }
+
+        impl<'a> Decodable<'a> for Opt<'a> {
+            #[inline]
+            fn decode(dec: &mut Decoder<'a>) -> DecodeResult<Self> {
+                let [code, len] = dec.peek::<2>()?.map(|b| u8::from_be_bytes([b]));
+                let buf = Cow::from(dec.read_slice(len as usize + 2)?);
+                Ok(Opt { code, buf })
+            }
+        }
+
         use DhcpOption::*;
         // read the code first, determines the variant
-
-        // pad has no length, so we can't read len up here
-        Ok(match decoder.read_u8()?.into() {
-            OptionCode::Pad => Pad,
-            OptionCode::SubnetMask => {
-                let length = decoder.read_u8()?;
-                SubnetMask(decoder.read_ipv4(length as usize)?)
-            }
-            OptionCode::TimeOffset => {
-                let _ = decoder.read_u8()?;
-                TimeOffset(decoder.read_i32()?)
-            }
-            OptionCode::Router => {
-                let length = decoder.read_u8()?;
-                Router(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::TimeServer => {
-                let length = decoder.read_u8()?;
-                TimeServer(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::NameServer => {
-                let length = decoder.read_u8()?;
-                NameServer(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::DomainNameServer => {
-                let length = decoder.read_u8()?;
-                DomainNameServer(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::LogServer => {
-                let length = decoder.read_u8()?;
-                LogServer(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::QuoteServer => {
-                let length = decoder.read_u8()?;
-                QuoteServer(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::LprServer => {
-                let length = decoder.read_u8()?;
-                LprServer(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::ImpressServer => {
-                let length = decoder.read_u8()?;
-                ImpressServer(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::ResourceLocationServer => {
-                let length = decoder.read_u8()?;
-                ResourceLocationServer(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::Hostname => {
-                let length = decoder.read_u8()?;
-                Hostname(decoder.read_string(length as usize)?)
-            }
-            OptionCode::BootFileSize => {
-                let _ = decoder.read_u8()?;
-                BootFileSize(decoder.read_u16()?)
-            }
-            OptionCode::MeritDumpFile => {
-                let length = decoder.read_u8()?;
-                MeritDumpFile(decoder.read_string(length as usize)?)
-            }
-            OptionCode::DomainName => {
-                let length = decoder.read_u8()?;
-                DomainName(decoder.read_string(length as usize)?)
-            }
-            OptionCode::SwapServer => {
-                let length = decoder.read_u8()?;
-                SwapServer(decoder.read_ipv4(length as usize)?)
-            }
-            OptionCode::RootPath => {
-                let length = decoder.read_u8()?;
-                RootPath(decoder.read_string(length as usize)?)
-            }
-            OptionCode::ExtensionsPath => {
-                let length = decoder.read_u8()?;
-                ExtensionsPath(decoder.read_string(length as usize)?)
-            }
-            OptionCode::IpForwarding => {
-                let _ = decoder.read_u8()?;
-                IpForwarding(decoder.read_bool()?)
-            }
-            OptionCode::NonLocalSrcRouting => {
-                let _ = decoder.read_u8()?;
-                NonLocalSrcRouting(decoder.read_bool()?)
-            }
-            OptionCode::MaxDatagramSize => {
-                let _ = decoder.read_u8()?;
-                MaxDatagramSize(decoder.read_u16()?)
-            }
-            OptionCode::DefaultIpTtl => {
-                let _ = decoder.read_u8()?;
-                DefaultIpTtl(decoder.read_u8()?)
-            }
-            OptionCode::InterfaceMtu => {
-                let _ = decoder.read_u8()?;
-                InterfaceMtu(decoder.read_u16()?)
-            }
-            OptionCode::AllSubnetsLocal => {
-                let _ = decoder.read_u8()?;
-                AllSubnetsLocal(decoder.read_bool()?)
-            }
-            OptionCode::BroadcastAddr => {
-                let length = decoder.read_u8()?;
-                BroadcastAddr(decoder.read_ipv4(length as usize)?)
-            }
-            OptionCode::PerformMaskDiscovery => {
-                let _ = decoder.read_u8()?;
-                PerformMaskDiscovery(decoder.read_bool()?)
-            }
-            OptionCode::MaskSupplier => {
-                let _ = decoder.read_u8()?;
-                MaskSupplier(decoder.read_bool()?)
-            }
-            OptionCode::PerformRouterDiscovery => {
-                let _ = decoder.read_u8()?;
-                PerformRouterDiscovery(decoder.read_bool()?)
-            }
-            OptionCode::RouterSolicitationAddr => {
-                let length = decoder.read_u8()?;
-                RouterSolicitationAddr(decoder.read_ipv4(length as usize)?)
-            }
-            OptionCode::StaticRoutingTable => {
-                let length = decoder.read_u8()?;
-                StaticRoutingTable(decoder.read_pair_ipv4s(length as usize)?)
-            }
-            OptionCode::ArpCacheTimeout => {
-                let _ = decoder.read_u8()?;
-                ArpCacheTimeout(decoder.read_u32()?)
-            }
-            OptionCode::EthernetEncapsulation => {
-                let _ = decoder.read_u8()?;
-                EthernetEncapsulation(decoder.read_bool()?)
-            }
-            OptionCode::DefaultTcpTtl => {
-                let _ = decoder.read_u8()?;
-                DefaultIpTtl(decoder.read_u8()?)
-            }
-            OptionCode::TcpKeepaliveInterval => {
-                let _ = decoder.read_u8()?;
-                TcpKeepaliveInterval(decoder.read_u32()?)
-            }
-            OptionCode::TcpKeepaliveGarbage => {
-                let _ = decoder.read_u8()?;
-                TcpKeepaliveGarbage(decoder.read_bool()?)
-            }
-            OptionCode::NISDomain => {
-                let length = decoder.read_u8()?;
-                NISDomain(decoder.read_string(length as usize)?)
-            }
-            OptionCode::NIS => {
-                let length = decoder.read_u8()?;
-                NIS(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::NTPServers => {
-                let length = decoder.read_u8()?;
-                NTPServers(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::VendorExtensions => {
-                let length = decoder.read_u8()?;
-                VendorExtensions(decoder.read_slice(length as usize)?.to_vec())
-            }
-            OptionCode::NetBiosNameServers => {
-                let length = decoder.read_u8()?;
-                NetBiosNameServers(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::NetBiosDatagramDistributionServer => {
-                let length = decoder.read_u8()?;
-                NetBiosDatagramDistributionServer(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::NetBiosNodeType => {
-                let _ = decoder.read_u8()?;
-                NetBiosNodeType(decoder.read_u8()?.into())
-            }
-            OptionCode::NetBiosScope => {
-                let length = decoder.read_u8()?;
-                NetBiosScope(decoder.read_string(length as usize)?)
-            }
-            OptionCode::XFontServer => {
-                let length = decoder.read_u8()?;
-                XFontServer(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::XDisplayManager => {
-                let length = decoder.read_u8()?;
-                XDisplayManager(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::RequestedIpAddress => {
-                let length = decoder.read_u8()?;
-                RequestedIpAddress(decoder.read_ipv4(length as usize)?)
-            }
-            OptionCode::AddressLeaseTime => {
-                let _ = decoder.read_u8()?;
-                AddressLeaseTime(decoder.read_u32()?)
-            }
-            OptionCode::OptionOverload => {
-                let _ = decoder.read_u8()?;
-                OptionOverload(decoder.read_u8()?)
-            }
-            OptionCode::MessageType => {
-                let _ = decoder.read_u8()?;
-                MessageType(decoder.read_u8()?.into())
-            }
-            OptionCode::ServerIdentifier => {
-                let length = decoder.read_u8()?;
-                ServerIdentifier(decoder.read_ipv4(length as usize)?)
-            }
-            OptionCode::ParameterRequestList => {
-                let length = decoder.read_u8()?;
-                ParameterRequestList(
-                    decoder
-                        .read_slice(length as usize)?
-                        .iter()
-                        .map(|code| (*code).into())
-                        .collect(),
-                )
-            }
-            OptionCode::Message => {
-                let length = decoder.read_u8()?;
-                Message(decoder.read_string(length as usize)?)
-            }
-            OptionCode::MaxMessageSize => {
-                let _ = decoder.read_u8()?;
-                MaxMessageSize(decoder.read_u16()?)
-            }
-            OptionCode::Renewal => {
-                let _ = decoder.read_u8()?;
-                Renewal(decoder.read_u32()?)
-            }
-            OptionCode::Rebinding => {
-                let _ = decoder.read_u8()?;
-                Rebinding(decoder.read_u32()?)
-            }
-            OptionCode::ClassIdentifier => {
-                let length = decoder.read_u8()?;
-                ClassIdentifier(decoder.read_slice(length as usize)?.to_vec())
-            }
-            OptionCode::ClientIdentifier => {
-                let length = decoder.read_u8()?;
-                ClientIdentifier(decoder.read_slice(length as usize)?.to_vec())
-            }
-            OptionCode::RelayAgentInformation => {
-                let length = decoder.read_u8()?;
-                let mut dec = Decoder::new(decoder.read_slice(length as usize)?);
-                RelayAgentInformation(relay::RelayAgentInformation::decode(&mut dec)?)
-            }
-            OptionCode::ClientLastTransactionTime => {
-                let _ = decoder.read_u8()?; // always 4
-                ClientLastTransactionTime(decoder.read_u32()?)
-            }
-            OptionCode::AssociatedIp => {
-                let length = decoder.read_u8()?;
-                AssociatedIp(decoder.read_ipv4s(length as usize)?)
-            }
-            OptionCode::ClientSystemArchitecture => {
-                let _length = decoder.read_u8()?;
-                let ty = decoder.read_u16()?;
-                ClientSystemArchitecture(ty.into())
-            }
-            OptionCode::ClientNetworkInterface => {
-                let length = decoder.read_u8()?;
-                debug_assert!(length == 3);
-                ClientNetworkInterface(decoder.read_u8()?, decoder.read_u8()?, decoder.read_u8()?)
-            }
-            OptionCode::ClientMachineIdentifier => {
-                let length = decoder.read_u8()? as usize;
-                ClientMachineIdentifier(decoder.read_slice(length)?.to_vec())
-            }
-            OptionCode::SubnetSelection => {
-                let len = decoder.read_u8()?; // always 4
-                SubnetSelection(decoder.read_ipv4(len as usize)?)
-            }
-            OptionCode::DomainSearch => {
-                let len = decoder.read_u8()?;
-
-                let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
-                let mut names = Vec::new();
-                while let Ok(name) = Name::read(&mut name_decoder) {
-                    names.push(Domain(name));
+        // pad|end have no length, so we can't read len up here
+        let mut last: Option<Opt<'_>> = None;
+        while let Ok(code) = decoder.peek_u8() {
+            match code.into() {
+                OptionCode::End => {
+                    return match last {
+                        Some(prev) => prev.as_option(),
+                        None => {
+                            decoder.read_u8()?;
+                            Ok(End)
+                        }
+                    };
                 }
-
-                DomainSearch(names)
+                OptionCode::Pad => {
+                    return match last {
+                        Some(prev) => prev.as_option(),
+                        None => {
+                            decoder.read_u8()?;
+                            Ok(Pad)
+                        }
+                    };
+                }
+                _ => {
+                    last = Some(match last {
+                        None => Opt::decode(decoder)?,
+                        Some(mut prev) if code == prev.code => {
+                            let cur = Opt::decode(decoder)?;
+                            // concatention case - <https://www.rfc-editor.org/rfc/rfc3396>
+                            // store the len & value in buf
+                            prev.buf.to_mut().extend(&cur.buf[2..]);
+                            prev
+                        }
+                        Some(prev) => {
+                            // got different option, decode the one we've got
+                            // need to stop here so we don't consume the next option's buffer
+                            return prev.as_option();
+                        }
+                    });
+                }
             }
-            OptionCode::StatusCode => {
-                let len = decoder.read_u8()? as usize;
-                let code = decoder.read_u8()?.into();
-                // len - 1 because code is included in length
-                let message = decoder.read_string(len - 1)?;
-                BulkLeaseQueryStatusCode(code, message)
-            }
-            OptionCode::BaseTime => {
-                let len = decoder.read_u8()?;
-                debug_assert!(len == 4);
-                BulkLeaseQueryBaseTime(decoder.read_u32()?)
-            }
-            OptionCode::StartTimeOfState => {
-                let len = decoder.read_u8()?;
-                debug_assert!(len == 4);
-                BulkLeasQueryStartTimeOfState(decoder.read_u32()?)
-            }
-            OptionCode::QueryStartTime => {
-                let len = decoder.read_u8()?;
-                debug_assert!(len == 4);
-                BulkLeaseQueryQueryStartTime(decoder.read_u32()?)
-            }
-            OptionCode::QueryEndTime => {
-                let len = decoder.read_u8()?;
-                debug_assert!(len == 4);
-                BulkLeaseQueryQueryEndTime(decoder.read_u32()?)
-            }
-            OptionCode::DhcpState => {
-                let _ = decoder.read_u8()?;
-                BulkLeaseQueryDhcpState(decoder.read_u8()?.into())
-            }
-            OptionCode::DataSource => {
-                let _ = decoder.read_u8()?;
-                BulkLeaseQueryDataSource(bulk_query::DataSourceFlags::new(decoder.read_u8()?))
-            }
-            OptionCode::End => End,
-            // not yet implemented
-            OptionCode::Unknown(code) => {
-                let length = decoder.read_u8()?;
-                let bytes = decoder.read_slice(length as usize)?.to_vec();
-                Unknown(UnknownOption { code, data: bytes })
-            }
-        })
+        }
+        last.ok_or(crate::error::DecodeError::NotEnoughBytes)?
+            .as_option()
     }
+}
+
+/// Splits `bytes` into chunks of up to u8::MAX (255 is the max opt length),
+/// where each chunk is prepended by the length of the chunk and the code.
+/// ```
+/// use dhcproto::{encoder::Encoder, v4::{OptionCode, encode_long_opt_bytes}};
+///
+/// let mut buf = Vec::new();
+/// let mut e = Encoder::new(&mut buf);
+/// let msg = std::iter::repeat(b'a').take(300).collect::<Vec<_>>();
+/// let res = encode_long_opt_bytes(OptionCode::Message, &msg, &mut e);
+/// // [code, 255, b'a', ..., code, 45, b'a', ...]
+/// let mut x = vec![OptionCode::Message.into(), 255];
+/// x.extend(std::iter::repeat(b'a').take(255));
+/// x.push(OptionCode::Message.into());
+/// x.push(45);
+/// x.extend(std::iter::repeat(b'a').take(45));
+///
+/// assert_eq!(buf, x);
+/// ```
+#[inline]
+pub fn encode_long_opt_bytes(
+    code: OptionCode,
+    bytes: &[u8],
+    e: &mut Encoder<'_>,
+) -> EncodeResult<()> {
+    for chunk in bytes.chunks(u8::MAX as usize) {
+        e.write_u8(code.into())?;
+        e.write_u8(chunk.len() as u8)?;
+        e.write_slice(chunk)?;
+    }
+    Ok(())
+}
+/// Splits `bytes` into chunks of up to u8::MAX / `factor` (255 is the max opt length),
+/// where each chunk is prepended by the length of the chunk and the code.
+///
+/// `factor` here accounts for writing data where `T` is more than 1 byte.
+///
+/// INVARIANT: `factor` must equal the number of bytes in each `T`
+/// ```
+/// # use std::net::Ipv4Addr;
+/// use dhcproto::{encoder::Encoder, v4::{OptionCode, encode_long_opt_chunks}};
+///
+/// let mut buf = Vec::new();
+/// let mut e = Encoder::new(&mut buf);
+/// let opt = std::iter::repeat(Ipv4Addr::from([1,2,3,4])).take(80).collect::<Vec<_>>();
+/// let res = encode_long_opt_chunks(OptionCode::NIS, 4, &opt, |ip, e| e.write_u32((*ip).into()), &mut e);
+/// // [code, 252, 1,2,3,4,1,2,3,4 ..., code, 68, b'a', ...]
+/// let mut x = vec![OptionCode::NIS.into(), 255];
+/// x.extend(std::iter::repeat(Ipv4Addr::from([1,2,3,4])).map(|ip| u32::from(ip).to_be_bytes()).flatten().take(252));
+/// x.push(OptionCode::NIS.into());
+/// x.push(65);
+/// x.extend(std::iter::repeat(Ipv4Addr::from([1,2,3,4])).map(|ip| u32::from(ip).to_be_bytes()).flatten().take(68));
+///
+/// assert_eq!(buf, x);
+/// ```
+#[inline]
+pub fn encode_long_opt_chunks<'a, T, F>(
+    code: OptionCode,
+    factor: usize,
+    data: &[T],
+    f: F,
+    e: &mut Encoder<'a>,
+) -> EncodeResult<()>
+where
+    F: Fn(&T, &mut Encoder<'a>) -> EncodeResult<()>,
+{
+    // TODO: consider using `mem::size_of::<T>()` so we don't need factor
+    // although, we would need to make OptionCode repr(u8)
+    for chunk in data.chunks(u8::MAX as usize / factor) {
+        e.write_u8(code.into())?;
+        e.write_u8((chunk.len() * factor) as u8)?;
+        for thing in chunk {
+            f(thing, e)?;
+        }
+    }
+    Ok(())
 }
 
 impl Encodable for DhcpOption {
@@ -1219,18 +1178,18 @@ impl Encodable for DhcpOption {
             | NetBiosNameServers(ips)
             | NetBiosDatagramDistributionServer(ips)
             | AssociatedIp(ips) => {
-                e.write_u8(code.into())?;
-                e.write_u8(ips.len() as u8 * 4)?;
-                for ip in ips {
-                    e.write_u32((*ip).into())?;
-                }
+
+                // let bytes = ips.iter().flat_map(|a| u32::from(*a).to_be_bytes()).collect::<Vec<_>>();
+                encode_long_opt_chunks(code, 4, ips, |ip, e| e.write_u32((*ip).into()), e)?;
+                // e.write_u8(code.into())?;
+                // e.write_u8(ips.len() as u8 * 4)?;
+                // for ip in ips {
+                //     e.write_u32((*ip).into())?;
+                // }
             }
             Hostname(s) | MeritDumpFile(s) | DomainName(s) | ExtensionsPath(s) | NISDomain(s)
             | RootPath(s) | NetBiosScope(s) | Message(s) => {
-                e.write_u8(code.into())?;
-                let s = s.as_bytes();
-                e.write_u8(s.len() as u8)?;
-                e.write_slice(s)?
+               encode_long_opt_bytes(code, s.as_bytes(), e)? ;
             }
             BootFileSize(num) | MaxDatagramSize(num) | InterfaceMtu(num) | MaxMessageSize(num) => {
                 e.write_u8(code.into())?;
@@ -1255,13 +1214,20 @@ impl Encodable for DhcpOption {
                 e.write_u8(*byte)?
             }
             StaticRoutingTable(pair_ips) => {
-                e.write_u8(code.into())?;
-                e.write_u8(pair_ips.len() as u8 * 8)?;
-                for (a, b) in pair_ips {
-                    e.write_u32((*a).into())?;
-                    e.write_u32((*b).into())?;
-                }
-            }
+
+                //     let bytes = pair_ips.iter().flat_map(|(a, b)| u32::from(*a).to_be_bytes().into_iter().chain(u32::from(*b).to_be_bytes())).collect::<Vec<_>>();
+                //     encode_chunk_bytes(code, &bytes, e)?;
+                encode_long_opt_chunks(
+                    code,
+                    8,
+                    pair_ips,
+                    |(a, b), e| {
+                        e.write_u32((*a).into())?;
+                        e.write_u32((*b).into())
+                    },
+                    e,
+                )?;
+           }
             ArpCacheTimeout(num)
             | TcpKeepaliveInterval(num)
             | AddressLeaseTime(num)
@@ -1274,42 +1240,34 @@ impl Encodable for DhcpOption {
             | BulkLeaseQueryQueryEndTime(num) => {
                 e.write_u8(code.into())?;
                 e.write_u8(4)?;
-                e.write_u32(*num)?
+                e.write_u32(*num)?;
             }
             VendorExtensions(bytes)
             | ClassIdentifier(bytes)
             | ClientIdentifier(bytes)
             // | DomainSearch(bytes)
             | ClientMachineIdentifier(bytes) => {
-                e.write_u8(code.into())?;
-                e.write_u8(bytes.len() as u8)?;
-                e.write_slice(bytes)?
+                encode_long_opt_bytes(code, bytes, e)?;
             }
             ParameterRequestList(codes) => {
-                e.write_u8(code.into())?;
-                e.write_u8(codes.len() as u8)?;
-                for code in codes {
-                    e.write_u8((*code).into())?;
-                }
+                encode_long_opt_chunks(code, 1, codes, |code, e| e.write_u8((*code).into()), e)?;
             }
             NetBiosNodeType(ntype) => {
                 e.write_u8(code.into())?;
                 e.write_u8(1)?;
-                e.write_u8((*ntype).into())?
+                e.write_u8((*ntype).into())?;
             }
             MessageType(mtype) => {
                 e.write_u8(code.into())?;
                 e.write_u8(1)?;
-                e.write_u8((*mtype).into())?
+                e.write_u8((*mtype).into())?;
             }
             RelayAgentInformation(relay) => {
                 let mut buf = Vec::new();
                 let mut opt_enc = Encoder::new(&mut buf);
                 relay.encode(&mut opt_enc)?;
-                e.write_u8(code.into())?;
-                // write len
-                e.write_u8(buf.len() as u8)?;
-                e.write_slice(&buf)?
+                // data encoded to intermediate buf
+                encode_long_opt_bytes(code, &buf, e)?;
             }
             ClientSystemArchitecture(arch) => {
                 e.write_u8(code.into())?;
@@ -1353,10 +1311,7 @@ impl Encodable for DhcpOption {
             }
             // not yet implemented
             Unknown(opt) => {
-                e.write_u8(code.into())?;
-                // length of bytes stored in Vec
-                e.write_u8(opt.data.len() as u8)?;
-                e.write_slice(&opt.data)?
+                encode_long_opt_bytes(code, &opt.data, e)?;
             }
         };
         Ok(())
@@ -1476,7 +1431,7 @@ impl UnknownOption {
     }
 }
 
-impl Decodable for UnknownOption {
+impl Decodable<'_> for UnknownOption {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         let code = decoder.read_u8()?;
         let length = decoder.read_u8()?;
@@ -1593,20 +1548,22 @@ impl From<MessageType> for u8 {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::VecDeque;
+
     use super::*;
     use std::str::FromStr;
 
     type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-    fn test_opt(opt: DhcpOption, actual: Vec<u8>) -> Result<()> {
+    fn test_opt(orig: DhcpOption, actual: Vec<u8>) -> Result<()> {
         let mut out = vec![];
         let mut enc = Encoder::new(&mut out);
-        opt.encode(&mut enc)?;
-        println!("{:?}", enc.buffer());
+        orig.encode(&mut enc)?;
+        println!("encoded {:?}", enc.buffer());
         assert_eq!(out, actual);
 
-        let buf = DhcpOption::decode(&mut Decoder::new(&out))?;
-        assert_eq!(buf, opt);
+        let decoded = DhcpOption::decode(&mut Decoder::new(&out))?;
+        assert_eq!(decoded, orig);
         Ok(())
     }
     #[test]
@@ -1615,8 +1572,22 @@ mod tests {
         println!("{:?}", input);
         let opts = DhcpOptions::decode(&mut Decoder::new(&input))?;
 
+        println!("{:?}", opts);
         let mut output = Vec::new();
         let _len = opts.encode(&mut Encoder::new(&mut output))?;
+        // not comparing len as we don't add PAD bytes
+        // assert_eq!(input.len(), len);
+        assert_eq!(opts.len(), len);
+        Ok(())
+    }
+
+    #[test]
+    fn test_long_opts() -> Result<()> {
+        let (input, len) = long_opt();
+        let opts = DhcpOptions::decode(&mut Decoder::new(&input))?;
+
+        let mut output = Vec::new();
+        opts.encode(&mut Encoder::new(&mut output))?;
         // not comparing len as we don't add PAD bytes
         // assert_eq!(input.len(), len);
         assert_eq!(opts.len(), len);
@@ -1633,6 +1604,27 @@ mod tests {
         )?;
         Ok(())
     }
+
+    #[test]
+    fn test_ips_long() -> Result<()> {
+        let ip = "192.168.0.1".parse::<Ipv4Addr>().unwrap();
+        let list = std::iter::repeat(ip).take(64).collect();
+        let mut bytes = std::iter::repeat(ip)
+            .take(63)
+            .flat_map(|ip| u32::from(ip).to_be_bytes())
+            .collect::<VecDeque<u8>>();
+        bytes.push_front(252);
+        bytes.push_front(6);
+        bytes.push_back(6);
+        bytes.push_back(4);
+        bytes.extend(u32::from(ip).to_be_bytes());
+        test_opt(
+            DhcpOption::DomainNameServer(list),
+            bytes.drain(..).collect(),
+        )?;
+        Ok(())
+    }
+
     #[test]
     fn test_ip() -> Result<()> {
         test_opt(
@@ -1752,6 +1744,18 @@ mod tests {
                 53, 1, 2, 54, 4, 192, 168, 0, 1, 51, 4, 0, 0, 0, 60, 58, 4, 0, 0, 0, 30, 59, 4, 0,
                 0, 0, 52, 1, 4, 255, 255, 255, 0, 3, 4, 192, 168, 0, 1, 6, 8, 192, 168, 0, 1, 192,
                 168, 1, 1, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ],
+            8,
+        )
+    }
+    fn long_opt() -> (Vec<u8>, usize) {
+        // domain name server encoded in long format: 6, 4, 192, 168, 0, 1, 6, 4, 192, 168, 1, 1
+        // instead of: 6, 8, 192, 168, 0, 1, 192, 168, 1, 1
+        (
+            vec![
+                53, 1, 2, 54, 4, 192, 168, 0, 1, 51, 4, 0, 0, 0, 60, 58, 4, 0, 0, 0, 30, 59, 4, 0,
+                0, 0, 52, 1, 4, 255, 255, 255, 0, 3, 4, 192, 168, 0, 1, 6, 4, 192, 168, 0, 1, 6, 4,
+                192, 168, 1, 1, 6, 4, 192, 1, 1, 1, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             ],
             8,
         )

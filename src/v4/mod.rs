@@ -455,7 +455,7 @@ impl Message {
     }
 }
 
-impl Decodable for Message {
+impl Decodable<'_> for Message {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(Message {
             opcode: Opcode::decode(decoder)?,
