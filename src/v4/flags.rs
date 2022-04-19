@@ -55,7 +55,7 @@ impl From<Flags> for u16 {
     }
 }
 
-impl Decodable for Flags {
+impl Decodable<'_> for Flags {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(decoder.read_u16()?.into())
     }

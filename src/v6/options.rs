@@ -269,7 +269,7 @@ pub struct Authentication {
     pub info: Vec<u8>,
 }
 
-impl Decodable for Authentication {
+impl Decodable<'_> for Authentication {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         let len = decoder.buffer().len();
         Ok(Authentication {
@@ -316,7 +316,7 @@ pub struct ORO {
     pub opts: Vec<OptionCode>,
 }
 
-impl Decodable for ORO {
+impl Decodable<'_> for ORO {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         let len = decoder.buffer().len();
         Ok(ORO {
@@ -343,7 +343,7 @@ pub struct IATA {
     pub opts: DhcpOptions,
 }
 
-impl Decodable for IATA {
+impl Decodable<'_> for IATA {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(IATA {
             id: decoder.read_u32()?,
@@ -363,7 +363,7 @@ pub struct IANA {
     pub opts: DhcpOptions,
 }
 
-impl Decodable for IANA {
+impl Decodable<'_> for IANA {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(IANA {
             id: decoder.read_u32()?,
@@ -385,7 +385,7 @@ pub struct IAPD {
     pub opts: DhcpOptions,
 }
 
-impl Decodable for IAPD {
+impl Decodable<'_> for IAPD {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(IAPD {
             id: decoder.read_u32()?,
@@ -408,7 +408,7 @@ pub struct IAPDPrefix {
     pub opts: DhcpOptions,
 }
 
-impl Decodable for IAPDPrefix {
+impl Decodable<'_> for IAPDPrefix {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(IAPDPrefix {
             preferred_lifetime: decoder.read_u32()?,
@@ -433,7 +433,7 @@ pub struct IAAddr {
     pub opts: DhcpOptions,
 }
 
-impl Decodable for IAAddr {
+impl Decodable<'_> for IAAddr {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(IAAddr {
             addr: decoder.read::<16>()?.into(),
@@ -473,7 +473,7 @@ impl UnknownOption {
     }
 }
 
-impl Decodable for DhcpOptions {
+impl Decodable<'_> for DhcpOptions {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         let mut opts = Vec::new();
         while let Ok(opt) = DhcpOption::decode(decoder) {
@@ -489,7 +489,7 @@ impl Encodable for DhcpOptions {
     }
 }
 
-impl Decodable for DhcpOption {
+impl Decodable<'_> for DhcpOption {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         let code = decoder.read_u16()?.into();
         let len = decoder.read_u16()? as usize;
