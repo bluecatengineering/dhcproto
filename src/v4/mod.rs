@@ -547,6 +547,7 @@ mod tests {
     fn decode_bootreq() -> Result<()> {
         let offer = bootreq();
         let msg = Message::decode(&mut Decoder::new(&offer))?;
+        println!("{:?}", msg);
         // now encode
         let mut buf = Vec::new();
         let mut e = Encoder::new(&mut buf);
