@@ -39,6 +39,10 @@ pub enum DecodeError {
     /// io error
     #[error("io error {0}")]
     IoError(#[from] io::Error),
+
+    /// Unknown decode error
+    #[error("unknown error")]
+    Unknown(Box<dyn std::error::Error + Send + Sync + 'static>),
 }
 
 /// Returned from types that encode
@@ -60,6 +64,10 @@ pub enum EncodeError {
     /// io error
     #[error("io error {0}")]
     IoError(#[from] io::Error),
+
+    /// DNS encoding error from trust-dns
+    #[error("domain encoding error {0}")]
+    DomainEncodeError(#[from] trust_dns_proto::error::ProtoError),
 }
 
 /// Convenience type for encode errors

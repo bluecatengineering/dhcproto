@@ -1,4 +1,9 @@
-use std::{collections::HashMap, iter, net::Ipv4Addr};
+use std::{
+    collections::HashMap,
+    iter,
+    net::Ipv4Addr,
+    ops::{Deref, DerefMut},
+};
 
 use crate::{
     decoder::{Decodable, Decoder},
@@ -10,6 +15,10 @@ use crate::{
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use trust_dns_proto::{
+    rr::Name,
+    serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder},
+};
 
 /// Options for DHCP. This implemention of options ignores PAD bytes.
 ///
@@ -328,8 +337,8 @@ pub enum OptionCode {
     ClientMachineIdentifier,
     /// 118 Subnet option - <https://datatracker.ietf.org/doc/html/rfc3011>
     SubnetSelection,
-    // /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
-    // DomainSearch,
+    /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
+    DomainSearch,
     /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
     StatusCode,
     /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
@@ -419,6 +428,7 @@ impl From<u8> for OptionCode {
             94 => ClientNetworkInterface,
             97 => ClientMachineIdentifier,
             118 => SubnetSelection,
+<<<<<<< HEAD
             // 119 => DomainSearch,
             151 => StatusCode,
             152 => BaseTime,
@@ -427,6 +437,9 @@ impl From<u8> for OptionCode {
             155 => QueryEndTime,
             156 => DhcpState,
             157 => DataSource,
+=======
+            119 => DomainSearch,
+>>>>>>> edacc1a (v4: add opt 119)
             255 => End,
             // TODO: implement more
             n => Unknown(n),
@@ -503,6 +516,7 @@ impl From<OptionCode> for u8 {
             ClientNetworkInterface => 94,
             ClientMachineIdentifier => 97,
             SubnetSelection => 118,
+<<<<<<< HEAD
             StatusCode => 151,
             BaseTime => 152,
             StartTimeOfState => 153,
@@ -511,6 +525,9 @@ impl From<OptionCode> for u8 {
             DhcpState => 156,
             DataSource => 157,
             // DomainSearch => 119,
+=======
+            DomainSearch => 119,
+>>>>>>> edacc1a (v4: add opt 119)
             End => 255,
             // TODO: implement more
             Unknown(n) => n,
@@ -657,6 +674,7 @@ pub enum DhcpOption {
     ClientMachineIdentifier(Vec<u8>),
     /// 118 Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>
     SubnetSelection(Ipv4Addr),
+<<<<<<< HEAD
     // /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
     // DomainSearch(Vec<u8>),
     /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
@@ -673,10 +691,57 @@ pub enum DhcpOption {
     BulkLeaseQueryDhcpState(bulk_query::QueryState),
     /// 157 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>
     BulkLeaseQueryDataSource(bulk_query::DataSourceFlags),
+=======
+    /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
+    DomainSearch(Vec<Domain>),
+>>>>>>> edacc1a (v4: add opt 119)
     /// Unknown option
     Unknown(UnknownOption),
     /// 255 End
     End,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Domain(Name);
+
+impl Deref for Domain {
+    type Target = Name;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Domain {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for Domain {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.collect_str(&self.0.to_string())
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Domain {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let name: &str = Deserialize::deserialize(deserializer)?;
+        name.parse().map(Domain).map_err(|_| {
+            serde::de::Error::invalid_value(
+                serde::de::Unexpected::Str(name),
+                &"unable to parse string into Name",
+            )
+        })
+    }
 }
 
 /// Architecture name from - <https://www.rfc-editor.org/rfc/rfc4578.html>
@@ -1060,6 +1125,7 @@ impl Decodable for DhcpOption {
                 let len = decoder.read_u8()?; // always 4
                 SubnetSelection(decoder.read_ipv4(len as usize)?)
             }
+<<<<<<< HEAD
             // OptionCode::DomainSearch => {
             //     let len = decoder.read_u8()?;
             //     DomainSearch(decoder.read_slice(len as usize)?.to_vec())
@@ -1098,6 +1164,18 @@ impl Decodable for DhcpOption {
             OptionCode::DataSource => {
                 let _ = decoder.read_u8()?;
                 BulkLeaseQueryDataSource(bulk_query::DataSourceFlags::new(decoder.read_u8()?))
+=======
+            OptionCode::DomainSearch => {
+                let len = decoder.read_u8()?;
+
+                let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
+                let mut names = Vec::new();
+                while let Ok(name) = Name::read(&mut name_decoder) {
+                    names.push(Domain(name));
+                }
+
+                DomainSearch(names)
+>>>>>>> edacc1a (v4: add opt 119)
             }
             OptionCode::End => End,
             // not yet implemented
@@ -1259,6 +1337,7 @@ impl Encodable for DhcpOption {
                 e.write_u8(*major)?;
                 e.write_u8(*minor)?;
             }
+<<<<<<< HEAD
             BulkLeaseQueryStatusCode(status_code, msg) => {
                 e.write_u8(code.into())?;
                 let msg = msg.as_bytes();
@@ -1275,6 +1354,18 @@ impl Encodable for DhcpOption {
                 e.write_u8(code.into())?;
                 e.write_u8(1)?;
                 e.write_u8((*src).into())?
+=======
+            DomainSearch(names) => {
+                e.write_u8(code.into())?;
+
+                let mut buf = Vec::new();
+                let mut name_encoder = BinEncoder::new(&mut buf);
+                for name in names {
+                    name.0.emit(&mut name_encoder)?;
+                }
+                e.write_u8(buf.len() as u8)?;
+                e.write_slice(&buf)?;
+>>>>>>> edacc1a (v4: add opt 119)
             }
             // not yet implemented
             Unknown(opt) => {
@@ -1357,6 +1448,7 @@ impl From<&DhcpOption> for OptionCode {
             ClientNetworkInterface(_, _, _) => OptionCode::ClientNetworkInterface,
             ClientMachineIdentifier(_) => OptionCode::ClientMachineIdentifier,
             SubnetSelection(_) => OptionCode::SubnetSelection,
+<<<<<<< HEAD
             // DomainSearch(_) => OptionCode::DomainSearch,
             BulkLeaseQueryStatusCode(_, _) => OptionCode::StatusCode,
             BulkLeaseQueryBaseTime(_) => OptionCode::BaseTime,
@@ -1365,6 +1457,9 @@ impl From<&DhcpOption> for OptionCode {
             BulkLeaseQueryQueryEndTime(_) => OptionCode::QueryEndTime,
             BulkLeaseQueryDhcpState(_) => OptionCode::DhcpState,
             BulkLeaseQueryDataSource(_) => OptionCode::DataSource,
+=======
+            DomainSearch(_) => OptionCode::DomainSearch,
+>>>>>>> edacc1a (v4: add opt 119)
             End => OptionCode::End,
             // TODO: implement more
             Unknown(n) => OptionCode::Unknown(n.code),
@@ -1519,6 +1614,7 @@ impl From<MessageType> for u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::str::FromStr;
 
     type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -1641,15 +1737,21 @@ mod tests {
         Ok(())
     }
 
-    // #[test]
-    // fn test_domainsearch() -> Result<()> {
-    //     test_opt(
-    //         DhcpOption::DomainSearch("eng.apple.com. marketing.apple.com"),
-    //         vec![93, 2, 0, 0],
-    //     )?;
+    #[test]
+    fn test_domainsearch() -> Result<()> {
+        test_opt(
+            DhcpOption::DomainSearch(vec![
+                Domain(Name::from_str("eng.apple.com.").unwrap()),
+                Domain(Name::from_str("marketing.apple.com.").unwrap()),
+            ]),
+            vec![
+                119, 27, 3, b'e', b'n', b'g', 5, b'a', b'p', b'p', b'l', b'e', 3, b'c', b'o', b'm',
+                0, 9, b'm', b'a', b'r', b'k', b'e', b't', b'i', b'n', b'g', 0xC0, 0x04,
+            ],
+        )?;
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 
     #[test]
     fn test_unknown() -> Result<()> {
