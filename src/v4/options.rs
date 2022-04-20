@@ -587,6 +587,7 @@ pub enum DhcpOption {
 }
 
 /// Architecture name from - <https://www.rfc-editor.org/rfc/rfc4578.html>
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Architecture {
     /// Intel x86PC
