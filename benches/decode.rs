@@ -128,6 +128,15 @@ fn decode_benches(c: &mut Criterion) {
             dhcproto::v4::Message::from_bytes(other_offer).unwrap();
         });
     });
+
+    g.bench_function("decode_opts", |b| {
+        let opts: &[u8] = &[
+            53, 1, 2, 54, 4, 192, 168, 0, 1, 51, 4, 0, 0, 0, 60, 58, 4, 0, 0, 0, 30, 59, 4, 0, 0,
+            0, 52, 1, 4, 255, 255, 255, 0, 3, 4, 192, 168, 0, 1, 6, 8, 192, 168, 0, 1, 192, 168, 1,
+            1, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+        b.iter(|| dhcproto::v4::DhcpOptions::from_bytes(opts).unwrap());
+    });
 }
 
 criterion_group!(benches, decode_benches);
