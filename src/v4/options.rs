@@ -1,9 +1,4 @@
-use std::{
-    collections::HashMap,
-    iter,
-    net::Ipv4Addr,
-    ops::{Deref, DerefMut},
-};
+use std::{collections::HashMap, iter, net::Ipv4Addr};
 
 use crate::{
     decoder::{Decodable, Decoder},
@@ -704,17 +699,13 @@ pub enum DhcpOption {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Domain(Name);
 
-impl Deref for Domain {
-    type Target = Name;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+impl Domain {
+    pub fn inner(self) -> Name {
+        self.0
     }
-}
 
-impl DerefMut for Domain {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    pub fn as_inner(&self) -> &Name {
+        &self.0
     }
 }
 
