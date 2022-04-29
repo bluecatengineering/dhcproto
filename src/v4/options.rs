@@ -423,8 +423,7 @@ impl From<u8> for OptionCode {
             94 => ClientNetworkInterface,
             97 => ClientMachineIdentifier,
             118 => SubnetSelection,
-<<<<<<< HEAD
-            // 119 => DomainSearch,
+            119 => DomainSearch,
             151 => StatusCode,
             152 => BaseTime,
             153 => StartTimeOfState,
@@ -432,9 +431,6 @@ impl From<u8> for OptionCode {
             155 => QueryEndTime,
             156 => DhcpState,
             157 => DataSource,
-=======
-            119 => DomainSearch,
->>>>>>> edacc1a (v4: add opt 119)
             255 => End,
             // TODO: implement more
             n => Unknown(n),
@@ -511,7 +507,7 @@ impl From<OptionCode> for u8 {
             ClientNetworkInterface => 94,
             ClientMachineIdentifier => 97,
             SubnetSelection => 118,
-<<<<<<< HEAD
+            DomainSearch => 119,
             StatusCode => 151,
             BaseTime => 152,
             StartTimeOfState => 153,
@@ -519,10 +515,6 @@ impl From<OptionCode> for u8 {
             QueryEndTime => 155,
             DhcpState => 156,
             DataSource => 157,
-            // DomainSearch => 119,
-=======
-            DomainSearch => 119,
->>>>>>> edacc1a (v4: add opt 119)
             End => 255,
             // TODO: implement more
             Unknown(n) => n,
@@ -669,9 +661,8 @@ pub enum DhcpOption {
     ClientMachineIdentifier(Vec<u8>),
     /// 118 Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>
     SubnetSelection(Ipv4Addr),
-<<<<<<< HEAD
-    // /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
-    // DomainSearch(Vec<u8>),
+    /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
+    DomainSearch(Vec<Domain>),
     /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
     BulkLeaseQueryStatusCode(bulk_query::Code, String),
     /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
@@ -686,10 +677,6 @@ pub enum DhcpOption {
     BulkLeaseQueryDhcpState(bulk_query::QueryState),
     /// 157 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>
     BulkLeaseQueryDataSource(bulk_query::DataSourceFlags),
-=======
-    /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
-    DomainSearch(Vec<Domain>),
->>>>>>> edacc1a (v4: add opt 119)
     /// Unknown option
     Unknown(UnknownOption),
     /// 255 End
@@ -699,13 +686,27 @@ pub enum DhcpOption {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Domain(Name);
 
-impl Domain {
-    pub fn inner(self) -> Name {
-        self.0
-    }
-
-    pub fn as_inner(&self) -> &Name {
+impl AsRef<Name> for Domain {
+    fn as_ref(&self) -> &Name {
         &self.0
+    }
+}
+
+impl AsMut<Name> for Domain {
+    fn as_mut(&mut self) -> &mut Name {
+        &mut self.0
+    }
+}
+
+impl From<Domain> for Name {
+    fn from(domain: Domain) -> Self {
+        domain.0
+    }
+}
+
+impl From<Name> for Domain {
+    fn from(name: Name) -> Self {
+        Domain(name)
     }
 }
 
@@ -1116,11 +1117,17 @@ impl Decodable for DhcpOption {
                 let len = decoder.read_u8()?; // always 4
                 SubnetSelection(decoder.read_ipv4(len as usize)?)
             }
-<<<<<<< HEAD
-            // OptionCode::DomainSearch => {
-            //     let len = decoder.read_u8()?;
-            //     DomainSearch(decoder.read_slice(len as usize)?.to_vec())
-            // }
+            OptionCode::DomainSearch => {
+                let len = decoder.read_u8()?;
+
+                let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
+                let mut names = Vec::new();
+                while let Ok(name) = Name::read(&mut name_decoder) {
+                    names.push(Domain(name));
+                }
+
+                DomainSearch(names)
+            }
             OptionCode::StatusCode => {
                 let len = decoder.read_u8()? as usize;
                 let code = decoder.read_u8()?.into();
@@ -1155,18 +1162,6 @@ impl Decodable for DhcpOption {
             OptionCode::DataSource => {
                 let _ = decoder.read_u8()?;
                 BulkLeaseQueryDataSource(bulk_query::DataSourceFlags::new(decoder.read_u8()?))
-=======
-            OptionCode::DomainSearch => {
-                let len = decoder.read_u8()?;
-
-                let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
-                let mut names = Vec::new();
-                while let Ok(name) = Name::read(&mut name_decoder) {
-                    names.push(Domain(name));
-                }
-
-                DomainSearch(names)
->>>>>>> edacc1a (v4: add opt 119)
             }
             OptionCode::End => End,
             // not yet implemented
@@ -1328,7 +1323,6 @@ impl Encodable for DhcpOption {
                 e.write_u8(*major)?;
                 e.write_u8(*minor)?;
             }
-<<<<<<< HEAD
             BulkLeaseQueryStatusCode(status_code, msg) => {
                 e.write_u8(code.into())?;
                 let msg = msg.as_bytes();
@@ -1345,7 +1339,7 @@ impl Encodable for DhcpOption {
                 e.write_u8(code.into())?;
                 e.write_u8(1)?;
                 e.write_u8((*src).into())?
-=======
+            }
             DomainSearch(names) => {
                 e.write_u8(code.into())?;
 
@@ -1356,7 +1350,6 @@ impl Encodable for DhcpOption {
                 }
                 e.write_u8(buf.len() as u8)?;
                 e.write_slice(&buf)?;
->>>>>>> edacc1a (v4: add opt 119)
             }
             // not yet implemented
             Unknown(opt) => {
@@ -1439,8 +1432,7 @@ impl From<&DhcpOption> for OptionCode {
             ClientNetworkInterface(_, _, _) => OptionCode::ClientNetworkInterface,
             ClientMachineIdentifier(_) => OptionCode::ClientMachineIdentifier,
             SubnetSelection(_) => OptionCode::SubnetSelection,
-<<<<<<< HEAD
-            // DomainSearch(_) => OptionCode::DomainSearch,
+            DomainSearch(_) => OptionCode::DomainSearch,
             BulkLeaseQueryStatusCode(_, _) => OptionCode::StatusCode,
             BulkLeaseQueryBaseTime(_) => OptionCode::BaseTime,
             BulkLeasQueryStartTimeOfState(_) => OptionCode::StartTimeOfState,
@@ -1448,9 +1440,6 @@ impl From<&DhcpOption> for OptionCode {
             BulkLeaseQueryQueryEndTime(_) => OptionCode::QueryEndTime,
             BulkLeaseQueryDhcpState(_) => OptionCode::DhcpState,
             BulkLeaseQueryDataSource(_) => OptionCode::DataSource,
-=======
-            DomainSearch(_) => OptionCode::DomainSearch,
->>>>>>> edacc1a (v4: add opt 119)
             End => OptionCode::End,
             // TODO: implement more
             Unknown(n) => OptionCode::Unknown(n.code),
