@@ -58,15 +58,32 @@ msg.encode(&mut e)?;
 // buf now has the contents of the encoded DHCP message
 ```
 
-## RFCs
+## RFCs supported
 
 DHCPv6:
 
 - https://datatracker.ietf.org/doc/html/rfc8415
 - https://datatracker.ietf.org/doc/html/rfc3646
 - https://datatracker.ietf.org/doc/html/rfc3633
+- https://datatracker.ietf.org/doc/html/rfc5007 (message types only)
+- https://datatracker.ietf.org/doc/html/rfc5460 (message types/status codes only, no opt 53)
+- https://datatracker.ietf.org/doc/html/rfc6977 (message types only)
+- https://datatracker.ietf.org/doc/html/rfc7341 (message types only)
 
 DHCPv4:
 
 - https://tools.ietf.org/html/rfc2131
+- https://tools.ietf.org/html/rfc3011
 - https://tools.ietf.org/html/rfc3232
+- https://tools.ietf.org/html/rfc3203
+- https://tools.ietf.org/html/rfc4388 (message types & opts)
+- https://tools.ietf.org/html/rfc4578
+- https://tools.ietf.org/html/rfc6926 (message types only, opts 151-157 unimplemented, PR welcome!)
+- https://tools.ietf.org/html/rfc7724 (message types only, status codes for opt 151 unimplemented)
+
+
+Unmerged:
+- https://www.rfc-editor.org/rfc/rfc3396
+- https://www.rfc-editor.org/rfc/rfc3397
+
+
