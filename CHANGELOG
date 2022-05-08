@@ -7,11 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- dhcpv4 option variants added (breaking)
+- dhcpv4 message type variants added (breaking)
+- ClientNetworkInterface removed inner tuple
+
 ### Added
 
 - dhcpv4 message variants 9-18 added, breaking change for `MessageType`
 - dhcpv4 added DhcpOption for 91/92/93/94/97
 - UnknownOption encode/decode
+- dhcpv4 options 151-157 from bulkleasequery RFC
 
 ## [0.7.0]
 
