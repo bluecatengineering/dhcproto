@@ -4,6 +4,7 @@ use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
     error::{DecodeResult, EncodeResult},
+    v4::bulk_query,
     v4::relay,
 };
 
@@ -279,6 +280,20 @@ pub enum OptionCode {
     SubnetSelection,
     // /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
     // DomainSearch,
+    /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
+    StatusCode,
+    /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
+    BaseTime,
+    /// 153 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.4>
+    StartTimeOfState,
+    /// 154 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.5>
+    QueryStartTime,
+    /// 155 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.6>
+    QueryEndTime,
+    /// 156 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.7>
+    DhcpState,
+    /// 157 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>
+    DataSource,
     /// Unknown option
     Unknown(u8),
     /// 255 End
@@ -355,6 +370,13 @@ impl From<u8> for OptionCode {
             97 => ClientMachineIdentifier,
             118 => SubnetSelection,
             // 119 => DomainSearch,
+            151 => StatusCode,
+            152 => BaseTime,
+            153 => StartTimeOfState,
+            154 => QueryStartTime,
+            155 => QueryEndTime,
+            156 => DhcpState,
+            157 => DataSource,
             255 => End,
             // TODO: implement more
             n => Unknown(n),
@@ -431,6 +453,13 @@ impl From<OptionCode> for u8 {
             ClientNetworkInterface => 94,
             ClientMachineIdentifier => 97,
             SubnetSelection => 118,
+            StatusCode => 151,
+            BaseTime => 152,
+            StartTimeOfState => 153,
+            QueryStartTime => 154,
+            QueryEndTime => 155,
+            DhcpState => 156,
+            DataSource => 157,
             // DomainSearch => 119,
             End => 255,
             // TODO: implement more
@@ -573,13 +602,27 @@ pub enum DhcpOption {
     /// 93 Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>
     ClientSystemArchitecture(Architecture),
     /// 94 Client Network Interface - <https://www.rfc-editor.org/rfc/rfc4578.html>
-    ClientNetworkInterface((u8, u8, u8)),
+    ClientNetworkInterface(u8, u8, u8),
     /// 97 Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>
     ClientMachineIdentifier(Vec<u8>),
     /// 118 Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>
     SubnetSelection(Ipv4Addr),
     // /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
     // DomainSearch(Vec<u8>),
+    /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
+    BulkLeaseQueryStatusCode(bulk_query::Code, String),
+    /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
+    BulkLeaseQueryBaseTime(u32),
+    /// 153 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.4>
+    BulkLeasQueryStartTimeOfState(u32),
+    /// 154 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.5>
+    BulkLeaseQueryQueryStartTime(u32),
+    /// 155 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.6>
+    BulkLeaseQueryQueryEndTime(u32),
+    /// 156 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.7>
+    BulkLeaseQueryDhcpState(bulk_query::QueryState),
+    /// 157 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>
+    BulkLeaseQueryDataSource(bulk_query::DataSourceFlags),
     /// Unknown option
     Unknown(UnknownOption),
     /// 255 End
@@ -957,7 +1000,7 @@ impl Decodable for DhcpOption {
             OptionCode::ClientNetworkInterface => {
                 let length = decoder.read_u8()?;
                 debug_assert!(length == 3);
-                ClientNetworkInterface((decoder.read_u8()?, decoder.read_u8()?, decoder.read_u8()?))
+                ClientNetworkInterface(decoder.read_u8()?, decoder.read_u8()?, decoder.read_u8()?)
             }
             OptionCode::ClientMachineIdentifier => {
                 let length = decoder.read_u8()? as usize;
@@ -971,6 +1014,41 @@ impl Decodable for DhcpOption {
             //     let len = decoder.read_u8()?;
             //     DomainSearch(decoder.read_slice(len as usize)?.to_vec())
             // }
+            OptionCode::StatusCode => {
+                let len = decoder.read_u8()? as usize;
+                let code = decoder.read_u8()?.into();
+                // len - 1 because code is included in length
+                let message = decoder.read_string(len - 1)?;
+                BulkLeaseQueryStatusCode(code, message)
+            }
+            OptionCode::BaseTime => {
+                let len = decoder.read_u8()?;
+                debug_assert!(len == 4);
+                BulkLeaseQueryBaseTime(decoder.read_u32()?)
+            }
+            OptionCode::StartTimeOfState => {
+                let len = decoder.read_u8()?;
+                debug_assert!(len == 4);
+                BulkLeasQueryStartTimeOfState(decoder.read_u32()?)
+            }
+            OptionCode::QueryStartTime => {
+                let len = decoder.read_u8()?;
+                debug_assert!(len == 4);
+                BulkLeaseQueryQueryStartTime(decoder.read_u32()?)
+            }
+            OptionCode::QueryEndTime => {
+                let len = decoder.read_u8()?;
+                debug_assert!(len == 4);
+                BulkLeaseQueryQueryEndTime(decoder.read_u32()?)
+            }
+            OptionCode::DhcpState => {
+                let _ = decoder.read_u8()?;
+                BulkLeaseQueryDhcpState(decoder.read_u8()?.into())
+            }
+            OptionCode::DataSource => {
+                let _ = decoder.read_u8()?;
+                BulkLeaseQueryDataSource(bulk_query::DataSourceFlags::new(decoder.read_u8()?))
+            }
             OptionCode::End => End,
             // not yet implemented
             OptionCode::Unknown(code) => {
@@ -1036,8 +1114,9 @@ impl Encodable for DhcpOption {
             Hostname(s) | MeritDumpFile(s) | DomainName(s) | ExtensionsPath(s) | NISDomain(s)
             | RootPath(s) | NetBiosScope(s) | Message(s) => {
                 e.write_u8(code.into())?;
+                let s = s.as_bytes();
                 e.write_u8(s.len() as u8)?;
-                e.write_slice(s.as_bytes())?
+                e.write_slice(s)?
             }
             BootFileSize(num) | MaxDatagramSize(num) | InterfaceMtu(num) | MaxMessageSize(num) => {
                 e.write_u8(code.into())?;
@@ -1074,7 +1153,11 @@ impl Encodable for DhcpOption {
             | AddressLeaseTime(num)
             | Renewal(num)
             | Rebinding(num)
-            | ClientLastTransactionTime(num) => {
+            | ClientLastTransactionTime(num)
+            | BulkLeaseQueryBaseTime(num)
+            | BulkLeasQueryStartTimeOfState(num)
+            | BulkLeaseQueryQueryStartTime(num)
+            | BulkLeaseQueryQueryEndTime(num) => {
                 e.write_u8(code.into())?;
                 e.write_u8(4)?;
                 e.write_u32(*num)?
@@ -1119,12 +1202,29 @@ impl Encodable for DhcpOption {
                 e.write_u8(2)?;
                 e.write_u16((*arch).into())?;
             }
-            ClientNetworkInterface((ty, major, minor)) => {
+            ClientNetworkInterface(ty, major, minor) => {
                 e.write_u8(code.into())?;
                 e.write_u8(3)?;
                 e.write_u8(*ty)?;
                 e.write_u8(*major)?;
                 e.write_u8(*minor)?;
+            }
+            BulkLeaseQueryStatusCode(status_code, msg) => {
+                e.write_u8(code.into())?;
+                let msg = msg.as_bytes();
+                e.write_u8(msg.len() as u8 + 1)?;
+                e.write_u8((*status_code).into())?;
+                e.write_slice(msg)?
+            }
+            BulkLeaseQueryDhcpState(state) => {
+                e.write_u8(code.into())?;
+                e.write_u8(1)?;
+                e.write_u8((*state).into())?
+            }
+            BulkLeaseQueryDataSource(src) => {
+                e.write_u8(code.into())?;
+                e.write_u8(1)?;
+                e.write_u8((*src).into())?
             }
             // not yet implemented
             Unknown(opt) => {
@@ -1204,10 +1304,17 @@ impl From<&DhcpOption> for OptionCode {
             ClientLastTransactionTime(_) => OptionCode::ClientLastTransactionTime,
             AssociatedIp(_) => OptionCode::AssociatedIp,
             ClientSystemArchitecture(_) => OptionCode::ClientSystemArchitecture,
-            ClientNetworkInterface(_) => OptionCode::ClientNetworkInterface,
+            ClientNetworkInterface(_, _, _) => OptionCode::ClientNetworkInterface,
             ClientMachineIdentifier(_) => OptionCode::ClientMachineIdentifier,
             SubnetSelection(_) => OptionCode::SubnetSelection,
             // DomainSearch(_) => OptionCode::DomainSearch,
+            BulkLeaseQueryStatusCode(_, _) => OptionCode::StatusCode,
+            BulkLeaseQueryBaseTime(_) => OptionCode::BaseTime,
+            BulkLeasQueryStartTimeOfState(_) => OptionCode::StartTimeOfState,
+            BulkLeaseQueryQueryStartTime(_) => OptionCode::QueryStartTime,
+            BulkLeaseQueryQueryEndTime(_) => OptionCode::QueryEndTime,
+            BulkLeaseQueryDhcpState(_) => OptionCode::DhcpState,
+            BulkLeaseQueryDataSource(_) => OptionCode::DataSource,
             End => OptionCode::End,
             // TODO: implement more
             Unknown(n) => OptionCode::Unknown(n.code),
@@ -1458,6 +1565,27 @@ mod tests {
         test_opt(
             DhcpOption::ClientSystemArchitecture(Architecture::Intelx86PC),
             vec![93, 2, 0, 0],
+        )?;
+
+        Ok(())
+    }
+    #[test]
+    fn test_status() -> Result<()> {
+        let msg = "message".to_string();
+        test_opt(
+            DhcpOption::BulkLeaseQueryStatusCode(bulk_query::Code::Success, msg.clone()),
+            vec![
+                151,
+                (msg.as_bytes().len() + 1) as u8,
+                0,
+                b'm',
+                b'e',
+                b's',
+                b's',
+                b'a',
+                b'g',
+                b'e',
+            ],
         )?;
 
         Ok(())

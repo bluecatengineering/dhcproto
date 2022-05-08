@@ -83,6 +83,7 @@ use std::{net::Ipv4Addr, str::Utf8Error};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+pub mod bulk_query;
 mod flags;
 mod htype;
 mod opcode;

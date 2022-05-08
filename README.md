@@ -78,7 +78,7 @@ DHCPv4:
 - https://tools.ietf.org/html/rfc3203
 - https://tools.ietf.org/html/rfc4388 (message types & opts)
 - https://tools.ietf.org/html/rfc4578
-- https://tools.ietf.org/html/rfc6926 (message types only, opts 151-157 unimplemented, PR welcome!)
+- https://tools.ietf.org/html/rfc6926 (message types & opts 151-157)
 - https://tools.ietf.org/html/rfc7724 (message types only, status codes for opt 151 unimplemented)
 
 
