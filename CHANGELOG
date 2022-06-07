@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - dhcpv4 option variants added (breaking)
 - dhcpv4 message type variants added (breaking)
 - ClientNetworkInterface removed inner tuple
+- Change `has_msg_type` return type to just `bool`
 
 ### Added
 
