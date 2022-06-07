@@ -36,6 +36,12 @@ use serde::{Deserialize, Serialize};
 pub struct DhcpOptions(HashMap<OptionCode, DhcpOption>);
 
 impl DhcpOptions {
+    /// Create new [`DhcpOptions`]
+    ///
+    /// [`DhcpOptions`]: crate::v4::DhcpOptions
+    pub fn new() -> Self {
+        Self::default()
+    }
     /// Get the data for a particular [`OptionCode`]
     ///
     /// [`OptionCode`]: crate::v4::OptionCode
@@ -54,11 +60,25 @@ impl DhcpOptions {
     }
     /// insert a new [`DhcpOption`]
     ///
+    /// ```
+    /// # use dhcproto::v4::{MessageType, DhcpOption, DhcpOptions};
+    /// let mut opts = DhcpOptions::new();
+    /// opts.insert(DhcpOption::MessageType(MessageType::Discover));
+    /// ```
     /// [`DhcpOption`]: crate::v4::DhcpOption
     pub fn insert(&mut self, opt: DhcpOption) -> Option<DhcpOption> {
         self.0.insert((&opt).into(), opt)
     }
     /// iterate over entries
+    /// ```
+    /// # use dhcproto::v4::{MessageType, DhcpOption, DhcpOptions};
+    /// let mut opts = DhcpOptions::new();
+    /// opts.insert(DhcpOption::MessageType(MessageType::Offer));
+    /// opts.insert(DhcpOption::SubnetMask([198, 168, 0, 1].into()));
+    /// for (code, opt) in opts.iter() {
+    ///     println!("{code:?} {opt:?}");
+    /// }
+    /// ```
     pub fn iter(&self) -> impl Iterator<Item = (&OptionCode, &DhcpOption)> {
         self.0.iter()
     }
@@ -67,6 +87,12 @@ impl DhcpOptions {
         self.0.iter_mut()
     }
     /// return message type
+    /// ```
+    /// # use dhcproto::v4::{MessageType, DhcpOption, DhcpOptions};
+    /// let mut opts = DhcpOptions::new();
+    /// opts.insert(DhcpOption::MessageType(MessageType::Offer));
+    /// assert_eq!(opts.msg_type(), Some(MessageType::Offer));
+    /// ```
     pub fn msg_type(&self) -> Option<MessageType> {
         let opt = self.get(OptionCode::MessageType)?;
         match opt {
@@ -75,17 +101,35 @@ impl DhcpOptions {
         }
     }
     /// determine if options contains a specific message type
-    pub fn has_msg_type(&self, opt: MessageType) -> Option<bool> {
-        if let DhcpOption::MessageType(msg) = self.get(OptionCode::MessageType)? {
-            return Some(*msg == opt);
-        }
-        Some(false)
+    /// ```
+    /// # use dhcproto::v4::{MessageType, DhcpOption, DhcpOptions};
+    /// let mut opts = DhcpOptions::new();
+    /// opts.insert(DhcpOption::MessageType(MessageType::Offer));
+    /// assert!(opts.has_msg_type(MessageType::Offer));
+    /// assert!(!opts.has_msg_type(MessageType::Decline));
+    /// ```
+    pub fn has_msg_type(&self, opt: MessageType) -> bool {
+        matches!(self.get(OptionCode::MessageType), Some(DhcpOption::MessageType(msg)) if *msg == opt)
     }
     /// clear all options
+    /// ```
+    /// # use dhcproto::v4::{MessageType, DhcpOption, DhcpOptions};
+    /// let mut opts = DhcpOptions::new();
+    /// opts.insert(DhcpOption::MessageType(MessageType::Discover));
+    /// assert!(opts.len() == 1);
+    /// opts.clear(); // clear options
+    /// assert!(opts.is_empty());
+    /// ```
     pub fn clear(&mut self) {
         self.0.clear()
     }
     /// Returns `true` if there are no options
+    /// ```
+    /// # use dhcproto::v4::{MessageType, DhcpOption, DhcpOptions};
+    /// let mut opts = DhcpOptions::new();
+    /// opts.insert(DhcpOption::MessageType(MessageType::Offer));
+    /// assert!(!opts.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -96,7 +140,13 @@ impl DhcpOptions {
     {
         self.0.retain(pred)
     }
-    /// Returns number of options
+    /// Returns number of Options
+    /// ```
+    /// # use dhcproto::v4::{MessageType, DhcpOption, DhcpOptions};
+    /// let mut opts = DhcpOptions::new();
+    /// opts.insert(DhcpOption::MessageType(MessageType::Offer));
+    /// assert_eq!(opts.len(), 1);
+    /// ```
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -266,9 +316,9 @@ pub enum OptionCode {
     ClientIdentifier,
     /// 82 Relay Agent Information
     RelayAgentInformation,
-    /// 91 client-last-transaction-time - https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1
+    /// 91 client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
     ClientLastTransactionTime,
-    /// 92 associated-ip - https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1
+    /// 92 associated-ip - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
     AssociatedIp,
     /// 93 Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>
     ClientSystemArchitecture,
@@ -595,9 +645,9 @@ pub enum DhcpOption {
     ClientIdentifier(Vec<u8>),
     /// 82 Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>
     RelayAgentInformation(relay::RelayAgentInformation),
-    /// 91 client-last-transaction-time - https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1
+    /// 91 client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
     ClientLastTransactionTime(u32),
-    /// 92 associated-ip - https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1
+    /// 92 associated-ip - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
     AssociatedIp(Vec<Ipv4Addr>),
     /// 93 Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>
     ClientSystemArchitecture(Architecture),
