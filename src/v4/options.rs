@@ -1178,7 +1178,6 @@ impl Encodable for DhcpOption {
             | NetBiosNameServers(ips)
             | NetBiosDatagramDistributionServer(ips)
             | AssociatedIp(ips) => {
-
                 // let bytes = ips.iter().flat_map(|a| u32::from(*a).to_be_bytes()).collect::<Vec<_>>();
                 encode_long_opt_chunks(code, 4, ips, |ip, e| e.write_u32((*ip).into()), e)?;
                 // e.write_u8(code.into())?;
@@ -1189,7 +1188,7 @@ impl Encodable for DhcpOption {
             }
             Hostname(s) | MeritDumpFile(s) | DomainName(s) | ExtensionsPath(s) | NISDomain(s)
             | RootPath(s) | NetBiosScope(s) | Message(s) => {
-               encode_long_opt_bytes(code, s.as_bytes(), e)? ;
+                encode_long_opt_bytes(code, s.as_bytes(), e)?;
             }
             BootFileSize(num) | MaxDatagramSize(num) | InterfaceMtu(num) | MaxMessageSize(num) => {
                 e.write_u8(code.into())?;
@@ -1214,7 +1213,6 @@ impl Encodable for DhcpOption {
                 e.write_u8(*byte)?
             }
             StaticRoutingTable(pair_ips) => {
-
                 //     let bytes = pair_ips.iter().flat_map(|(a, b)| u32::from(*a).to_be_bytes().into_iter().chain(u32::from(*b).to_be_bytes())).collect::<Vec<_>>();
                 //     encode_chunk_bytes(code, &bytes, e)?;
                 encode_long_opt_chunks(
@@ -1227,7 +1225,7 @@ impl Encodable for DhcpOption {
                     },
                     e,
                 )?;
-           }
+            }
             ArpCacheTimeout(num)
             | TcpKeepaliveInterval(num)
             | AddressLeaseTime(num)
@@ -1245,7 +1243,6 @@ impl Encodable for DhcpOption {
             VendorExtensions(bytes)
             | ClassIdentifier(bytes)
             | ClientIdentifier(bytes)
-            // | DomainSearch(bytes)
             | ClientMachineIdentifier(bytes) => {
                 encode_long_opt_bytes(code, bytes, e)?;
             }
