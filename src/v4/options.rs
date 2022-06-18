@@ -1102,10 +1102,10 @@ pub fn encode_long_opt_bytes(
 /// let opt = std::iter::repeat(Ipv4Addr::from([1,2,3,4])).take(80).collect::<Vec<_>>();
 /// let res = encode_long_opt_chunks(OptionCode::NIS, 4, &opt, |ip, e| e.write_u32((*ip).into()), &mut e);
 /// // [code, 252, 1,2,3,4,1,2,3,4 ..., code, 68, b'a', ...]
-/// let mut x = vec![OptionCode::NIS.into(), 255];
+/// let mut x = vec![OptionCode::NIS.into(), 252];
 /// x.extend(std::iter::repeat(Ipv4Addr::from([1,2,3,4])).map(|ip| u32::from(ip).to_be_bytes()).flatten().take(252));
 /// x.push(OptionCode::NIS.into());
-/// x.push(65);
+/// x.push(68);
 /// x.extend(std::iter::repeat(Ipv4Addr::from([1,2,3,4])).map(|ip| u32::from(ip).to_be_bytes()).flatten().take(68));
 ///
 /// assert_eq!(buf, x);
