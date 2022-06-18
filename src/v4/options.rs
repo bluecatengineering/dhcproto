@@ -1523,6 +1523,175 @@ impl From<MessageType> for u8 {
     }
 }
 
+use num_enum::FromPrimitive;
+
+/// Each option type is represented by an 8-bit code
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Copy, Hash, Clone, PartialEq, Eq, FromPrimitive)]
+#[repr(u8)]
+pub enum OtherCode {
+    /// 0 Padding
+    Pad = 0,
+    /// 1 Subnet Mask
+    SubnetMask = 1,
+    /// 2 Time Offset
+    TimeOffset = 2,
+    /// 3 Router
+    Router = 3,
+    /// 4 Router
+    TimeServer = 4,
+    /// 5 Name Server
+    NameServer = 5,
+    /// 6 Name Server
+    DomainNameServer = 6,
+    /// 7 Log Server
+    LogServer = 7,
+    /// 8 Quote Server
+    QuoteServer = 8,
+    /// 9 LPR Server
+    LprServer = 9,
+    /// 10 Impress server
+    ImpressServer = 10,
+    /// 11 Resource Location Server
+    ResourceLocationServer = 11,
+    /// 12 Host name
+    Hostname = 12,
+    /// 13 Boot file size
+    BootFileSize = 13,
+    /// 14 Merit Dump File
+    MeritDumpFile = 14,
+    /// 15 Domain Name
+    DomainName = 15,
+    /// 16 Swap server
+    SwapServer = 16,
+    /// 17 Root Path
+    RootPath = 17,
+    /// 18 Extensions path
+    ExtensionsPath = 18,
+    /// 19 IP forwarding
+    IpForwarding = 19,
+    /// 20 Non-local source routing
+    NonLocalSrcRouting = 20,
+    /// 22 Max Datagram reassembly size
+    MaxDatagramSize = 22,
+    /// 23 Ip TTL
+    DefaultIpTtl = 23,
+    /// 26 Interface MTU
+    InterfaceMtu = 26,
+    /// 27 All Subnets Local
+    AllSubnetsLocal = 27,
+    /// 28 Broadcast address
+    BroadcastAddr = 28,
+    /// 29 Perform mask discovery
+    PerformMaskDiscovery = 29,
+    /// 30 Mask supplier
+    MaskSupplier = 30,
+    /// 31 Perform router discovery
+    PerformRouterDiscovery = 31,
+    /// 32 Router solicitation address
+    RouterSolicitationAddr = 32,
+    /// 33 Static routing table
+    StaticRoutingTable = 33,
+    /// 35 ARP timeout
+    ArpCacheTimeout = 35,
+    /// 36 Ethernet encapsulation
+    EthernetEncapsulation = 36,
+    /// 37 Default TCP TTL
+    DefaultTcpTtl = 37,
+    /// 38 TCP keepalive interval
+    TcpKeepaliveInterval = 38,
+    /// 39 TCP keealive garbage
+    TcpKeepaliveGarbage = 39,
+    /// 40 Network information service domain
+    NISDomain = 40,
+    /// 41 Network infomration servers
+    NIS = 41,
+    /// 42 NTP servers
+    NTPServers = 42,
+    /// 43 Vendor Extensions
+    VendorExtensions = 43,
+    /// 44 NetBIOS over TCP/IP name server
+    NetBiosNameServers = 44,
+    /// 45 NetBIOS over TCP/IP Datagram Distribution Server
+    NetBiosDatagramDistributionServer = 45,
+    /// 46 NetBIOS over TCP/IP Node Type
+    NetBiosNodeType = 46,
+    /// 47 NetBIOS over TCP/IP Scope
+    NetBiosScope = 47,
+    /// 48 X Window System Font Server
+    XFontServer = 48,
+    /// 49 Window System Display Manager
+    XDisplayManager = 49,
+    /// 50 Requested IP Address
+    RequestedIpAddress = 50,
+    /// 51 IP Address Lease Time
+    AddressLeaseTime = 51,
+    /// 52 Option Overload
+    OptionOverload = 52,
+    /// 53 Message Type
+    MessageType = 53,
+    /// 54 Server Identifier
+    ServerIdentifier = 54,
+    /// 55 Parameter Request List
+    ParameterRequestList = 55,
+    /// 56 Message
+    Message = 56,
+    /// 57 Maximum DHCP Message Size
+    MaxMessageSize = 57,
+    /// 58 Renewal (T1) Time Value
+    Renewal = 58,
+    /// 59 Rebinding (T2) Time Value
+    Rebinding = 59,
+    /// 60 Class-identifier
+    ClassIdentifier = 60,
+    /// 61 Client Identifier
+    ClientIdentifier = 61,
+    /// 82 Relay Agent Information
+    RelayAgentInformation = 82,
+    /// 91 client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
+    ClientLastTransactionTime = 91,
+    /// 92 associated-ip - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
+    AssociatedIp = 92,
+    /// 93 Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>
+    ClientSystemArchitecture = 93,
+    /// 94 Client Network Interface - <https://www.rfc-editor.org/rfc/rfc4578.html>
+    ClientNetworkInterface = 94,
+    /// 97 Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>
+    ClientMachineIdentifier = 97,
+    /// 118 Subnet option - <https://datatracker.ietf.org/doc/html/rfc3011>
+    SubnetSelection = 118,
+    /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
+    DomainSearch = 119,
+    /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
+    StatusCode = 151,
+    /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
+    BaseTime = 152,
+    /// 153 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.4>
+    StartTimeOfState = 153,
+    /// 154 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.5>
+    QueryStartTime = 154,
+    /// 155 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.6>
+    QueryEndTime = 155,
+    /// 156 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.7>
+    DhcpState = 156,
+    /// 157 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>
+    DataSource = 157,
+    /// Unknown option
+    #[num_enum(default)]
+    Unknown,
+    /// 255 End
+    End = 255,
+}
+
+// requires arbitrary_enum_discriminant nightly feature
+// #[derive(Debug, Eq, PartialEq, num_enum::FromPrimitive)]
+// #[repr(u8)]
+// enum Enum {
+//     Zero = 0,
+//     #[num_enum(catch_all)]
+//     NonZero(u8),
+// }
+
 #[cfg(test)]
 mod tests {
     use std::collections::VecDeque;
@@ -1758,5 +1927,12 @@ mod tests {
             ],
             8,
         )
+    }
+    #[test]
+    fn test_opt_default() {
+        let opt: OtherCode = 255.into();
+        assert_eq!(OtherCode::End, opt);
+        assert_eq!(OtherCode::DomainSearch as u8, 119_u8);
+        assert_eq!(OtherCode::Unknown, 241.into());
     }
 }
