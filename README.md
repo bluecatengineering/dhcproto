@@ -2,6 +2,15 @@
 
 A DHCP parser and encoder for DHCPv4/DHCPv6. `dhcproto` aims to be a functionally complete DHCP implementation. Many common option types are implemented, PRs are welcome to flesh out missing types.
 
+## features
+
+- 100 % safe rust
+- v4 & v6 Message types
+- v4 & v6 message header getters/setters, all data mutable
+- option types with 100's of fully type safe variants (accepting PR's for unknown variants)
+- Long option encoding supported (RFC 3396) (allows encoding options longer than 255 bytes)
+- benchmarked encoding/decoding
+
 ## crates.io
 
 https://crates.io/crates/dhcproto
