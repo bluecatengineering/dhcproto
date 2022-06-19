@@ -137,6 +137,18 @@ fn encode_benches(c: &mut Criterion) {
             message.encode(&mut Encoder::new(&mut bytes)).unwrap();
         });
     });
+    g.bench_function("encode_opts", |b| {
+        let opts: &[u8] = &[
+            53, 1, 2, 54, 4, 192, 168, 0, 1, 51, 4, 0, 0, 0, 60, 58, 4, 0, 0, 0, 30, 59, 4, 0, 0,
+            0, 52, 1, 4, 255, 255, 255, 0, 3, 4, 192, 168, 0, 1, 6, 8, 192, 168, 0, 1, 192, 168, 1,
+            1, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+        let x = dhcproto::v4::DhcpOptions::from_bytes(opts).unwrap();
+        let mut bytes = Vec::with_capacity(opts.len());
+        b.iter(|| {
+            x.encode(&mut Encoder::new(&mut bytes)).unwrap();
+        });
+    });
 }
 
 criterion_group!(benches, encode_benches);
