@@ -980,6 +980,7 @@ fn decode_inner(
 }
 
 impl Decodable<'_> for DhcpOption {
+    #[inline]
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         #[derive(Debug)]
         struct Opt<'a> {
@@ -1002,7 +1003,8 @@ impl Decodable<'_> for DhcpOption {
         impl<'a> Decodable<'a> for Opt<'a> {
             #[inline]
             fn decode(dec: &mut Decoder<'a>) -> DecodeResult<Self> {
-                let [code, len] = dec.peek::<2>()?.map(|b| u8::from_be_bytes([b]));
+                // TODO: necessary to call u8::from_be_bytes?
+                let [code, len] = dec.peek::<2>()?;
                 let buf = Cow::from(dec.read_slice(len as usize + 2)?);
                 Ok(Opt { code, buf })
             }
