@@ -330,7 +330,7 @@ impl From<MessageType> for u8 {
     }
 }
 
-impl Decodable<'_> for Message {
+impl Decodable for Message {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(Message {
             msg_type: decoder.read_u8()?.into(),
