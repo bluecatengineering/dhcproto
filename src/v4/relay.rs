@@ -74,7 +74,7 @@ impl RelayAgentInformation {
     }
 }
 
-impl Decodable<'_> for RelayAgentInformation {
+impl Decodable for RelayAgentInformation {
     fn decode(d: &mut crate::Decoder<'_>) -> super::DecodeResult<Self> {
         let mut opts = HashMap::new();
         while let Ok(opt) = RelayInfo::decode(d) {
@@ -121,7 +121,7 @@ pub enum RelayInfo {
     // VirtualSubnetControl(u8),
 }
 
-impl Decodable<'_> for RelayInfo {
+impl Decodable for RelayInfo {
     fn decode(d: &mut crate::Decoder<'_>) -> super::DecodeResult<Self> {
         use RelayInfo::*;
         // read the code first, determines the variant

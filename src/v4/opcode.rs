@@ -18,7 +18,7 @@ pub enum Opcode {
     Unknown(u8),
 }
 
-impl Decodable<'_> for Opcode {
+impl Decodable for Opcode {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(decoder.read_u8()?.into())
     }

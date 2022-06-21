@@ -141,7 +141,7 @@ impl From<HType> for u8 {
     }
 }
 
-impl Decodable<'_> for HType {
+impl Decodable for HType {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         Ok(decoder.read_u8()?.into())
     }

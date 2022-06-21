@@ -156,7 +156,7 @@ impl DhcpOptions {
     }
 }
 
-impl Decodable<'_> for DhcpOptions {
+impl Decodable for DhcpOptions {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         // represented as a vector in the actual message
         let mut opts = HashMap::new();
@@ -979,7 +979,7 @@ fn decode_inner(
     })
 }
 
-impl Decodable<'_> for DhcpOption {
+impl Decodable for DhcpOption {
     #[inline]
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         #[derive(Debug)]
@@ -998,10 +998,7 @@ impl Decodable<'_> for DhcpOption {
 
                 decode_inner(code, opt_decoder.buffer().len(), &mut opt_decoder)
             }
-        }
-
-        impl<'a> Decodable<'a> for Opt<'a> {
-            #[inline]
+            // can't implement Decodable b/c of lifetime issues
             fn decode(dec: &mut Decoder<'a>) -> DecodeResult<Self> {
                 // TODO: necessary to call u8::from_be_bytes?
                 let [code, len] = dec.peek::<2>()?;
@@ -1430,7 +1427,7 @@ impl UnknownOption {
     }
 }
 
-impl Decodable<'_> for UnknownOption {
+impl Decodable for UnknownOption {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         let code = decoder.read_u8()?;
         let length = decoder.read_u8()?;
