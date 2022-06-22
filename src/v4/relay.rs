@@ -74,8 +74,8 @@ impl RelayAgentInformation {
     }
 }
 
-impl Decodable for RelayAgentInformation {
-    fn decode(d: &mut crate::Decoder<'_>) -> super::DecodeResult<Self> {
+impl<'a> Decodable<'a> for RelayAgentInformation {
+    fn decode(d: &mut crate::Decoder<'a>) -> super::DecodeResult<Self> {
         let mut opts = HashMap::new();
         while let Ok(opt) = RelayInfo::decode(d) {
             opts.insert(RelayCode::from(&opt), opt);
@@ -121,8 +121,8 @@ pub enum RelayInfo {
     // VirtualSubnetControl(u8),
 }
 
-impl Decodable for RelayInfo {
-    fn decode(d: &mut crate::Decoder<'_>) -> super::DecodeResult<Self> {
+impl<'a> Decodable<'a> for RelayInfo {
+    fn decode(d: &mut crate::Decoder<'a>) -> super::DecodeResult<Self> {
         use RelayInfo::*;
         // read the code first, determines the variant
         Ok(match d.read_u8()?.into() {

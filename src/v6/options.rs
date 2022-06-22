@@ -141,7 +141,7 @@ pub struct UserClass {
 }
 
 #[inline]
-fn decode_data(decoder: &'_ mut Decoder<'_>) -> Vec<Vec<u8>> {
+fn decode_data(decoder: &mut Decoder<'_>) -> Vec<Vec<u8>> {
     let mut data = Vec::new();
     while let Ok(len) = decoder.read_u16() {
         // if we can read the len and the string
@@ -269,8 +269,8 @@ pub struct Authentication {
     pub info: Vec<u8>,
 }
 
-impl Decodable for Authentication {
-    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
+impl<'a> Decodable<'a> for Authentication {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         let len = decoder.buffer().len();
         Ok(Authentication {
             proto: decoder.read_u8()?,
@@ -316,8 +316,8 @@ pub struct ORO {
     pub opts: Vec<OptionCode>,
 }
 
-impl Decodable for ORO {
-    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
+impl<'a> Decodable<'a> for ORO {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         let len = decoder.buffer().len();
         Ok(ORO {
             opts: {
@@ -343,8 +343,8 @@ pub struct IATA {
     pub opts: DhcpOptions,
 }
 
-impl Decodable for IATA {
-    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
+impl<'a> Decodable<'a> for IATA {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         Ok(IATA {
             id: decoder.read_u32()?,
             opts: DhcpOptions::decode(decoder)?,
@@ -363,8 +363,8 @@ pub struct IANA {
     pub opts: DhcpOptions,
 }
 
-impl Decodable for IANA {
-    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
+impl<'a> Decodable<'a> for IANA {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         Ok(IANA {
             id: decoder.read_u32()?,
             t1: decoder.read_u32()?,
@@ -385,8 +385,8 @@ pub struct IAPD {
     pub opts: DhcpOptions,
 }
 
-impl Decodable for IAPD {
-    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
+impl<'a> Decodable<'a> for IAPD {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         Ok(IAPD {
             id: decoder.read_u32()?,
             t1: decoder.read_u32()?,
@@ -408,8 +408,8 @@ pub struct IAPDPrefix {
     pub opts: DhcpOptions,
 }
 
-impl Decodable for IAPDPrefix {
-    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
+impl<'a> Decodable<'a> for IAPDPrefix {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         Ok(IAPDPrefix {
             preferred_lifetime: decoder.read_u32()?,
             valid_lifetime: decoder.read_u32()?,
@@ -433,8 +433,8 @@ pub struct IAAddr {
     pub opts: DhcpOptions,
 }
 
-impl Decodable for IAAddr {
-    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
+impl<'a> Decodable<'a> for IAAddr {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         Ok(IAAddr {
             addr: decoder.read::<16>()?.into(),
             preferred_life: decoder.read_u32()?,
@@ -473,8 +473,8 @@ impl UnknownOption {
     }
 }
 
-impl Decodable for DhcpOptions {
-    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
+impl<'a> Decodable<'a> for DhcpOptions {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         let mut opts = Vec::new();
         while let Ok(opt) = DhcpOption::decode(decoder) {
             opts.push(opt);
@@ -484,13 +484,13 @@ impl Decodable for DhcpOptions {
 }
 
 impl Encodable for DhcpOptions {
-    fn encode(&self, e: &'_ mut Encoder<'_>) -> EncodeResult<()> {
+    fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
         self.0.iter().try_for_each(|opt| opt.encode(e))
     }
 }
 
-impl Decodable for DhcpOption {
-    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
+impl<'a> Decodable<'a> for DhcpOption {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         let code = decoder.read_u16()?.into();
         let len = decoder.read_u16()? as usize;
         Ok(match code {
@@ -573,7 +573,7 @@ impl Decodable for DhcpOption {
     }
 }
 impl Encodable for DhcpOption {
-    fn encode(&self, e: &'_ mut Encoder<'_>) -> EncodeResult<()> {
+    fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
         let code: OptionCode = self.into();
         e.write_u16(code.into())?;
         match self {

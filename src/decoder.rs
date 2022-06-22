@@ -11,12 +11,26 @@ use std::{
 };
 
 /// A trait for types which are serializable to and from DHCP binary formats
-pub trait Decodable: Sized {
+///
+/// If decoding a type generically, you may need to use higher rank trait bounds:
+/// ```
+/// use dhcproto::{Decodable, Decoder, error::DecodeResult};
+///
+/// struct Msg<T> { msg: T }
+///
+/// impl<T: for<'a> Decodable<'a>> Msg<T> {
+///     fn new(buf: Vec<u8>) -> DecodeResult<Self> {
+///         let mut dec = Decoder::new(&buf);
+///         Ok(Self { msg: T::decode(&mut dec)? })
+///     }
+/// }
+/// ```
+pub trait Decodable<'a>: Sized {
     /// Read the type from the stream
-    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self>;
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self>;
 
     /// Returns the object in binary form
-    fn from_bytes(bytes: &[u8]) -> DecodeResult<Self> {
+    fn from_bytes(bytes: &'a [u8]) -> DecodeResult<Self> {
         let mut decoder = Decoder::new(bytes);
         Self::decode(&mut decoder)
     }

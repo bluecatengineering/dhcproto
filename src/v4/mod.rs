@@ -455,8 +455,8 @@ impl Message {
     }
 }
 
-impl Decodable for Message {
-    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
+impl<'a> Decodable<'a> for Message {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         Ok(Message {
             opcode: Opcode::decode(decoder)?,
             htype: decoder.read_u8()?.into(),
