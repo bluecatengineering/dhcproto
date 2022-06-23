@@ -317,6 +317,8 @@ pub enum OptionCode {
     ClassIdentifier,
     /// 61 Client Identifier
     ClientIdentifier,
+    /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
+    RapidCommit,
     /// 82 Relay Agent Information
     RelayAgentInformation,
     /// 91 client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
@@ -415,6 +417,7 @@ impl From<u8> for OptionCode {
             59 => Rebinding,
             60 => ClassIdentifier,
             61 => ClientIdentifier,
+            80 => RapidCommit,
             82 => RelayAgentInformation,
             91 => ClientLastTransactionTime,
             92 => AssociatedIp,
@@ -499,6 +502,7 @@ impl From<OptionCode> for u8 {
             Rebinding => 59,
             ClassIdentifier => 60,
             ClientIdentifier => 61,
+            RapidCommit => 80,
             RelayAgentInformation => 82,
             ClientLastTransactionTime => 91,
             AssociatedIp => 92,
@@ -646,6 +650,8 @@ pub enum DhcpOption {
     ClassIdentifier(Vec<u8>),
     /// 61 Client Identifier
     ClientIdentifier(Vec<u8>),
+    /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
+    RapidCommit,
     /// 82 Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>
     RelayAgentInformation(relay::RelayAgentInformation),
     /// 91 client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
@@ -917,6 +923,10 @@ fn decode_inner(
         OptionCode::Rebinding => Rebinding(decoder.read_u32()?),
         OptionCode::ClassIdentifier => ClassIdentifier(decoder.read_slice(len)?.to_vec()),
         OptionCode::ClientIdentifier => ClientIdentifier(decoder.read_slice(len)?.to_vec()),
+        OptionCode::RapidCommit => {
+            debug_assert!(len == 0);
+            RapidCommit
+        }
         OptionCode::RelayAgentInformation => {
             let mut dec = Decoder::new(decoder.read_slice(len)?);
             RelayAgentInformation(relay::RelayAgentInformation::decode(&mut dec)?)
@@ -1144,6 +1154,10 @@ impl Encodable for DhcpOption {
         match self {
             Pad | End => {
                 e.write_u8(code.into())?;
+            }
+            RapidCommit => {
+                e.write_u8(code.into())?;
+                e.write_u8(0)?;
             }
             SubnetMask(addr)
             | SwapServer(addr)
@@ -1376,6 +1390,7 @@ impl From<&DhcpOption> for OptionCode {
             Rebinding(_) => OptionCode::Rebinding,
             ClassIdentifier(_) => OptionCode::ClassIdentifier,
             ClientIdentifier(_) => OptionCode::ClientIdentifier,
+            RapidCommit => OptionCode::RapidCommit,
             RelayAgentInformation(_) => OptionCode::RelayAgentInformation,
             ClientLastTransactionTime(_) => OptionCode::ClientLastTransactionTime,
             AssociatedIp(_) => OptionCode::AssociatedIp,
@@ -1680,6 +1695,12 @@ mod tests {
             DhcpOption::ClientSystemArchitecture(Architecture::Intelx86PC),
             vec![93, 2, 0, 0],
         )?;
+
+        Ok(())
+    }
+    #[test]
+    fn test_rapid_commit() -> Result<()> {
+        test_opt(DhcpOption::RapidCommit, vec![80, 0])?;
 
         Ok(())
     }
