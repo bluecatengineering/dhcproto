@@ -172,16 +172,21 @@ impl Message {
         self.xid
     }
 
+    /// Get the msgs transaction id as a number
+    pub fn xid_num(&self) -> u32 {
+        u32::from_be_bytes([0, self.xid[0], self.xid[1], self.xid[2]])
+    }
+
     /// Set transaction id
     pub fn set_xid(&mut self, xid: [u8; 3]) -> &mut Self {
         self.xid = xid;
         self
     }
 
-    /// Set transaction id from u32, will only use first 3 bytes
+    /// Set transaction id from u32, will only use last 3 bytes
     pub fn set_xid_num(&mut self, xid: u32) -> &mut Self {
         let arr = xid.to_be_bytes();
-        self.xid = arr[..3]
+        self.xid = arr[1..=3]
             .try_into()
             .expect("a u32 has 4 bytes so this shouldn't fail");
         self
@@ -401,6 +406,18 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn xid_num() {
+        let mut msg = Message::default();
+        msg.set_xid_num(16_777_215);
+        assert_eq!(msg.xid_num(), 16_777_215);
+
+        msg.set_xid_num(16_777_000);
+        assert_eq!(msg.xid_num(), 16_777_000);
+
+        msg.set_xid_num(8);
+        assert_eq!(msg.xid_num(), 8);
+    }
     #[cfg(feature = "serde")]
     #[test]
     fn test_json_v6() -> Result<()> {

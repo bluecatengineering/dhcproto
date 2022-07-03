@@ -78,7 +78,7 @@
 //! # Ok(()) }
 //! ```
 //!
-use std::{net::Ipv4Addr, str::Utf8Error};
+use std::{fmt, net::Ipv4Addr, str::Utf8Error};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -499,6 +499,36 @@ impl Encodable for Message {
         e.write(self.magic)?;
         self.opts.encode(e)?;
         Ok(())
+    }
+}
+
+impl fmt::Display for Message {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Message")
+            .field("xid", &self.xid())
+            .field("broadcast_flag", &self.flags().broadcast())
+            .field("ciaddr", &self.ciaddr())
+            .field("yiaddr", &self.yiaddr())
+            .field("siaddr", &self.siaddr())
+            .field("giaddr", &self.giaddr())
+            .field(
+                "chaddr",
+                &hex::encode(self.chaddr())
+                    .chars()
+                    .enumerate()
+                    .flat_map(|(i, c)| {
+                        if i != 0 && i % 2 == 0 {
+                            Some(':')
+                        } else {
+                            None
+                        }
+                        .into_iter()
+                        .chain(std::iter::once(c))
+                    })
+                    .collect::<String>(),
+            )
+            .field("opts", &self.opts())
+            .finish()
     }
 }
 

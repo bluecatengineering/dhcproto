@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ClientNetworkInterface removed inner tuple
 - Change `has_msg_type` return type to just `bool`
 
+### Fixed
+
+- v6 `set_xid_num` was taking bytes from the wrong end
+
 ### Added
 
 - dhcpv4 opt 119 DomainSearch
@@ -21,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - dhcpv4 added DhcpOption for 91/92/93/94/97
 - UnknownOption encode/decode
 - dhcpv4 options 151-157 from bulkleasequery RFC
+- add `Display` impl for `v4::Message`
 
 ## [0.7.0]
 
