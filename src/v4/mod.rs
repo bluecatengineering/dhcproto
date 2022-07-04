@@ -527,7 +527,10 @@ impl fmt::Display for Message {
                     })
                     .collect::<String>(),
             )
-            .field("opts", &self.opts())
+            .field(
+                "opts",
+                &self.opts().iter().map(|(_, v)| v).collect::<Vec<_>>(),
+            )
             .finish()
     }
 }
