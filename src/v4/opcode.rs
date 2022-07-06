@@ -18,14 +18,14 @@ pub enum Opcode {
     Unknown(u8),
 }
 
-impl Decodable for Opcode {
-    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
+impl<'a> Decodable<'a> for Opcode {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         Ok(decoder.read_u8()?.into())
     }
 }
 
 impl Encodable for Opcode {
-    fn encode(&self, e: &'_ mut Encoder<'_>) -> EncodeResult<()> {
+    fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
         e.write_u8((*self).into())
     }
 }

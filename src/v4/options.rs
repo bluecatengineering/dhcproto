@@ -157,8 +157,8 @@ impl DhcpOptions {
     }
 }
 
-impl Decodable for DhcpOptions {
-    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
+impl<'a> Decodable<'a> for DhcpOptions {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         // represented as a vector in the actual message
         let mut opts = HashMap::new();
         // should we error the whole parser if we fail to parse an
@@ -944,9 +944,9 @@ fn decode_inner(
     })
 }
 
-impl Decodable for DhcpOption {
+impl<'a> Decodable<'a> for DhcpOption {
     #[inline]
-    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         #[derive(Debug)]
         struct Opt<'a> {
             code: u8,
@@ -963,6 +963,8 @@ impl Decodable for DhcpOption {
 
                 decode_inner(code, opt_decoder.buffer().len(), &mut opt_decoder)
             }
+        }
+        impl<'a> Decodable<'a> for Opt<'a> {
             // can't implement Decodable b/c of lifetime issues
             fn decode(dec: &mut Decoder<'a>) -> DecodeResult<Self> {
                 // TODO: necessary to call u8::from_be_bytes?
@@ -975,7 +977,7 @@ impl Decodable for DhcpOption {
         use DhcpOption::*;
         // read the code first, determines the variant
         // pad|end have no length, so we can't read len up here
-        let mut last: Option<Opt<'_>> = None;
+        let mut last: Option<Opt<'a>> = None;
         while let Ok(code) = decoder.peek_u8() {
             match code.into() {
                 OptionCode::End => {
@@ -1399,8 +1401,8 @@ impl UnknownOption {
     }
 }
 
-impl Decodable for UnknownOption {
-    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
+impl<'a> Decodable<'a> for UnknownOption {
+    fn decode(decoder: &mut Decoder<'a>) -> DecodeResult<Self> {
         let code = decoder.read_u8()?;
         let length = decoder.read_u8()?;
         let bytes = decoder.read_slice(length as usize)?.to_vec();
