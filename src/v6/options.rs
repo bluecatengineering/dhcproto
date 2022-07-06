@@ -1,8 +1,13 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use trust_dns_proto::{
+    rr::Name,
+    serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder},
+};
 
 use std::net::Ipv6Addr;
 
+pub use crate::Domain;
 use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
@@ -100,6 +105,8 @@ pub enum DhcpOption {
     ReconfAccept,
     /// 23 - <https://datatracker.ietf.org/doc/html/rfc3646>
     DNSNameServer(Vec<Ipv6Addr>),
+    /// 24 - <https://datatracker.ietf.org/doc/html/rfc3646>
+    DomainSearchList(Vec<Domain>),
     /// 25 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.21>
     IAPD(IAPD),
     /// 26 - <https://datatracker.ietf.org/doc/html/rfc3633#section-10>
@@ -560,11 +567,16 @@ impl Decodable for DhcpOption {
                 let mut dec = Decoder::new(decoder.read_slice(len)?);
                 DhcpOption::IAPDPrefix(IAPDPrefix::decode(&mut dec)?)
             }
+            OptionCode::DomainSearchList => {
+                let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
+                let mut names = Vec::new();
+                while let Ok(name) = Name::read(&mut name_decoder) {
+                    names.push(Domain(name));
+                }
+
+                DhcpOption::DomainSearchList(names)
+            }
             // not yet implemented
-            OptionCode::DomainSearchList => DhcpOption::Unknown(UnknownOption {
-                code: code.into(),
-                data: decoder.read_slice(len)?.to_vec(),
-            }),
             OptionCode::Unknown(code) => DhcpOption::Unknown(UnknownOption {
                 code,
                 data: decoder.read_slice(len)?.to_vec(),
@@ -710,6 +722,15 @@ impl Encodable for DhcpOption {
                 for addr in addrs {
                     e.write_u128((*addr).into())?;
                 }
+            }
+            DhcpOption::DomainSearchList(names) => {
+                let mut buf = Vec::new();
+                let mut name_encoder = BinEncoder::new(&mut buf);
+                for name in names {
+                    name.0.emit(&mut name_encoder)?;
+                }
+                e.write_u16(buf.len() as u16)?;
+                e.write_slice(&buf)?;
             }
             DhcpOption::IAPDPrefix(IAPDPrefix {
                 preferred_lifetime,
@@ -881,6 +902,7 @@ impl From<&DhcpOption> for OptionCode {
             ReconfMsg(_) => OptionCode::ReconfMsg,
             ReconfAccept => OptionCode::ReconfAccept,
             DNSNameServer(_) => OptionCode::DNSNameServer,
+            DomainSearchList(_) => OptionCode::DomainSearchList,
             IAPD(_) => OptionCode::IAPD,
             IAPDPrefix(_) => OptionCode::IAPDPrefix,
             Unknown(UnknownOption { code, .. }) => OptionCode::Unknown(*code),

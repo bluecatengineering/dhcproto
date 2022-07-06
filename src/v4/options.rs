@@ -1,5 +1,6 @@
 use std::{borrow::Cow, collections::HashMap, iter, net::Ipv4Addr};
 
+pub use crate::Domain;
 use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
@@ -331,6 +332,8 @@ pub enum OptionCode {
     ClientNetworkInterface,
     /// 97 Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>
     ClientMachineIdentifier,
+    /// 114 Captive portal - <https://datatracker.ietf.org/doc/html/rfc8910>
+    CaptivePortal,
     /// 118 Subnet option - <https://datatracker.ietf.org/doc/html/rfc3011>
     SubnetSelection,
     /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
@@ -424,6 +427,7 @@ impl From<u8> for OptionCode {
             93 => ClientSystemArchitecture,
             94 => ClientNetworkInterface,
             97 => ClientMachineIdentifier,
+            114 => CaptivePortal,
             118 => SubnetSelection,
             119 => DomainSearch,
             151 => StatusCode,
@@ -509,6 +513,7 @@ impl From<OptionCode> for u8 {
             ClientSystemArchitecture => 93,
             ClientNetworkInterface => 94,
             ClientMachineIdentifier => 97,
+            CaptivePortal => 114,
             SubnetSelection => 118,
             DomainSearch => 119,
             StatusCode => 151,
@@ -664,6 +669,8 @@ pub enum DhcpOption {
     ClientNetworkInterface(u8, u8, u8),
     /// 97 Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>
     ClientMachineIdentifier(Vec<u8>),
+    /// 114 Captive Portal - <https://datatracker.ietf.org/doc/html/rfc8910>
+    CaptivePortal(url::Url),
     /// 118 Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>
     SubnetSelection(Ipv4Addr),
     /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
@@ -686,59 +693,6 @@ pub enum DhcpOption {
     Unknown(UnknownOption),
     /// 255 End
     End,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Domain(Name);
-
-impl AsRef<Name> for Domain {
-    fn as_ref(&self) -> &Name {
-        &self.0
-    }
-}
-
-impl AsMut<Name> for Domain {
-    fn as_mut(&mut self) -> &mut Name {
-        &mut self.0
-    }
-}
-
-impl From<Domain> for Name {
-    fn from(domain: Domain) -> Self {
-        domain.0
-    }
-}
-
-impl From<Name> for Domain {
-    fn from(name: Name) -> Self {
-        Domain(name)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl Serialize for Domain {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.collect_str(&self.0.to_string())
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de> Deserialize<'de> for Domain {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let name: &str = Deserialize::deserialize(deserializer)?;
-        name.parse().map(Domain).map_err(|_| {
-            serde::de::Error::invalid_value(
-                serde::de::Unexpected::Str(name),
-                &"unable to parse string into Name",
-            )
-        })
-    }
 }
 
 /// Architecture name from - <https://www.rfc-editor.org/rfc/rfc4578.html>
@@ -944,6 +898,7 @@ fn decode_inner(
         OptionCode::ClientMachineIdentifier => {
             ClientMachineIdentifier(decoder.read_slice(len)?.to_vec())
         }
+        OptionCode::CaptivePortal => CaptivePortal(decoder.read_str(len)?.parse()?),
         OptionCode::SubnetSelection => SubnetSelection(decoder.read_ipv4(len)?),
         OptionCode::DomainSearch => {
             let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
@@ -1291,6 +1246,10 @@ impl Encodable for DhcpOption {
                 e.write_u8(*major)?;
                 e.write_u8(*minor)?;
             }
+            CaptivePortal(url) => {
+                let url = url.to_string();
+                encode_long_opt_bytes(code, url.as_bytes(), e)?;
+            }
             BulkLeaseQueryStatusCode(status_code, msg) => {
                 e.write_u8(code.into())?;
                 let msg = msg.as_bytes();
@@ -1309,15 +1268,12 @@ impl Encodable for DhcpOption {
                 e.write_u8((*src).into())?
             }
             DomainSearch(names) => {
-                e.write_u8(code.into())?;
-
                 let mut buf = Vec::new();
                 let mut name_encoder = BinEncoder::new(&mut buf);
                 for name in names {
                     name.0.emit(&mut name_encoder)?;
                 }
-                e.write_u8(buf.len() as u8)?;
-                e.write_slice(&buf)?;
+                encode_long_opt_bytes(code, &buf, e)?;
             }
             // not yet implemented
             Unknown(opt) => {
@@ -1397,6 +1353,7 @@ impl From<&DhcpOption> for OptionCode {
             ClientSystemArchitecture(_) => OptionCode::ClientSystemArchitecture,
             ClientNetworkInterface(_, _, _) => OptionCode::ClientNetworkInterface,
             ClientMachineIdentifier(_) => OptionCode::ClientMachineIdentifier,
+            CaptivePortal(_) => OptionCode::CaptivePortal,
             SubnetSelection(_) => OptionCode::SubnetSelection,
             DomainSearch(_) => OptionCode::DomainSearch,
             BulkLeaseQueryStatusCode(_, _) => OptionCode::StatusCode,
@@ -1585,7 +1542,7 @@ mod tests {
 
         println!("{:?}", opts);
         let mut output = Vec::new();
-        let _len = opts.encode(&mut Encoder::new(&mut output))?;
+        opts.encode(&mut Encoder::new(&mut output))?;
         // not comparing len as we don't add PAD bytes
         // assert_eq!(input.len(), len);
         assert_eq!(opts.len(), len);
@@ -1698,6 +1655,22 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_captive_portal() -> Result<()> {
+        let mut res = vec![114];
+        let url = "https://foobar.com/".as_bytes(); // note the ending slash
+        res.push(url.len() as u8);
+        res.extend(url);
+
+        test_opt(
+            DhcpOption::CaptivePortal("https://foobar.com".parse()?), // url parse will add trailing slash
+            res,
+        )?;
+
+        Ok(())
+    }
+
     #[test]
     fn test_rapid_commit() -> Result<()> {
         test_opt(DhcpOption::RapidCommit, vec![80, 0])?;

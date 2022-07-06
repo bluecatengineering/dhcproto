@@ -135,8 +135,12 @@ impl<'a> Decoder<'a> {
 
     /// Read a utf-8 encoded String
     pub fn read_string(&mut self, len: usize) -> DecodeResult<String> {
-        let slice = self.read_slice(len)?;
-        Ok(str::from_utf8(slice)?.to_owned())
+        Ok(self.read_str(len)?.to_owned())
+    }
+
+    /// Read a utf-8 encoded String
+    pub fn read_str(&mut self, len: usize) -> DecodeResult<&str> {
+        Ok(str::from_utf8(self.read_slice(len)?)?)
     }
 
     /// Read an ipv4 addr

@@ -199,6 +199,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "trust-dns-proto",
+ "url",
 ]
 
 [[package]]
@@ -786,6 +787,7 @@ dependencies = [
  "idna",
  "matches",
  "percent-encoding",
+ "serde",
 ]
 
 [[package]]

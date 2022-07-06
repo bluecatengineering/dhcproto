@@ -17,10 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - v6 `set_xid_num` was taking bytes from the wrong end
+- dhcpv6 DomainSearchList (opt 24)
 
 ### Added
 
 - dhcpv4 opt 119 DomainSearch
+- dhcpv4 opt 114 CaptivePortal
 - dhcpv4 message variants 9-18 added, breaking change for `MessageType`
 - dhcpv4 added DhcpOption for 91/92/93/94/97
 - UnknownOption encode/decode
