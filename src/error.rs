@@ -40,6 +40,10 @@ pub enum DecodeError {
     #[error("io error {0}")]
     IoError(#[from] io::Error),
 
+    /// url parse error
+    #[error("url parse error")]
+    UrlParseError(#[from] url::ParseError),
+
     /// Unknown decode error
     #[error("unknown error")]
     Unknown(Box<dyn std::error::Error + Send + Sync + 'static>),

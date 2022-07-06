@@ -13,7 +13,7 @@ A DHCP parser and encoder for DHCPv4/DHCPv6. `dhcproto` aims to be a functionall
 
 ## crates.io
 
-https://crates.io/crates/dhcproto
+<https://crates.io/crates/dhcproto>
 
 ## Minimum Rust Version
 
@@ -71,28 +71,26 @@ msg.encode(&mut e)?;
 
 DHCPv6:
 
-- https://datatracker.ietf.org/doc/html/rfc8415
-- https://datatracker.ietf.org/doc/html/rfc3646
-- https://datatracker.ietf.org/doc/html/rfc3633
-- https://datatracker.ietf.org/doc/html/rfc5007 (message types only)
-- https://datatracker.ietf.org/doc/html/rfc5460 (message types/status codes only, no opt 53)
-- https://datatracker.ietf.org/doc/html/rfc6977 (message types only)
-- https://datatracker.ietf.org/doc/html/rfc7341 (message types only)
+- <https://datatracker.ietf.org/doc/html/rfc8415>
+- <https://datatracker.ietf.org/doc/html/rfc3646>
+- <https://datatracker.ietf.org/doc/html/rfc3633>
+- <https://datatracker.ietf.org/doc/html/rfc5007> (message types only)
+- <https://datatracker.ietf.org/doc/html/rfc5460> (message types/status codes only, no opt 53)
+- <https://datatracker.ietf.org/doc/html/rfc6977> (message types only)
+- <https://datatracker.ietf.org/doc/html/rfc7341> (message types only)
 
 DHCPv4:
 
-- https://tools.ietf.org/html/rfc2131
-- https://tools.ietf.org/html/rfc3011
-- https://tools.ietf.org/html/rfc3232
-- https://tools.ietf.org/html/rfc3203
-- https://tools.ietf.org/html/rfc4388 (message types & opts)
-- https://tools.ietf.org/html/rfc4578
-- https://tools.ietf.org/html/rfc6926 (message types & opts 151-157)
-- https://tools.ietf.org/html/rfc7724 (message types only, status codes for opt 151 unimplemented)
-
-
-Unmerged:
-- https://www.rfc-editor.org/rfc/rfc3396
-- https://www.rfc-editor.org/rfc/rfc3397
-
-
+- <https://tools.ietf.org/html/rfc2131>
+- <https://tools.ietf.org/html/rfc3011>
+- <https://tools.ietf.org/html/rfc3232>
+- <https://tools.ietf.org/html/rfc3203>
+- <https://tools.ietf.org/html/rfc3046>
+- <https://tools.ietf.org/html/rfc3396>
+- <https://tools.ietf.org/html/rfc3397>
+- <https://tools.ietf.org/html/rfc4039>
+- <https://tools.ietf.org/html/rfc4388> (message types & opts)
+- <https://tools.ietf.org/html/rfc4578>
+- <https://tools.ietf.org/html/rfc6926> (message types & opts 151-157)
+- <https://tools.ietf.org/html/rfc7724> (message types only, status codes for opt 151 unimplemented)
+- <https://tools.ietf.org/html/rfc8910>
