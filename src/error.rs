@@ -44,6 +44,10 @@ pub enum DecodeError {
     #[error("url parse error")]
     UrlParseError(#[from] url::ParseError),
 
+    /// domain parse error
+    #[error("domain parse error {0}")]
+    DomainParseError(#[from] trust_dns_proto::error::ProtoError),
+
     /// Unknown decode error
     #[error("unknown error")]
     Unknown(Box<dyn std::error::Error + Send + Sync + 'static>),
