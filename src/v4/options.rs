@@ -186,14 +186,21 @@ impl Encodable for DhcpOptions {
         } else {
             // encode all opts adding the `End` afterwards
             // sum all bytes written
-            self.0
-                .iter()
-                .chain(iter::once((&OptionCode::End, &DhcpOption::End)))
-                .try_for_each(|(_, opt)| opt.encode(e))
-            // TODO: no padding added for now, is it necessary?
-            // apparently it's "normally" added to pad out to word sizes
-            // but test packet captures are often padded to 60 bytes
-            // which seems like not a word size?
+            match self.get(OptionCode::RelayAgentInformation) {
+                // agent info must be placed last before `End`
+                Some(agent_info) => self
+                    .0
+                    .iter()
+                    .filter(|opt| *opt.0 != OptionCode::RelayAgentInformation)
+                    .chain(iter::once((&OptionCode::RelayAgentInformation, agent_info)))
+                    .chain(iter::once((&OptionCode::End, &DhcpOption::End)))
+                    .try_for_each(|(_, opt)| opt.encode(e)),
+                None => self
+                    .0
+                    .iter()
+                    .chain(iter::once((&OptionCode::End, &DhcpOption::End)))
+                    .try_for_each(|(_, opt)| opt.encode(e)),
+            }
         }
     }
 }
@@ -320,6 +327,8 @@ pub enum OptionCode {
     ClientIdentifier,
     /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
     RapidCommit,
+    /// 81 FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>
+    // ClientFQDN(),
     /// 82 Relay Agent Information
     RelayAgentInformation,
     /// 91 client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>

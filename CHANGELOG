@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- relay agent info will be added before END opt if present [see here](https://datatracker.ietf.org/doc/html/rfc3046#section-2.1)
+
 ## [0.8.0]
 
 ### Changed
