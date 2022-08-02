@@ -1,3 +1,5 @@
+use num_enum::{FromPrimitive, IntoPrimitive};
+
 use std::{borrow::Cow, collections::HashMap, iter, net::Ipv4Addr};
 
 pub use crate::Domain;
@@ -207,336 +209,240 @@ impl Encodable for DhcpOptions {
 
 /// Each option type is represented by an 8-bit code
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Hash, Clone, PartialEq, Eq, FromPrimitive, IntoPrimitive)]
+#[num_enum(u8)]
 pub enum OptionCode {
     /// 0 Padding
+    #[num_enum(num = 0)]
     Pad,
     /// 1 Subnet Mask
+    #[num_enum(num = 1)]
     SubnetMask,
     /// 2 Time Offset
+    #[num_enum(num = 2)]
     TimeOffset,
     /// 3 Router
+    #[num_enum(num = 3)]
     Router,
     /// 4 Router
+    #[num_enum(num = 4)]
     TimeServer,
     /// 5 Name Server
+    #[num_enum(num = 5)]
     NameServer,
     /// 6 Name Server
+    #[num_enum(num = 6)]
     DomainNameServer,
     /// 7 Log Server
+    #[num_enum(num = 7)]
     LogServer,
     /// 8 Quote Server
+    #[num_enum(num = 8)]
     QuoteServer,
     /// 9 LPR Server
+    #[num_enum(num = 9)]
     LprServer,
     /// 10 Impress server
+    #[num_enum(num = 10)]
     ImpressServer,
     /// 11 Resource Location Server
+    #[num_enum(num = 11)]
     ResourceLocationServer,
     /// 12 Host name
+    #[num_enum(num = 12)]
     Hostname,
     /// 13 Boot file size
+    #[num_enum(num = 13)]
     BootFileSize,
     /// 14 Merit Dump File
+    #[num_enum(num = 14)]
     MeritDumpFile,
     /// 15 Domain Name
+    #[num_enum(num = 15)]
     DomainName,
     /// 16 Swap server
+    #[num_enum(num = 16)]
     SwapServer,
     /// 17 Root Path
+    #[num_enum(num = 17)]
     RootPath,
     /// 18 Extensions path
+    #[num_enum(num = 18)]
     ExtensionsPath,
     /// 19 IP forwarding
+    #[num_enum(num = 19)]
     IpForwarding,
     /// 20 Non-local source routing
+    #[num_enum(num = 20)]
     NonLocalSrcRouting,
     /// 22 Max Datagram reassembly size
+    #[num_enum(num = 22)]
     MaxDatagramSize,
     /// 23 Ip TTL
+    #[num_enum(num = 23)]
     DefaultIpTtl,
     /// 26 Interface MTU
+    #[num_enum(num = 26)]
     InterfaceMtu,
     /// 27 All Subnets Local
+    #[num_enum(num = 27)]
     AllSubnetsLocal,
     /// 28 Broadcast address
+    #[num_enum(num = 28)]
     BroadcastAddr,
     /// 29 Perform mask discovery
+    #[num_enum(num = 29)]
     PerformMaskDiscovery,
     /// 30 Mask supplier
+    #[num_enum(num = 30)]
     MaskSupplier,
     /// 31 Perform router discovery
+    #[num_enum(num = 31)]
     PerformRouterDiscovery,
     /// 32 Router solicitation address
+    #[num_enum(num = 32)]
     RouterSolicitationAddr,
     /// 33 Static routing table
+    #[num_enum(num = 33)]
     StaticRoutingTable,
     /// 35 ARP timeout
+    #[num_enum(num = 35)]
     ArpCacheTimeout,
     /// 36 Ethernet encapsulation
+    #[num_enum(num = 36)]
     EthernetEncapsulation,
     /// 37 Default TCP TTL
+    #[num_enum(num = 37)]
     DefaultTcpTtl,
     /// 38 TCP keepalive interval
+    #[num_enum(num = 38)]
     TcpKeepaliveInterval,
     /// 39 TCP keealive garbage
+    #[num_enum(num = 39)]
     TcpKeepaliveGarbage,
     /// 40 Network information service domain
+    #[num_enum(num = 40)]
     NISDomain,
     /// 41 Network infomration servers
+    #[num_enum(num = 41)]
     NIS,
     /// 42 NTP servers
+    #[num_enum(num = 42)]
     NTPServers,
     /// 43 Vendor Extensions
+    #[num_enum(num = 43)]
     VendorExtensions,
     /// 44 NetBIOS over TCP/IP name server
+    #[num_enum(num = 44)]
     NetBiosNameServers,
     /// 45 NetBIOS over TCP/IP Datagram Distribution Server
+    #[num_enum(num = 45)]
     NetBiosDatagramDistributionServer,
     /// 46 NetBIOS over TCP/IP Node Type
+    #[num_enum(num = 46)]
     NetBiosNodeType,
     /// 47 NetBIOS over TCP/IP Scope
+    #[num_enum(num = 47)]
     NetBiosScope,
     /// 48 X Window System Font Server
+    #[num_enum(num = 48)]
     XFontServer,
     /// 49 Window System Display Manager
+    #[num_enum(num = 49)]
     XDisplayManager,
     /// 50 Requested IP Address
+    #[num_enum(num = 50)]
     RequestedIpAddress,
     /// 51 IP Address Lease Time
+    #[num_enum(num = 51)]
     AddressLeaseTime,
     /// 52 Option Overload
+    #[num_enum(num = 52)]
     OptionOverload,
     /// 53 Message Type
+    #[num_enum(num = 53)]
     MessageType,
     /// 54 Server Identifier
+    #[num_enum(num = 54)]
     ServerIdentifier,
     /// 55 Parameter Request List
+    #[num_enum(num = 55)]
     ParameterRequestList,
     /// 56 Message
+    #[num_enum(num = 56)]
     Message,
     /// 57 Maximum DHCP Message Size
+    #[num_enum(num = 57)]
     MaxMessageSize,
     /// 58 Renewal (T1) Time Value
+    #[num_enum(num = 58)]
     Renewal,
     /// 59 Rebinding (T2) Time Value
+    #[num_enum(num = 59)]
     Rebinding,
     /// 60 Class-identifier
+    #[num_enum(num = 60)]
     ClassIdentifier,
     /// 61 Client Identifier
+    #[num_enum(num = 61)]
     ClientIdentifier,
     /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
+    #[num_enum(num = 80)]
     RapidCommit,
-    /// 81 FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>
-    // ClientFQDN(),
     /// 82 Relay Agent Information
+    #[num_enum(num = 82)]
     RelayAgentInformation,
     /// 91 client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
+    #[num_enum(num = 91)]
     ClientLastTransactionTime,
     /// 92 associated-ip - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
+    #[num_enum(num = 92)]
     AssociatedIp,
     /// 93 Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>
+    #[num_enum(num = 93)]
     ClientSystemArchitecture,
     /// 94 Client Network Interface - <https://www.rfc-editor.org/rfc/rfc4578.html>
+    #[num_enum(num = 94)]
     ClientNetworkInterface,
     /// 97 Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>
+    #[num_enum(num = 97)]
     ClientMachineIdentifier,
-    /// 114 Captive portal - <https://datatracker.ietf.org/doc/html/rfc8910>
+    /// 114 Captive Portal - <https://datatracker.ietf.org/doc/html/rfc8910>
+    #[num_enum(num = 114)]
     CaptivePortal,
     /// 118 Subnet option - <https://datatracker.ietf.org/doc/html/rfc3011>
+    #[num_enum(num = 118)]
     SubnetSelection,
     /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
+    #[num_enum(num = 119)]
     DomainSearch,
     /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
+    #[num_enum(num = 151)]
     StatusCode,
     /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
+    #[num_enum(num = 152)]
     BaseTime,
     /// 153 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.4>
+    #[num_enum(num = 153)]
     StartTimeOfState,
     /// 154 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.5>
+    #[num_enum(num = 154)]
     QueryStartTime,
     /// 155 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.6>
+    #[num_enum(num = 155)]
     QueryEndTime,
     /// 156 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.7>
+    #[num_enum(num = 156)]
     DhcpState,
     /// 157 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>
+    #[num_enum(num = 157)]
     DataSource,
-    /// Unknown option
-    Unknown(u8),
     /// 255 End
+    #[num_enum(num = 255)]
     End,
-}
-
-impl From<u8> for OptionCode {
-    fn from(n: u8) -> Self {
-        use OptionCode::*;
-        match n {
-            0 => Pad,
-            1 => SubnetMask,
-            2 => TimeOffset,
-            3 => Router,
-            4 => TimeServer,
-            5 => NameServer,
-            6 => DomainNameServer,
-            7 => LogServer,
-            8 => QuoteServer,
-            9 => LprServer,
-            10 => ImpressServer,
-            11 => ResourceLocationServer,
-            12 => Hostname,
-            13 => BootFileSize,
-            14 => MeritDumpFile,
-            15 => DomainName,
-            16 => SwapServer,
-            17 => RootPath,
-            18 => ExtensionsPath,
-            19 => IpForwarding,
-            20 => NonLocalSrcRouting,
-            22 => MaxDatagramSize,
-            23 => DefaultIpTtl,
-            26 => InterfaceMtu,
-            27 => AllSubnetsLocal,
-            28 => BroadcastAddr,
-            29 => PerformMaskDiscovery,
-            30 => MaskSupplier,
-            31 => PerformRouterDiscovery,
-            32 => RouterSolicitationAddr,
-            33 => StaticRoutingTable,
-            35 => ArpCacheTimeout,
-            36 => EthernetEncapsulation,
-            37 => DefaultTcpTtl,
-            38 => TcpKeepaliveInterval,
-            39 => TcpKeepaliveGarbage,
-            40 => NISDomain,
-            41 => NIS,
-            42 => NTPServers,
-            43 => VendorExtensions,
-            44 => NetBiosNameServers,
-            45 => NetBiosDatagramDistributionServer,
-            46 => NetBiosNodeType,
-            47 => NetBiosScope,
-            48 => XFontServer,
-            49 => XDisplayManager,
-            50 => RequestedIpAddress,
-            51 => AddressLeaseTime,
-            52 => OptionOverload,
-            53 => MessageType,
-            54 => ServerIdentifier,
-            55 => ParameterRequestList,
-            56 => Message,
-            57 => MaxMessageSize,
-            58 => Renewal,
-            59 => Rebinding,
-            60 => ClassIdentifier,
-            61 => ClientIdentifier,
-            80 => RapidCommit,
-            82 => RelayAgentInformation,
-            91 => ClientLastTransactionTime,
-            92 => AssociatedIp,
-            93 => ClientSystemArchitecture,
-            94 => ClientNetworkInterface,
-            97 => ClientMachineIdentifier,
-            114 => CaptivePortal,
-            118 => SubnetSelection,
-            119 => DomainSearch,
-            151 => StatusCode,
-            152 => BaseTime,
-            153 => StartTimeOfState,
-            154 => QueryStartTime,
-            155 => QueryEndTime,
-            156 => DhcpState,
-            157 => DataSource,
-            255 => End,
-            // TODO: implement more
-            n => Unknown(n),
-        }
-    }
-}
-
-impl From<OptionCode> for u8 {
-    fn from(opt: OptionCode) -> Self {
-        use OptionCode::*;
-        match opt {
-            Pad => 0,
-            SubnetMask => 1,
-            TimeOffset => 2,
-            Router => 3,
-            TimeServer => 4,
-            NameServer => 5,
-            DomainNameServer => 6,
-            LogServer => 7,
-            QuoteServer => 8,
-            LprServer => 9,
-            ImpressServer => 10,
-            ResourceLocationServer => 11,
-            Hostname => 12,
-            BootFileSize => 13,
-            MeritDumpFile => 14,
-            DomainName => 15,
-            SwapServer => 16,
-            RootPath => 17,
-            ExtensionsPath => 18,
-            IpForwarding => 19,
-            NonLocalSrcRouting => 20,
-            MaxDatagramSize => 22,
-            DefaultIpTtl => 23,
-            InterfaceMtu => 26,
-            AllSubnetsLocal => 27,
-            BroadcastAddr => 28,
-            PerformMaskDiscovery => 29,
-            MaskSupplier => 30,
-            PerformRouterDiscovery => 31,
-            RouterSolicitationAddr => 32,
-            StaticRoutingTable => 33,
-            ArpCacheTimeout => 35,
-            EthernetEncapsulation => 36,
-            DefaultTcpTtl => 37,
-            TcpKeepaliveInterval => 38,
-            TcpKeepaliveGarbage => 39,
-            NISDomain => 40,
-            NIS => 41,
-            NTPServers => 42,
-            VendorExtensions => 43,
-            NetBiosNameServers => 44,
-            NetBiosDatagramDistributionServer => 45,
-            NetBiosNodeType => 46,
-            NetBiosScope => 47,
-            XFontServer => 48,
-            XDisplayManager => 49,
-            RequestedIpAddress => 50,
-            AddressLeaseTime => 51,
-            OptionOverload => 52,
-            MessageType => 53,
-            ServerIdentifier => 54,
-            ParameterRequestList => 55,
-            Message => 56,
-            MaxMessageSize => 57,
-            Renewal => 58,
-            Rebinding => 59,
-            ClassIdentifier => 60,
-            ClientIdentifier => 61,
-            RapidCommit => 80,
-            RelayAgentInformation => 82,
-            ClientLastTransactionTime => 91,
-            AssociatedIp => 92,
-            ClientSystemArchitecture => 93,
-            ClientNetworkInterface => 94,
-            ClientMachineIdentifier => 97,
-            CaptivePortal => 114,
-            SubnetSelection => 118,
-            DomainSearch => 119,
-            StatusCode => 151,
-            BaseTime => 152,
-            StartTimeOfState => 153,
-            QueryStartTime => 154,
-            QueryEndTime => 155,
-            DhcpState => 156,
-            DataSource => 157,
-            End => 255,
-            // TODO: implement more
-            Unknown(n) => n,
-        }
-    }
+    /// Unknown option
+    #[num_enum(catch_all)]
+    Unknown(u8),
 }
 
 /// DHCP Options
@@ -706,110 +612,64 @@ pub enum DhcpOption {
 
 /// Architecture name from - <https://www.rfc-editor.org/rfc/rfc4578.html>
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, FromPrimitive, IntoPrimitive)]
+#[num_enum(u16)]
 pub enum Architecture {
     /// Intel x86PC
+    #[num_enum(num = 0)]
     Intelx86PC,
     /// NEC/PC98
+    #[num_enum(num = 1)]
     NECPC98,
     /// EFI Itanium
+    #[num_enum(num = 2)]
     Itanium,
     /// DEC Alpha
+    #[num_enum(num = 3)]
     DECAlpha,
     /// Arc x86
+    #[num_enum(num = 4)]
     Arcx86,
     /// Intel Lean Client
+    #[num_enum(num = 5)]
     IntelLeanClient,
     /// EFI IA32
+    #[num_enum(num = 6)]
     IA32,
     /// EFI BC
+    #[num_enum(num = 7)]
     BC,
     /// EFI Xscale
+    #[num_enum(num = 8)]
     Xscale,
     /// EFI x86-64
+    #[num_enum(num = 9)]
     X86_64,
     /// Unknown
+    #[num_enum(catch_all)]
     Unknown(u16),
-}
-
-impl From<u16> for Architecture {
-    fn from(n: u16) -> Self {
-        use Architecture::*;
-        match n {
-            0 => Intelx86PC,
-            1 => NECPC98,
-            2 => Itanium,
-            3 => DECAlpha,
-            4 => Arcx86,
-            5 => IntelLeanClient,
-            6 => IA32,
-            7 => BC,
-            8 => Xscale,
-            9 => X86_64,
-            _ => Unknown(n),
-        }
-    }
-}
-
-impl From<Architecture> for u16 {
-    fn from(n: Architecture) -> Self {
-        use Architecture::*;
-        match n {
-            Intelx86PC => 0,
-            NECPC98 => 1,
-            Itanium => 2,
-            DECAlpha => 3,
-            Arcx86 => 4,
-            IntelLeanClient => 5,
-            IA32 => 6,
-            BC => 7,
-            Xscale => 8,
-            X86_64 => 9,
-            Unknown(n) => n,
-        }
-    }
 }
 
 /// NetBIOS allows several different node types
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, FromPrimitive, IntoPrimitive)]
+#[num_enum(u8)]
 pub enum NodeType {
     /// Broadcast
+    #[num_enum(num = 1)]
     B,
     /// Peer-to-peer
+    #[num_enum(num = 2)]
     P,
     /// Mixed (B & P)
+    #[num_enum(num = 4)]
     M,
     /// Hybrid (P & B)
+    #[num_enum(num = 8)]
     H,
     /// Unknown
+    #[num_enum(catch_all)]
     Unknown(u8),
-}
-
-impl From<u8> for NodeType {
-    fn from(n: u8) -> Self {
-        use NodeType::*;
-        match n {
-            1 => B,
-            2 => P,
-            4 => M,
-            8 => H,
-            _ => Unknown(n),
-        }
-    }
-}
-
-impl From<NodeType> for u8 {
-    fn from(n: NodeType) -> Self {
-        use NodeType::*;
-        match n {
-            B => 1,
-            P => 2,
-            M => 4,
-            H => 8,
-            Unknown(n) => n,
-        }
-    }
 }
 
 #[inline]
@@ -1430,267 +1290,67 @@ impl Encodable for UnknownOption {
 /// The DHCP message type
 /// <https://datatracker.ietf.org/doc/html/rfc2131#section-3.1>
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, FromPrimitive, IntoPrimitive)]
+#[num_enum(u8)]
 pub enum MessageType {
     /// DHCPDiscover
+    #[num_enum(num = 1)]
     Discover,
     /// DHCPOffer
+    #[num_enum(num = 2)]
     Offer,
     /// DHCPRequest
+    #[num_enum(num = 3)]
     Request,
     /// DHCPDecline
+    #[num_enum(num = 4)]
     Decline,
     /// DHCPAck
+    #[num_enum(num = 5)]
     Ack,
     /// DHCPNak
+    #[num_enum(num = 6)]
     Nak,
     /// DHCPRelease
+    #[num_enum(num = 7)]
     Release,
     /// DHCPInform
+    #[num_enum(num = 8)]
     Inform,
     /// DHCPForceRenew - <https://www.rfc-editor.org/rfc/rfc3203.html>
+    #[num_enum(num = 9)]
     ForceRenew,
     /// DHCPLeaseQuery - <https://www.rfc-editor.org/rfc/rfc4388#section-6.1>
+    #[num_enum(num = 10)]
     LeaseQuery,
     /// DHCPLeaseUnassigned
+    #[num_enum(num = 11)]
     LeaseUnassigned,
     /// DHCPLeaseUnknown
+    #[num_enum(num = 12)]
     LeaseUnknown,
     /// DHCPLeaseActive
+    #[num_enum(num = 13)]
     LeaseActive,
     /// DHCPBulkLeaseQuery - <https://www.rfc-editor.org/rfc/rfc6926.html>
+    #[num_enum(num = 14)]
     BulkLeaseQuery,
     /// DHCPLeaseQueryDone
+    #[num_enum(num = 15)]
     LeaseQueryDone,
     /// DHCPActiveLeaseQuery - <https://www.rfc-editor.org/rfc/rfc7724.html>
+    #[num_enum(num = 16)]
     ActiveLeaseQuery,
     /// DHCPLeaseQueryStatus
+    #[num_enum(num = 17)]
     LeaseQueryStatus,
     /// DHCPTLS
+    #[num_enum(num = 18)]
     Tls,
     /// an unknown message type
+    #[num_enum(catch_all)]
     Unknown(u8),
 }
-
-impl From<u8> for MessageType {
-    fn from(n: u8) -> Self {
-        match n {
-            1 => MessageType::Discover,
-            2 => MessageType::Offer,
-            3 => MessageType::Request,
-            4 => MessageType::Decline,
-            5 => MessageType::Ack,
-            6 => MessageType::Nak,
-            7 => MessageType::Release,
-            8 => MessageType::Inform,
-            9 => MessageType::ForceRenew,
-            10 => MessageType::LeaseQuery,
-            11 => MessageType::LeaseUnassigned,
-            12 => MessageType::LeaseUnknown,
-            13 => MessageType::LeaseActive,
-            14 => MessageType::BulkLeaseQuery,
-            15 => MessageType::LeaseQueryDone,
-            16 => MessageType::ActiveLeaseQuery,
-            17 => MessageType::LeaseQueryStatus,
-            18 => MessageType::Tls,
-            n => MessageType::Unknown(n),
-        }
-    }
-}
-impl From<MessageType> for u8 {
-    fn from(m: MessageType) -> Self {
-        match m {
-            MessageType::Discover => 1,
-            MessageType::Offer => 2,
-            MessageType::Request => 3,
-            MessageType::Decline => 4,
-            MessageType::Ack => 5,
-            MessageType::Nak => 6,
-            MessageType::Release => 7,
-            MessageType::Inform => 8,
-            MessageType::ForceRenew => 9,
-            MessageType::LeaseQuery => 10,
-            MessageType::LeaseUnassigned => 11,
-            MessageType::LeaseUnknown => 12,
-            MessageType::LeaseActive => 13,
-            MessageType::BulkLeaseQuery => 14,
-            MessageType::LeaseQueryDone => 15,
-            MessageType::ActiveLeaseQuery => 16,
-            MessageType::LeaseQueryStatus => 17,
-            MessageType::Tls => 18,
-            MessageType::Unknown(n) => n,
-        }
-    }
-}
-
-use num_enum::FromPrimitive;
-
-/// Each option type is represented by an 8-bit code
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Copy, Hash, Clone, PartialEq, Eq, FromPrimitive)]
-#[repr(u8)]
-pub enum OtherCode {
-    /// 0 Padding
-    Pad = 0,
-    /// 1 Subnet Mask
-    SubnetMask = 1,
-    /// 2 Time Offset
-    TimeOffset = 2,
-    /// 3 Router
-    Router = 3,
-    /// 4 Router
-    TimeServer = 4,
-    /// 5 Name Server
-    NameServer = 5,
-    /// 6 Name Server
-    DomainNameServer = 6,
-    /// 7 Log Server
-    LogServer = 7,
-    /// 8 Quote Server
-    QuoteServer = 8,
-    /// 9 LPR Server
-    LprServer = 9,
-    /// 10 Impress server
-    ImpressServer = 10,
-    /// 11 Resource Location Server
-    ResourceLocationServer = 11,
-    /// 12 Host name
-    Hostname = 12,
-    /// 13 Boot file size
-    BootFileSize = 13,
-    /// 14 Merit Dump File
-    MeritDumpFile = 14,
-    /// 15 Domain Name
-    DomainName = 15,
-    /// 16 Swap server
-    SwapServer = 16,
-    /// 17 Root Path
-    RootPath = 17,
-    /// 18 Extensions path
-    ExtensionsPath = 18,
-    /// 19 IP forwarding
-    IpForwarding = 19,
-    /// 20 Non-local source routing
-    NonLocalSrcRouting = 20,
-    /// 22 Max Datagram reassembly size
-    MaxDatagramSize = 22,
-    /// 23 Ip TTL
-    DefaultIpTtl = 23,
-    /// 26 Interface MTU
-    InterfaceMtu = 26,
-    /// 27 All Subnets Local
-    AllSubnetsLocal = 27,
-    /// 28 Broadcast address
-    BroadcastAddr = 28,
-    /// 29 Perform mask discovery
-    PerformMaskDiscovery = 29,
-    /// 30 Mask supplier
-    MaskSupplier = 30,
-    /// 31 Perform router discovery
-    PerformRouterDiscovery = 31,
-    /// 32 Router solicitation address
-    RouterSolicitationAddr = 32,
-    /// 33 Static routing table
-    StaticRoutingTable = 33,
-    /// 35 ARP timeout
-    ArpCacheTimeout = 35,
-    /// 36 Ethernet encapsulation
-    EthernetEncapsulation = 36,
-    /// 37 Default TCP TTL
-    DefaultTcpTtl = 37,
-    /// 38 TCP keepalive interval
-    TcpKeepaliveInterval = 38,
-    /// 39 TCP keealive garbage
-    TcpKeepaliveGarbage = 39,
-    /// 40 Network information service domain
-    NISDomain = 40,
-    /// 41 Network infomration servers
-    NIS = 41,
-    /// 42 NTP servers
-    NTPServers = 42,
-    /// 43 Vendor Extensions
-    VendorExtensions = 43,
-    /// 44 NetBIOS over TCP/IP name server
-    NetBiosNameServers = 44,
-    /// 45 NetBIOS over TCP/IP Datagram Distribution Server
-    NetBiosDatagramDistributionServer = 45,
-    /// 46 NetBIOS over TCP/IP Node Type
-    NetBiosNodeType = 46,
-    /// 47 NetBIOS over TCP/IP Scope
-    NetBiosScope = 47,
-    /// 48 X Window System Font Server
-    XFontServer = 48,
-    /// 49 Window System Display Manager
-    XDisplayManager = 49,
-    /// 50 Requested IP Address
-    RequestedIpAddress = 50,
-    /// 51 IP Address Lease Time
-    AddressLeaseTime = 51,
-    /// 52 Option Overload
-    OptionOverload = 52,
-    /// 53 Message Type
-    MessageType = 53,
-    /// 54 Server Identifier
-    ServerIdentifier = 54,
-    /// 55 Parameter Request List
-    ParameterRequestList = 55,
-    /// 56 Message
-    Message = 56,
-    /// 57 Maximum DHCP Message Size
-    MaxMessageSize = 57,
-    /// 58 Renewal (T1) Time Value
-    Renewal = 58,
-    /// 59 Rebinding (T2) Time Value
-    Rebinding = 59,
-    /// 60 Class-identifier
-    ClassIdentifier = 60,
-    /// 61 Client Identifier
-    ClientIdentifier = 61,
-    /// 82 Relay Agent Information
-    RelayAgentInformation = 82,
-    /// 91 client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
-    ClientLastTransactionTime = 91,
-    /// 92 associated-ip - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
-    AssociatedIp = 92,
-    /// 93 Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>
-    ClientSystemArchitecture = 93,
-    /// 94 Client Network Interface - <https://www.rfc-editor.org/rfc/rfc4578.html>
-    ClientNetworkInterface = 94,
-    /// 97 Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>
-    ClientMachineIdentifier = 97,
-    /// 118 Subnet option - <https://datatracker.ietf.org/doc/html/rfc3011>
-    SubnetSelection = 118,
-    /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
-    DomainSearch = 119,
-    /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
-    StatusCode = 151,
-    /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
-    BaseTime = 152,
-    /// 153 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.4>
-    StartTimeOfState = 153,
-    /// 154 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.5>
-    QueryStartTime = 154,
-    /// 155 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.6>
-    QueryEndTime = 155,
-    /// 156 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.7>
-    DhcpState = 156,
-    /// 157 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>
-    DataSource = 157,
-    /// Unknown option
-    #[num_enum(default)]
-    Unknown,
-    /// 255 End
-    End = 255,
-}
-
-// requires arbitrary_enum_discriminant nightly feature
-// #[derive(Debug, Eq, PartialEq, num_enum::FromPrimitive)]
-// #[repr(u8)]
-// enum Enum {
-//     Zero = 0,
-//     #[num_enum(catch_all)]
-//     NonZero(u8),
-// }
 
 #[cfg(test)]
 mod tests {
@@ -1930,9 +1590,9 @@ mod tests {
     }
     #[test]
     fn test_opt_default() {
-        let opt: OtherCode = 255.into();
-        assert_eq!(OtherCode::End, opt);
-        assert_eq!(OtherCode::DomainSearch as u8, 119_u8);
-        assert_eq!(OtherCode::Unknown, 241.into());
+        let opt: OptionCode = 255.into();
+        assert_eq!(OptionCode::End, opt);
+        assert_eq!(u8::from(OptionCode::DomainSearch), 119_u8);
+        assert_eq!(OptionCode::Unknown(241), 241.into());
     }
 }

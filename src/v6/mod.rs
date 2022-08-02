@@ -54,6 +54,7 @@
 //!
 mod options;
 
+use num_enum::{FromPrimitive, IntoPrimitive};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -212,127 +213,80 @@ impl Message {
 /// DHCPv6 message types
 /// <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, FromPrimitive, IntoPrimitive)]
+#[num_enum(u8)]
 pub enum MessageType {
     // RFC 3315
     /// client solicit - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    #[num_enum(num = 1)]
     Solicit,
     /// server advertise - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    #[num_enum(num = 2)]
     Advertise,
     /// request - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    #[num_enum(num = 3)]
     Request,
     /// confirm - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    #[num_enum(num = 4)]
     Confirm,
     /// renew - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    #[num_enum(num = 5)]
     Renew,
     /// rebind - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    #[num_enum(num = 6)]
     Rebind,
     /// reply - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    #[num_enum(num = 7)]
     Reply,
     /// release message type - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    #[num_enum(num = 8)]
     Release,
     /// decline - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    #[num_enum(num = 9)]
     Decline,
     /// reconfigure - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    #[num_enum(num = 10)]
     Reconfigure,
     /// information request - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    #[num_enum(num = 11)]
     InformationRequest,
     /// relay forward - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    #[num_enum(num = 12)]
     RelayForw,
     /// relay reply - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    #[num_enum(num = 13)]
     RelayRepl,
     // RFC 5007
     /// lease query - <https://datatracker.ietf.org/doc/html/rfc5007#section-4.2.1>
+    #[num_enum(num = 14)]
     LeaseQuery,
     /// lease query reply - <https://datatracker.ietf.org/doc/html/rfc5007#section-4.2.2>
+    #[num_enum(num = 15)]
     LeaseQueryReply,
     // RFC 5460
     /// lease query done - <https://datatracker.ietf.org/doc/html/rfc5460#section-5.2.2>
+    #[num_enum(num = 16)]
     LeaseQueryDone,
     /// lease query data - <https://datatracker.ietf.org/doc/html/rfc5460#section-5.2.1>
+    #[num_enum(num = 17)]
     LeaseQueryData,
     // RFC 6977
     /// reconfigure request - <https://datatracker.ietf.org/doc/html/rfc6977#section-6.2.1>
+    #[num_enum(num = 18)]
     ReconfigureRequest,
     /// reconfigure reply - <https://datatracker.ietf.org/doc/html/rfc6977#section-6.2.2>
+    #[num_enum(num = 19)]
     ReconfigureReply,
     // RFC 7341
     /// dhcpv4 query - <https://datatracker.ietf.org/doc/html/rfc7341#section-6.2>
+    #[num_enum(num = 20)]
     DHCPv4Query,
     /// dhcpv4 response - <https://datatracker.ietf.org/doc/html/rfc7341#section-6.2>
+    #[num_enum(num = 21)]
     DHCPv4Response,
     /// unknown/unimplemented message type
+    #[num_enum(catch_all)]
     Unknown(u8),
-}
-
-impl From<u8> for MessageType {
-    fn from(n: u8) -> Self {
-        use MessageType::*;
-        match n {
-            // RFC 3315
-            1 => Solicit,
-            2 => Advertise,
-            3 => Request,
-            4 => Confirm,
-            5 => Renew,
-            6 => Rebind,
-            7 => Reply,
-            8 => Release,
-            9 => Decline,
-            10 => Reconfigure,
-            11 => InformationRequest,
-            12 => RelayForw,
-            13 => RelayRepl,
-            // RFC 5007
-            14 => LeaseQuery,
-            15 => LeaseQueryReply,
-            // RFC 5460
-            16 => LeaseQueryDone,
-            17 => LeaseQueryData,
-            // RFC 6977
-            18 => ReconfigureRequest,
-            19 => ReconfigureReply,
-            // RFC 7341
-            20 => DHCPv4Query,
-            21 => DHCPv4Response,
-            n => Unknown(n),
-        }
-    }
-}
-
-impl From<MessageType> for u8 {
-    fn from(m: MessageType) -> Self {
-        use MessageType::*;
-        match m {
-            // RFC 3315
-            Solicit => 1,
-            Advertise => 2,
-            Request => 3,
-            Confirm => 4,
-            Renew => 5,
-            Rebind => 6,
-            Reply => 7,
-            Release => 8,
-            Decline => 9,
-            Reconfigure => 10,
-            InformationRequest => 11,
-            RelayForw => 12,
-            RelayRepl => 13,
-            // RFC 5007
-            LeaseQuery => 14,
-            LeaseQueryReply => 15,
-            // RFC 5460
-            LeaseQueryDone => 16,
-            LeaseQueryData => 17,
-            // RFC 6977
-            ReconfigureRequest => 18,
-            ReconfigureReply => 19,
-            // RFC 7341
-            DHCPv4Query => 20,
-            DHCPv4Response => 21,
-            Unknown(n) => n,
-        }
-    }
 }
 
 impl Decodable for Message {

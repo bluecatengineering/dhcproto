@@ -3,6 +3,7 @@ use std::{collections::HashMap, fmt, net::Ipv4Addr};
 
 use crate::{Decodable, Encodable};
 
+use num_enum::{FromPrimitive, IntoPrimitive};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -292,63 +293,36 @@ impl UnknownInfo {
 
 /// relay code, represented as a u8
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, FromPrimitive, IntoPrimitive)]
+#[num_enum(u8)]
 pub enum RelayCode {
+    #[num_enum(num = 1)]
     AgentCircuitId,
+    #[num_enum(num = 2)]
     AgentRemoteId,
+    #[num_enum(num = 4)]
     DocsisDeviceClass,
+    #[num_enum(num = 5)]
     LinkSelection,
+    #[num_enum(num = 6)]
     SubscriberId,
+    #[num_enum(num = 7)]
     RadiusAttributes,
+    #[num_enum(num = 8)]
     Authentication,
+    #[num_enum(num = 9)]
     VendorSpecificInformation,
+    #[num_enum(num = 10)]
     RelayAgentFlags,
+    #[num_enum(num = 11)]
     ServerIdentifierOverride,
+    #[num_enum(num = 151)]
     VirtualSubnet,
+    #[num_enum(num = 152)]
     VirtualSubnetControl,
     /// unknown/unimplemented message type
+    #[num_enum(catch_all)]
     Unknown(u8),
-}
-
-impl From<u8> for RelayCode {
-    fn from(n: u8) -> Self {
-        use RelayCode::*;
-        match n {
-            1 => AgentCircuitId,
-            2 => AgentRemoteId,
-            4 => DocsisDeviceClass,
-            5 => LinkSelection,
-            6 => SubscriberId,
-            7 => RadiusAttributes,
-            8 => Authentication,
-            9 => VendorSpecificInformation,
-            10 => RelayAgentFlags,
-            11 => ServerIdentifierOverride,
-            151 => VirtualSubnet,
-            152 => VirtualSubnetControl,
-            _ => Unknown(n),
-        }
-    }
-}
-impl From<RelayCode> for u8 {
-    fn from(code: RelayCode) -> Self {
-        use RelayCode::*;
-        match code {
-            AgentCircuitId => 1,
-            AgentRemoteId => 2,
-            DocsisDeviceClass => 4,
-            LinkSelection => 5,
-            SubscriberId => 6,
-            RadiusAttributes => 7,
-            Authentication => 8,
-            VendorSpecificInformation => 9,
-            RelayAgentFlags => 10,
-            ServerIdentifierOverride => 11,
-            VirtualSubnet => 151,
-            VirtualSubnetControl => 152,
-            Unknown(n) => n,
-        }
-    }
 }
 
 impl From<&RelayInfo> for RelayCode {

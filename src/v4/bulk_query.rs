@@ -1,5 +1,6 @@
 use std::fmt;
 
+use num_enum::{FromPrimitive, IntoPrimitive};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -50,90 +51,45 @@ impl From<DataSourceFlags> for u8 {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, FromPrimitive, IntoPrimitive)]
+#[num_enum(u8)]
 pub enum QueryState {
+    #[num_enum(num = 1)]
     Available,
+    #[num_enum(num = 2)]
     Active,
+    #[num_enum(num = 3)]
     Expired,
+    #[num_enum(num = 4)]
     Release,
+    #[num_enum(num = 5)]
     Abandoned,
+    #[num_enum(num = 6)]
     Reset,
+    #[num_enum(num = 7)]
     Remote,
+    #[num_enum(num = 8)]
     Transitioning,
+    #[num_enum(catch_all)]
     Unknown(u8),
-}
-
-impl From<u8> for QueryState {
-    fn from(n: u8) -> Self {
-        use QueryState::*;
-        match n {
-            1 => Available,
-            2 => Active,
-            3 => Expired,
-            4 => Release,
-            5 => Abandoned,
-            6 => Reset,
-            7 => Remote,
-            8 => Transitioning,
-            _ => Unknown(n),
-        }
-    }
-}
-
-impl From<QueryState> for u8 {
-    fn from(state: QueryState) -> Self {
-        use QueryState::*;
-        match state {
-            Available => 1,
-            Active => 2,
-            Expired => 3,
-            Release => 4,
-            Abandoned => 5,
-            Reset => 6,
-            Remote => 7,
-            Transitioning => 8,
-            Unknown(code) => code,
-        }
-    }
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, FromPrimitive, IntoPrimitive)]
+#[num_enum(u8)]
 pub enum Code {
+    #[num_enum(num = 0)]
     Success,
+    #[num_enum(num = 1)]
     UnspecFail,
+    #[num_enum(num = 2)]
     QueryTerminated,
+    #[num_enum(num = 3)]
     MalformedQuery,
+    #[num_enum(num = 4)]
     NotAllowed,
+    #[num_enum(catch_all)]
     Unknown(u8),
-}
-
-impl From<u8> for Code {
-    fn from(n: u8) -> Self {
-        use Code::*;
-        match n {
-            0 => Success,
-            1 => UnspecFail,
-            2 => QueryTerminated,
-            3 => MalformedQuery,
-            4 => NotAllowed,
-            _ => Unknown(n),
-        }
-    }
-}
-
-impl From<Code> for u8 {
-    fn from(code: Code) -> Self {
-        use Code::*;
-        match code {
-            Success => 0,
-            UnspecFail => 1,
-            QueryTerminated => 2,
-            MalformedQuery => 3,
-            NotAllowed => 4,
-            Unknown(code) => code,
-        }
-    }
 }
 
 #[cfg(test)]

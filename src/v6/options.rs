@@ -1,3 +1,4 @@
+use num_enum::{FromPrimitive, IntoPrimitive};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use trust_dns_proto::{
@@ -172,96 +173,58 @@ pub struct StatusCode {
 
 /// Status code for Server Unicast
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, FromPrimitive, IntoPrimitive)]
+#[num_enum(u16)]
 pub enum Status {
+    #[num_enum(num = 0)]
     Success,
+    #[num_enum(num = 1)]
     UnspecFail,
+    #[num_enum(num = 2)]
     NoAddrsAvail,
+    #[num_enum(num = 3)]
     NoBinding,
+    #[num_enum(num = 4)]
     NotOnLink,
+    #[num_enum(num = 5)]
     UseMulticast,
+    #[num_enum(num = 6)]
     NoPrefixAvail,
+    #[num_enum(num = 7)]
     UnknownQueryType,
+    #[num_enum(num = 8)]
     MalformedQuery,
+    #[num_enum(num = 9)]
     NotConfigured,
+    #[num_enum(num = 10)]
     NotAllowed,
+    #[num_enum(num = 11)]
     QueryTerminated,
+    #[num_enum(num = 12)]
     DataMissing,
+    #[num_enum(num = 13)]
     CatchUpComplete,
+    #[num_enum(num = 14)]
     NotSupported,
+    #[num_enum(num = 15)]
     TLSConnectionRefused,
+    #[num_enum(num = 16)]
     AddressInUse,
+    #[num_enum(num = 17)]
     ConfigurationConflict,
+    #[num_enum(num = 18)]
     MissingBindingInformation,
+    #[num_enum(num = 19)]
     OutdatedBindingInformation,
+    #[num_enum(num = 20)]
     ServerShuttingDown,
+    #[num_enum(num = 21)]
     DNSUpdateNotSupported,
+    #[num_enum(num = 22)]
     ExcessiveTimeSkew,
     /// unknown/unimplemented message type
+    #[num_enum(catch_all)]
     Unknown(u16),
-}
-
-impl From<u16> for Status {
-    fn from(n: u16) -> Self {
-        use Status::*;
-        match n {
-            0 => Success,
-            1 => UnspecFail,
-            2 => NoAddrsAvail,
-            3 => NoBinding,
-            4 => NotOnLink,
-            5 => UseMulticast,
-            6 => NoPrefixAvail,
-            7 => UnknownQueryType,
-            8 => MalformedQuery,
-            9 => NotConfigured,
-            10 => NotAllowed,
-            11 => QueryTerminated,
-            12 => DataMissing,
-            13 => CatchUpComplete,
-            14 => NotSupported,
-            15 => TLSConnectionRefused,
-            16 => AddressInUse,
-            17 => ConfigurationConflict,
-            18 => MissingBindingInformation,
-            19 => OutdatedBindingInformation,
-            20 => ServerShuttingDown,
-            21 => DNSUpdateNotSupported,
-            22 => ExcessiveTimeSkew,
-            _ => Unknown(n),
-        }
-    }
-}
-impl From<Status> for u16 {
-    fn from(n: Status) -> Self {
-        use Status::*;
-        match n {
-            Success => 0,
-            UnspecFail => 1,
-            NoAddrsAvail => 2,
-            NoBinding => 3,
-            NotOnLink => 4,
-            UseMulticast => 5,
-            NoPrefixAvail => 6,
-            UnknownQueryType => 7,
-            MalformedQuery => 8,
-            NotConfigured => 9,
-            NotAllowed => 10,
-            QueryTerminated => 11,
-            DataMissing => 12,
-            CatchUpComplete => 13,
-            NotSupported => 14,
-            TLSConnectionRefused => 15,
-            AddressInUse => 16,
-            ConfigurationConflict => 17,
-            MissingBindingInformation => 18,
-            OutdatedBindingInformation => 19,
-            ServerShuttingDown => 20,
-            DNSUpdateNotSupported => 21,
-            ExcessiveTimeSkew => 22,
-            Unknown(n) => n,
-        }
-    }
 }
 
 /// Authentication
@@ -762,120 +725,81 @@ impl Encodable for DhcpOption {
 
 /// option code type
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, FromPrimitive, IntoPrimitive)]
+#[num_enum(u16)]
 pub enum OptionCode {
     /// 1
+    #[num_enum(num = 1)]
     ClientId, // should duid for this be bytes or string?
     /// 2
+    #[num_enum(num = 2)]
     ServerId,
     /// 3
+    #[num_enum(num = 3)]
     IANA,
     /// 4
+    #[num_enum(num = 4)]
     IATA,
     /// 5
+    #[num_enum(num = 5)]
     IAAddr,
     /// 6
+    #[num_enum(num = 6)]
     ORO,
     /// 7
+    #[num_enum(num = 7)]
     Preference,
     /// 8
+    #[num_enum(num = 8)]
     ElapsedTime,
     /// 9
+    #[num_enum(num = 9)]
     RelayMsg,
     /// 11
+    #[num_enum(num = 11)]
     Authentication,
     /// 12
+    #[num_enum(num = 12)]
     ServerUnicast,
     /// 13
+    #[num_enum(num = 13)]
     StatusCode,
     /// 14
+    #[num_enum(num = 14)]
     RapidCommit,
     /// 15
+    #[num_enum(num = 15)]
     UserClass,
     /// 16
+    #[num_enum(num = 16)]
     VendorClass,
     /// 17
+    #[num_enum(num = 17)]
     VendorOpts,
     /// 18
+    #[num_enum(num = 18)]
     InterfaceId,
     /// 19
+    #[num_enum(num = 19)]
     ReconfMsg,
     /// 20
+    #[num_enum(num = 20)]
     ReconfAccept,
     /// 23
+    #[num_enum(num = 23)]
     DNSNameServer,
     /// 24
+    #[num_enum(num = 24)]
     DomainSearchList,
     /// 25
+    #[num_enum(num = 25)]
     IAPD,
     /// 26
+    #[num_enum(num = 26)]
     IAPDPrefix,
     /// an unknown or unimplemented option type
+    #[num_enum(catch_all)]
     Unknown(u16),
-}
-
-impl From<OptionCode> for u16 {
-    fn from(opt: OptionCode) -> Self {
-        use OptionCode::*;
-        match opt {
-            ClientId => 1,
-            ServerId => 2,
-            IANA => 3,
-            IATA => 4,
-            IAAddr => 5,
-            ORO => 6,
-            Preference => 7,
-            ElapsedTime => 8,
-            RelayMsg => 9,
-            Authentication => 11,
-            ServerUnicast => 12,
-            StatusCode => 13,
-            RapidCommit => 14,
-            UserClass => 15,
-            VendorClass => 16,
-            VendorOpts => 17,
-            InterfaceId => 18,
-            ReconfMsg => 19,
-            ReconfAccept => 20,
-            DNSNameServer => 23,
-            DomainSearchList => 24,
-            IAPD => 25,
-            IAPDPrefix => 26,
-            Unknown(n) => n,
-        }
-    }
-}
-
-impl From<u16> for OptionCode {
-    fn from(n: u16) -> Self {
-        use OptionCode::*;
-        match n {
-            1 => ClientId,
-            2 => ServerId,
-            3 => IANA,
-            4 => IATA,
-            5 => IAAddr,
-            6 => ORO,
-            7 => Preference,
-            8 => ElapsedTime,
-            9 => RelayMsg,
-            11 => Authentication,
-            12 => ServerUnicast,
-            13 => StatusCode,
-            14 => RapidCommit,
-            15 => UserClass,
-            16 => VendorClass,
-            17 => VendorOpts,
-            18 => InterfaceId,
-            19 => ReconfMsg,
-            20 => ReconfAccept,
-            23 => DNSNameServer,
-            24 => DomainSearchList,
-            25 => IAPD,
-            26 => IAPDPrefix,
-            _ => Unknown(n),
-        }
-    }
 }
 
 impl From<&DhcpOption> for OptionCode {
