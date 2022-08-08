@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- `PartialOrd`/`Ord` impls for `v4::DhcpOption`/`v6::DhcpOption`/`v4::OptionCode`/`v6::OptionCode`
+- `v6::DhcpOptions` methods `*_all`
+
+### Changed
+
+- internally, v6 DhcpOptions are now kept sorted by OptionCode (may become `HashMap<_, Vec<_>>` in future)
+
 ### Fixed
 
 - relay agent info will be added before END opt if present [see here](https://datatracker.ietf.org/doc/html/rfc3046#section-2.1)
