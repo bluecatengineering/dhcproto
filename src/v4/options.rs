@@ -367,6 +367,18 @@ pub enum OptionCode {
     End,
 }
 
+impl PartialOrd for OptionCode {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for OptionCode {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        u8::from(*self).cmp(&u8::from(*other))
+    }
+}
+
 impl From<u8> for OptionCode {
     fn from(n: u8) -> Self {
         use OptionCode::*;
@@ -702,6 +714,18 @@ pub enum DhcpOption {
     Unknown(UnknownOption),
     /// 255 End
     End,
+}
+
+impl PartialOrd for DhcpOption {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for DhcpOption {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        OptionCode::from(self).cmp(&OptionCode::from(other))
+    }
 }
 
 /// Architecture name from - <https://www.rfc-editor.org/rfc/rfc4578.html>

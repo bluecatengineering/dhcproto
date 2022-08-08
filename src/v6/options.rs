@@ -5,7 +5,7 @@ use trust_dns_proto::{
     serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder},
 };
 
-use std::net::Ipv6Addr;
+use std::{cmp::Ordering, net::Ipv6Addr, ops::RangeInclusive};
 
 pub use crate::Domain;
 use crate::{
@@ -16,13 +16,15 @@ use crate::{
 };
 
 // server can send multiple IA_NA options to request multiple addresses
-// this means we cannot represent is as a hashmap
+// so we must be able to handle multiple of the same option type
 // <https://datatracker.ietf.org/doc/html/rfc8415#section-6.6>
+// TODO: consider HashMap<OptionCode, TinyVec<DhcpOption>>
 
 /// <https://datatracker.ietf.org/doc/html/rfc8415#section-21>
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct DhcpOptions(Vec<DhcpOption>);
+// vec maintains sorted on OptionCode
 
 impl DhcpOptions {
     /// construct empty DhcpOptions
@@ -31,24 +33,42 @@ impl DhcpOptions {
     }
     /// get the first element matching this option code
     pub fn get(&self, code: OptionCode) -> Option<&DhcpOption> {
-        self.0
-            .get(self.0.iter().position(|x| OptionCode::from(x) == code)?)
+        let first = first(&self.0, |x| OptionCode::from(x).cmp(&code))?;
+        // get_unchecked?
+        self.0.get(first)
+    }
+    /// get all elements matching this option code
+    pub fn get_all(&self, code: OptionCode) -> Option<&[DhcpOption]> {
+        let range = range_binsearch(&self.0, |x| OptionCode::from(x).cmp(&code))?;
+        Some(&self.0[range])
     }
     /// get the first element matching this option code
     pub fn get_mut(&mut self, code: OptionCode) -> Option<&mut DhcpOption> {
-        let i = self.0.iter().position(|x| OptionCode::from(x) == code)?;
-        self.0.get_mut(i)
+        let first = first(&self.0, |x| OptionCode::from(x).cmp(&code))?;
+        self.0.get_mut(first)
+    }
+    /// get all elements matching this option code
+    pub fn get_mut_all(&mut self, code: OptionCode) -> Option<&mut [DhcpOption]> {
+        let range = range_binsearch(&self.0, |x| OptionCode::from(x).cmp(&code))?;
+        Some(&mut self.0[range])
     }
     /// remove the first element with a matching option code
     pub fn remove(&mut self, code: OptionCode) -> Option<DhcpOption> {
-        Some(
-            self.0
-                .remove(self.0.iter().position(|x| OptionCode::from(x) == code)?),
-        )
+        let first = first(&self.0, |x| OptionCode::from(x).cmp(&code))?;
+        Some(self.0.remove(first))
     }
-    /// push a new option into the list of opts
-    pub fn push(&mut self, opt: DhcpOption) {
-        self.0.push(opt)
+    /// remove all elements with a matching option code
+    pub fn remove_all(
+        &mut self,
+        code: OptionCode,
+    ) -> Option<impl Iterator<Item = DhcpOption> + '_> {
+        let range = range_binsearch(&self.0, |x| OptionCode::from(x).cmp(&code))?;
+        Some(self.0.drain(range))
+    }
+    /// insert a new option into the list of opts
+    pub fn insert(&mut self, opt: DhcpOption) {
+        let i = self.0.partition_point(|x| x < &opt);
+        self.0.insert(i, opt)
     }
     /// return a reference to an iterator
     pub fn iter(&self) -> impl Iterator<Item = &DhcpOption> {
@@ -113,6 +133,18 @@ pub enum DhcpOption {
     IAPDPrefix(IAPDPrefix),
     /// An unknown or unimplemented option type
     Unknown(UnknownOption),
+}
+
+impl PartialOrd for DhcpOption {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for DhcpOption {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        OptionCode::from(self).cmp(&OptionCode::from(other))
+    }
 }
 
 /// wrapper around interface id
@@ -486,6 +518,8 @@ impl Decodable for DhcpOptions {
         while let Ok(opt) = DhcpOption::decode(decoder) {
             opts.push(opt);
         }
+        // sorts by OptionCode
+        opts.sort_unstable();
         Ok(DhcpOptions(opts))
     }
 }
@@ -814,6 +848,18 @@ pub enum OptionCode {
     Unknown(u16),
 }
 
+impl PartialOrd for OptionCode {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for OptionCode {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        u16::from(*self).cmp(&u16::from(*other))
+    }
+}
+
 impl From<OptionCode> for u16 {
     fn from(opt: OptionCode) -> Self {
         use OptionCode::*;
@@ -907,5 +953,98 @@ impl From<&DhcpOption> for OptionCode {
             IAPDPrefix(_) => OptionCode::IAPDPrefix,
             Unknown(UnknownOption { code, .. }) => OptionCode::Unknown(*code),
         }
+    }
+}
+
+#[inline]
+fn first<T, F>(arr: &[T], f: F) -> Option<usize>
+where
+    T: Ord,
+    F: Fn(&T) -> Ordering,
+{
+    let mut l = 0;
+    let mut r = arr.len() - 1;
+    while l <= r {
+        let mid = (l + r) >> 1;
+        // SAFETY: we know it is within the length
+        let mid_cmp = f(unsafe { arr.get_unchecked(mid) });
+        let prev_cmp = if mid > 0 {
+            f(unsafe { arr.get_unchecked(mid - 1) }) == Ordering::Less
+        } else {
+            false
+        };
+        if (mid == 0 || prev_cmp) && mid_cmp == Ordering::Equal {
+            return Some(mid);
+        } else if mid_cmp == Ordering::Less {
+            l = mid + 1;
+        } else {
+            r = mid - 1;
+        }
+    }
+    None
+}
+
+#[inline]
+fn last<T, F>(arr: &[T], f: F) -> Option<usize>
+where
+    T: Ord,
+    F: Fn(&T) -> Ordering,
+{
+    let n = arr.len();
+    let mut l = 0;
+    let mut r = n - 1;
+    while l <= r {
+        let mid = (l + r) >> 1;
+        // SAFETY: we know it is within the length
+        let mid_cmp = f(unsafe { arr.get_unchecked(mid) });
+        let nxt_cmp = if mid < n {
+            f(unsafe { arr.get_unchecked(mid + 1) }) == Ordering::Greater
+        } else {
+            false
+        };
+        if (mid == n - 1 || nxt_cmp) && mid_cmp == Ordering::Equal {
+            return Some(mid);
+        } else if mid_cmp == Ordering::Greater {
+            r = mid - 1;
+        } else {
+            l = mid + 1;
+        }
+    }
+    None
+}
+
+#[inline]
+fn range_binsearch<T, F>(arr: &[T], f: F) -> Option<RangeInclusive<usize>>
+where
+    T: Ord,
+    F: Fn(&T) -> Ordering,
+{
+    let first = first(arr, &f)?;
+    let last = last(arr, &f)?;
+    Some(first..=last)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_range_binsearch() {
+        let arr = vec![0, 1, 1, 1, 1, 4, 6, 7, 9, 9, 10];
+        assert_eq!(Some(1..=4), range_binsearch(&arr, |x| x.cmp(&1)));
+
+        let arr = vec![0, 1, 1, 1, 1, 4, 6, 7, 9, 9, 10];
+        assert_eq!(Some(0..=0), range_binsearch(&arr, |x| x.cmp(&0)));
+
+        let arr = vec![0, 1, 1, 1, 1, 4, 6, 7, 9, 9, 10];
+        assert_eq!(Some(5..=5), range_binsearch(&arr, |x| x.cmp(&4)));
+
+        let arr = vec![1, 2, 2, 2, 2, 3, 4, 7, 8, 8];
+        assert_eq!(Some(8..=9), range_binsearch(&arr, |x| x.cmp(&8)));
+
+        let arr = vec![1, 2, 2, 2, 2, 3, 4, 7, 8, 8];
+        assert_eq!(Some(1..=4), range_binsearch(&arr, |x| x.cmp(&2)));
+
+        let arr = vec![1, 2, 2, 2, 2, 3, 4, 7, 8, 8];
+        assert_eq!(Some(7..=7), range_binsearch(&arr, |x| x.cmp(&7)));
     }
 }

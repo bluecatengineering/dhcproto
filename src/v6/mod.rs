@@ -15,7 +15,7 @@
 //! let mut msg = v6::Message::new(v6::MessageType::Solicit);
 //! // set an option
 //! msg.opts_mut()
-//!     .push(v6::DhcpOption::ClientId(duid));
+//!     .insert(v6::DhcpOption::ClientId(duid));
 //!
 //! // now encode to bytes
 //! let mut buf = Vec::new();
@@ -374,7 +374,6 @@ mod tests {
         println!("{:?}", input);
         // no PAD bytes or hashmap with ipv6 so the lens will be exact
         assert_eq!(buf.len(), input.len());
-        assert_eq!(buf, input);
         // decode again
         let res = Message::decode(&mut Decoder::new(&buf))?;
         // check Messages are equal after decoding/encoding
