@@ -57,7 +57,7 @@ mod options;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use std::convert::TryInto;
+use std::{convert::TryInto, fmt};
 
 // re-export submodules from proto::msg
 pub use self::options::*;
@@ -351,6 +351,16 @@ impl Encodable for Message {
         e.write(self.xid)?;
         self.opts.encode(e)?;
         Ok(())
+    }
+}
+
+impl fmt::Display for Message {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Message")
+            .field("xid", &self.xid_num())
+            .field("msg_type", &self.msg_type())
+            .field("opts", &self.opts())
+            .finish()
     }
 }
 
