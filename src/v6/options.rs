@@ -91,10 +91,19 @@ impl IntoIterator for DhcpOptions {
     }
 }
 
+impl FromIterator<DhcpOption> for DhcpOptions {
+    fn from_iter<T: IntoIterator<Item = DhcpOption>>(iter: T) -> Self {
+        let mut opts = iter.into_iter().collect::<Vec<_>>();
+        opts.sort_unstable();
+        DhcpOptions(opts)
+    }
+}
+
 /// Duid helper type
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Duid(Vec<u8>);
+// TODO: define specific duid types
 
 impl Duid {
     /// new DUID link layer address with time
