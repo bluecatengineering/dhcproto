@@ -13,10 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `v6::DhcpOptions` methods `*_all`
 - `v6::Duid` & methods
 - `v6::Message` `Display` impl
+- `v6::RelayMessage`
 
 ### Changed
 
 - internally, v6 DhcpOptions are now kept sorted by OptionCode (may become `HashMap<_, Vec<_>>` in future)
+- `DhcpOptions::RelayMsg()` type changed to `RelayMessage`
 
 ### Fixed
 

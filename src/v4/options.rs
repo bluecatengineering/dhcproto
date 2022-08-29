@@ -157,6 +157,31 @@ impl DhcpOptions {
     }
 }
 
+impl IntoIterator for DhcpOptions {
+    type Item = (OptionCode, DhcpOption);
+    type IntoIter = std::collections::hash_map::IntoIter<OptionCode, DhcpOption>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl FromIterator<DhcpOption> for DhcpOptions {
+    fn from_iter<T: IntoIterator<Item = DhcpOption>>(iter: T) -> Self {
+        DhcpOptions(
+            iter.into_iter()
+                .map(|opt| ((&opt).into(), opt))
+                .collect::<HashMap<OptionCode, DhcpOption>>(),
+        )
+    }
+}
+
+impl FromIterator<(OptionCode, DhcpOption)> for DhcpOptions {
+    fn from_iter<T: IntoIterator<Item = (OptionCode, DhcpOption)>>(iter: T) -> Self {
+        DhcpOptions(iter.into_iter().collect::<HashMap<_, _>>())
+    }
+}
+
 impl Decodable for DhcpOptions {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         // represented as a vector in the actual message

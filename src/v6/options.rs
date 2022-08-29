@@ -13,7 +13,7 @@ use crate::{
     encoder::{Encodable, Encoder},
     error::{DecodeResult, EncodeResult},
     v4::HType,
-    v6::MessageType,
+    v6::{MessageType, RelayMessage},
 };
 
 // server can send multiple IA_NA options to request multiple addresses
@@ -78,6 +78,16 @@ impl DhcpOptions {
     /// return a mutable ref to an iterator
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut DhcpOption> {
         self.0.iter_mut()
+    }
+}
+
+impl IntoIterator for DhcpOptions {
+    type Item = DhcpOption;
+
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
@@ -165,7 +175,7 @@ pub enum DhcpOption {
     /// Elapsed time in millis
     ElapsedTime(u16),
     /// 9 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.10>
-    RelayMsg(RelayMsg),
+    RelayMsg(RelayMessage),
     /// 11 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.11>
     Authentication(Authentication),
     /// 12 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.12>
@@ -384,31 +394,6 @@ impl Decodable for Authentication {
     }
 }
 
-/// Relay Msg
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct RelayMsg {
-    /// DHCP-relay-message In a Relay-forward message, the received
-    ///                message, relayed verbatim to the next relay agent
-    ///                or server; in a Relay-reply message, the message to
-    ///                be copied and relayed to the relay agent or client
-    ///                whose address is in the peer-address field of the
-    ///                Relay-reply message
-    // TODO: should we decode this into a `Message`?
-    msg: Vec<u8>,
-}
-
-impl RelayMsg {
-    /// Create a new `RelayMsg`
-    pub fn new(msg: Vec<u8>) -> Self {
-        Self { msg }
-    }
-    /// return the contents of the `RelayMsg`
-    pub fn data(&self) -> &[u8] {
-        &self.msg
-    }
-}
-
 /// Option Request Option
 /// <https://datatracker.ietf.org/doc/html/rfc8415#section-21.7>
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -618,9 +603,10 @@ impl Decodable for DhcpOption {
             }
             OptionCode::Preference => DhcpOption::Preference(decoder.read_u8()?),
             OptionCode::ElapsedTime => DhcpOption::ElapsedTime(decoder.read_u16()?),
-            OptionCode::RelayMsg => DhcpOption::RelayMsg(RelayMsg {
-                msg: decoder.read_slice(len)?.to_vec(),
-            }),
+            OptionCode::RelayMsg => {
+                let mut relay_dec = Decoder::new(decoder.read_slice(len)?);
+                DhcpOption::RelayMsg(RelayMessage::decode(&mut relay_dec)?)
+            }
             OptionCode::Authentication => {
                 let mut dec = Decoder::new(decoder.read_slice(len)?);
                 DhcpOption::Authentication(Authentication::decode(&mut dec)?)
@@ -749,9 +735,13 @@ impl Encodable for DhcpOption {
                 e.write_u16(2)?;
                 e.write_u16(*elapsed)?;
             }
-            DhcpOption::RelayMsg(RelayMsg { msg }) => {
-                e.write_u16(msg.len() as u16)?;
-                e.write_slice(msg)?;
+            DhcpOption::RelayMsg(msg) => {
+                let mut buf = Vec::new();
+                let mut relay_enc = Encoder::new(&mut buf);
+                msg.encode(&mut relay_enc)?;
+
+                e.write_u16(buf.len() as u16)?;
+                e.write_slice(&buf)?;
             }
             DhcpOption::Authentication(Authentication {
                 proto,

@@ -57,7 +57,7 @@ mod options;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use std::{convert::TryInto, fmt};
+use std::{convert::TryInto, fmt, net::Ipv6Addr};
 
 // re-export submodules from proto::msg
 pub use self::options::*;
@@ -359,6 +359,91 @@ impl fmt::Display for Message {
         f.debug_struct("Message")
             .field("xid", &self.xid_num())
             .field("msg_type", &self.msg_type())
+            .field("opts", &self.opts())
+            .finish()
+    }
+}
+
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RelayMessage {
+    /// message type
+    /// <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
+    msg_type: MessageType,
+    /// hop count
+    /// <https://datatracker.ietf.org/doc/html/rfc8415#section-9>
+    hop_count: u8,
+    /// link address
+    /// <https://datatracker.ietf.org/doc/html/rfc8415#section-9>
+    link_addr: Ipv6Addr,
+    /// peer address
+    /// <https://datatracker.ietf.org/doc/html/rfc8415#section-9>
+    peer_addr: Ipv6Addr,
+    /// Options
+    /// <https://datatracker.ietf.org/doc/html/rfc8415#section-21>
+    opts: DhcpOptions,
+}
+
+impl RelayMessage {
+    pub fn msg_type(&self) -> MessageType {
+        self.msg_type
+    }
+    pub fn hop_count(&self) -> u8 {
+        self.hop_count
+    }
+    pub fn link_addr(&self) -> Ipv6Addr {
+        self.link_addr
+    }
+    pub fn peer_addr(&self) -> Ipv6Addr {
+        self.peer_addr
+    }
+    /// Get a reference to the message's options.
+    pub fn opts(&self) -> &DhcpOptions {
+        &self.opts
+    }
+
+    /// Set DHCP opts
+    pub fn set_opts(&mut self, opts: DhcpOptions) -> &mut Self {
+        self.opts = opts;
+        self
+    }
+
+    /// Get a mutable reference to the message's options.
+    pub fn opts_mut(&mut self) -> &mut DhcpOptions {
+        &mut self.opts
+    }
+}
+
+impl Decodable for RelayMessage {
+    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
+        Ok(Self {
+            msg_type: decoder.read_u8()?.into(),
+            hop_count: decoder.read_u8()?,
+            link_addr: decoder.read::<16>()?.into(),
+            peer_addr: decoder.read::<16>()?.into(),
+            opts: DhcpOptions::decode(decoder)?,
+        })
+    }
+}
+
+impl Encodable for RelayMessage {
+    fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
+        e.write_u8(self.msg_type.into())?;
+        e.write_u8(self.hop_count)?;
+        e.write_slice(&self.link_addr.octets())?;
+        e.write_slice(&self.peer_addr.octets())?;
+        self.opts.encode(e)?;
+        Ok(())
+    }
+}
+
+impl fmt::Display for RelayMessage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RelayMessage")
+            .field("msg_type", &self.msg_type())
+            .field("hop_count", &self.hop_count())
+            .field("link_addr", &self.link_addr())
+            .field("peer_addr", &self.peer_addr())
             .field("opts", &self.opts())
             .finish()
     }
