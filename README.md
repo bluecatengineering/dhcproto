@@ -4,7 +4,7 @@ A DHCP parser and encoder for DHCPv4/DHCPv6. `dhcproto` aims to be a functionall
 
 ## features
 
-- 100 % safe rust
+- v4 is 100% safe rust (v6 uses `get_unchecked` after bounds have been checked)
 - v4 & v6 Message types
 - v4 & v6 message header getters/setters, all data mutable
 - option types with 100's of fully type safe variants (accepting PR's for unknown variants)
