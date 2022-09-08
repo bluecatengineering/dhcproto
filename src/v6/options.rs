@@ -156,9 +156,17 @@ impl Duid {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    /// consume and return internal DUID as bytes
-    pub fn into_vec(self) -> Vec<u8> {
-        self.0
+}
+
+impl AsRef<[u8]> for Duid {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<Vec<u8>> for Duid {
+    fn from(v: Vec<u8>) -> Self {
+        Self(v)
     }
 }
 
