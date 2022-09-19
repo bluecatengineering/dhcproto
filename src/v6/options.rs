@@ -13,7 +13,7 @@ use crate::{
     encoder::{Encodable, Encoder},
     error::{DecodeResult, EncodeResult},
     v4::HType,
-    v6::{MessageType, RelayMessage},
+    v6::{MessageType, OROCode, RelayMessage},
 };
 
 // server can send multiple IA_NA options to request multiple addresses
@@ -417,7 +417,7 @@ impl Decodable for Authentication {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ORO {
     // 2 * num opts
-    pub opts: Vec<OptionCode>,
+    pub opts: Vec<OROCode>,
 }
 
 impl Decodable for ORO {
@@ -429,7 +429,7 @@ impl Decodable for ORO {
                     .read_slice(len)?
                     .chunks_exact(2)
                     // TODO: use .array_chunks::<2>() when stable
-                    .map(|code| OptionCode::from(u16::from_be_bytes([code[0], code[1]])))
+                    .map(|code| OROCode::from(u16::from_be_bytes([code[0], code[1]])))
                     .collect()
             },
         })
