@@ -350,6 +350,8 @@ pub enum OptionCode {
     ClassIdentifier,
     /// 61 Client Identifier
     ClientIdentifier,
+    /// 65 NIS-Server-Addr
+    NISServerAddr,
     /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
     RapidCommit,
     /// 81 FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>
@@ -466,6 +468,7 @@ impl From<u8> for OptionCode {
             59 => Rebinding,
             60 => ClassIdentifier,
             61 => ClientIdentifier,
+            65 => NISServerAddr,
             80 => RapidCommit,
             82 => RelayAgentInformation,
             91 => ClientLastTransactionTime,
@@ -552,6 +555,7 @@ impl From<OptionCode> for u8 {
             Rebinding => 59,
             ClassIdentifier => 60,
             ClientIdentifier => 61,
+            NISServerAddr => 65,
             RapidCommit => 80,
             RelayAgentInformation => 82,
             ClientLastTransactionTime => 91,
@@ -701,6 +705,8 @@ pub enum DhcpOption {
     ClassIdentifier(Vec<u8>),
     /// 61 Client Identifier
     ClientIdentifier(Vec<u8>),
+    /// 65 NIS-Server-Addr
+    NISServerAddr(Vec<Ipv4Addr>),
     /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
     RapidCommit,
     /// 82 Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>
@@ -906,6 +912,7 @@ fn decode_inner(
         OptionCode::TcpKeepaliveInterval => TcpKeepaliveInterval(decoder.read_u32()?),
         OptionCode::TcpKeepaliveGarbage => TcpKeepaliveGarbage(decoder.read_bool()?),
         OptionCode::NISDomain => NISDomain(decoder.read_string(len)?),
+        OptionCode::NISServerAddr => NISServerAddr(decoder.read_ipv4s(len)?),
         OptionCode::NIS => NIS(decoder.read_ipv4s(len)?),
         OptionCode::NTPServers => NTPServers(decoder.read_ipv4s(len)?),
         OptionCode::VendorExtensions => VendorExtensions(decoder.read_slice(len)?.to_vec()),
@@ -1200,6 +1207,7 @@ impl Encodable for DhcpOption {
             | XFontServer(ips)
             | XDisplayManager(ips)
             | NIS(ips)
+            | NISServerAddr(ips)
             | NTPServers(ips)
             | NetBiosNameServers(ips)
             | NetBiosDatagramDistributionServer(ips)
@@ -1384,6 +1392,7 @@ impl From<&DhcpOption> for OptionCode {
             TcpKeepaliveGarbage(_) => OptionCode::TcpKeepaliveGarbage,
             NISDomain(_) => OptionCode::NISDomain,
             NIS(_) => OptionCode::NIS,
+            NISServerAddr(_) => OptionCode::NISServerAddr,
             NTPServers(_) => OptionCode::NTPServers,
             VendorExtensions(_) => OptionCode::VendorExtensions,
             NetBiosNameServers(_) => OptionCode::NetBiosNameServers,
@@ -1781,6 +1790,19 @@ mod tests {
                 data: vec![1, 2, 3, 4],
             }),
             vec![240, 4, 1, 2, 3, 4],
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_nis_server_addr() -> Result<()> {
+        test_opt(
+            DhcpOption::NISServerAddr(vec![
+                Ipv4Addr::new(127, 0, 0, 1),
+                Ipv4Addr::new(127, 0, 0, 2),
+            ]),
+            vec![65, 8, 127, 0, 0, 1, 127, 0, 0, 2],
         )?;
 
         Ok(())
