@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `v6::Duid` & methods
 - `v6::Message` `Display` impl
 - `v6::RelayMessage`
+- `v4::NISServerAddr` added to options
 
 ### Changed
 
