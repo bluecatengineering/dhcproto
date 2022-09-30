@@ -1,6 +1,6 @@
 use std::{borrow::Cow, collections::HashMap, iter, net::Ipv4Addr};
 
-pub use crate::Domain;
+use crate::Domain;
 use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
@@ -13,7 +13,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use trust_dns_proto::{
     rr::Name,
-    serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder},
+    serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder, EncodeMode},
 };
 
 /// Options for DHCP. This implemention of options ignores PAD bytes.
@@ -1356,15 +1356,17 @@ impl Encodable for DhcpOption {
                 encode_long_opt_bytes(code, &buf, e)?;
             }
             ClientFQDN(flags, r1, r2, domain) => {
-                let mut buf = Vec::new();
-                let mut name_encoder = BinEncoder::new(&mut buf);
-                domain.0.emit(&mut name_encoder)?;
-
-                e.write_u8(buf.len() as u8 + 3)?;
-                e.write_u8((*flags).into())?;
-                e.write_u8(*r1)?;
-                e.write_u8(*r2)?;
-                e.write_slice(&buf)?;
+                let mut buf = vec![(*flags).into(), *r1, *r2];
+                if flags.e() {
+                    // emits in canonical format
+                    // start encoding at byte 3 because we had some preamble
+                    let mut name_encoder = BinEncoder::with_offset(&mut buf, 3, EncodeMode::Normal);
+                    domain.0.emit_as_canonical(&mut name_encoder, true)?;
+                } else {
+                    // TODO: not sure if this is correct
+                    buf.extend(domain.0.to_ascii().as_bytes());
+                }
+                encode_long_opt_bytes(code, &buf, e)?;
             }
             // not yet implemented
             Unknown(opt) => {
@@ -1802,6 +1804,24 @@ mod tests {
             vec![
                 119, 27, 3, b'e', b'n', b'g', 5, b'a', b'p', b'p', b'l', b'e', 3, b'c', b'o', b'm',
                 0, 9, b'm', b'a', b'r', b'k', b'e', b't', b'i', b'n', b'g', 0xC0, 0x04,
+            ],
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_client_fqdn() -> Result<()> {
+        test_opt(
+            DhcpOption::ClientFQDN(
+                fqdn::FqdnFlags::default().set_e(),
+                0,
+                0,
+                Domain(Name::from_str("www.google.com.").unwrap()),
+            ),
+            vec![
+                81, 19, 0x04, 0, 0, 3, b'w', b'w', b'w', 6, b'g', b'o', b'o', b'g', b'l', b'e', 3,
+                b'c', b'o', b'm', 0,
             ],
         )?;
 

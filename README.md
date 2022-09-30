@@ -91,6 +91,7 @@ DHCPv4:
 - <https://tools.ietf.org/html/rfc4039>
 - <https://tools.ietf.org/html/rfc4388> (message types & opts)
 - <https://tools.ietf.org/html/rfc4578>
+- <https://tools.ietf.org/html/rfc4702>
 - <https://tools.ietf.org/html/rfc6926> (message types & opts 151-157)
 - <https://tools.ietf.org/html/rfc7724> (message types only, status codes for opt 151 unimplemented)
 - <https://tools.ietf.org/html/rfc8910>
