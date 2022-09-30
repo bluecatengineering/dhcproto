@@ -7,7 +7,7 @@ use trust_dns_proto::{
 
 use std::{cmp::Ordering, net::Ipv6Addr, ops::RangeInclusive};
 
-pub use crate::Domain;
+use crate::Domain;
 use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
