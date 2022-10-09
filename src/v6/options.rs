@@ -194,9 +194,9 @@ pub enum DhcpOption {
     /// 9 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.10>
     RelayMsg(RelayMessage),
     /// 11 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.11>
-    Authentication(Authentication),
+    Auth(Auth),
     /// 12 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.12>
-    ServerUnicast(Ipv6Addr),
+    Unicast(Ipv6Addr),
     /// 13 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.13>
     StatusCode(StatusCode),
     /// 14 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.14>
@@ -214,13 +214,13 @@ pub enum DhcpOption {
     /// 20 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.20>
     ReconfAccept,
     /// 23 - <https://datatracker.ietf.org/doc/html/rfc3646>
-    DNSNameServer(Vec<Ipv6Addr>),
+    DNSServers(Vec<Ipv6Addr>),
     /// 24 - <https://datatracker.ietf.org/doc/html/rfc3646>
-    DomainSearchList(Vec<Domain>),
+    DomainList(Vec<Domain>),
     /// 25 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.21>
     IAPD(IAPD),
     /// 26 - <https://datatracker.ietf.org/doc/html/rfc3633#section-10>
-    IAPDPrefix(IAPDPrefix),
+    IAPrefix(IAPrefix),
     /// An unknown or unimplemented option type
     Unknown(UnknownOption),
 }
@@ -386,10 +386,10 @@ impl From<Status> for u16 {
     }
 }
 
-/// Authentication
+/// Auth
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Authentication {
+pub struct Auth {
     pub proto: u8,
     pub algo: u8,
     pub rdm: u8,
@@ -398,10 +398,10 @@ pub struct Authentication {
     pub info: Vec<u8>,
 }
 
-impl Decodable for Authentication {
+impl Decodable for Auth {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         let len = decoder.buffer().len();
-        Ok(Authentication {
+        Ok(Auth {
             proto: decoder.read_u8()?,
             algo: decoder.read_u8()?,
             rdm: decoder.read_u8()?,
@@ -503,7 +503,7 @@ impl Decodable for IAPD {
 /// Identity Association Prefix Delegation Prefix Option
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct IAPDPrefix {
+pub struct IAPrefix {
     pub preferred_lifetime: u32,
     pub valid_lifetime: u32,
     pub prefix_len: u8,
@@ -512,9 +512,9 @@ pub struct IAPDPrefix {
     pub opts: DhcpOptions,
 }
 
-impl Decodable for IAPDPrefix {
+impl Decodable for IAPrefix {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
-        Ok(IAPDPrefix {
+        Ok(IAPrefix {
             preferred_lifetime: decoder.read_u32()?,
             valid_lifetime: decoder.read_u32()?,
             prefix_len: decoder.read_u8()?,
@@ -630,11 +630,11 @@ impl Decodable for DhcpOption {
                 let mut relay_dec = Decoder::new(decoder.read_slice(len)?);
                 DhcpOption::RelayMsg(RelayMessage::decode(&mut relay_dec)?)
             }
-            OptionCode::Authentication => {
+            OptionCode::Auth => {
                 let mut dec = Decoder::new(decoder.read_slice(len)?);
-                DhcpOption::Authentication(Authentication::decode(&mut dec)?)
+                DhcpOption::Auth(Auth::decode(&mut dec)?)
             }
-            OptionCode::ServerUnicast => DhcpOption::ServerUnicast(decoder.read::<16>()?.into()),
+            OptionCode::Unicast => DhcpOption::Unicast(decoder.read::<16>()?.into()),
             OptionCode::StatusCode => DhcpOption::StatusCode(StatusCode {
                 status: decoder.read_u16()?.into(),
                 msg: decoder.read_string(len - 1)?,
@@ -664,27 +664,31 @@ impl Decodable for DhcpOption {
             OptionCode::InterfaceId => DhcpOption::InterfaceId(decoder.read_slice(len)?.to_vec()),
             OptionCode::ReconfMsg => DhcpOption::ReconfMsg(decoder.read_u8()?.into()),
             OptionCode::ReconfAccept => DhcpOption::ReconfAccept,
-            OptionCode::DNSNameServer => DhcpOption::DNSNameServer(decoder.read_ipv6s(len)?),
+            OptionCode::DNSServers => DhcpOption::DNSServers(decoder.read_ipv6s(len)?),
             OptionCode::IAPD => {
                 let mut dec = Decoder::new(decoder.read_slice(len)?);
                 DhcpOption::IAPD(IAPD::decode(&mut dec)?)
             }
-            OptionCode::IAPDPrefix => {
+            OptionCode::IAPrefix => {
                 let mut dec = Decoder::new(decoder.read_slice(len)?);
-                DhcpOption::IAPDPrefix(IAPDPrefix::decode(&mut dec)?)
+                DhcpOption::IAPrefix(IAPrefix::decode(&mut dec)?)
             }
-            OptionCode::DomainSearchList => {
+            OptionCode::DomainList => {
                 let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
                 let mut names = Vec::new();
                 while let Ok(name) = Name::read(&mut name_decoder) {
                     names.push(Domain(name));
                 }
 
-                DhcpOption::DomainSearchList(names)
+                DhcpOption::DomainList(names)
             }
             // not yet implemented
             OptionCode::Unknown(code) => DhcpOption::Unknown(UnknownOption {
                 code,
+                data: decoder.read_slice(len)?.to_vec(),
+            }),
+			unimplemented => DhcpOption::Unknown(UnknownOption {
+                code: unimplemented.into(),
                 data: decoder.read_slice(len)?.to_vec(),
             }),
         })
@@ -766,7 +770,7 @@ impl Encodable for DhcpOption {
                 e.write_u16(buf.len() as u16)?;
                 e.write_slice(&buf)?;
             }
-            DhcpOption::Authentication(Authentication {
+            DhcpOption::Auth(Auth {
                 proto,
                 algo,
                 rdm,
@@ -780,7 +784,7 @@ impl Encodable for DhcpOption {
                 e.write_u64(*replay_detection)?;
                 e.write_slice(info)?;
             }
-            DhcpOption::ServerUnicast(addr) => {
+            DhcpOption::Unicast(addr) => {
                 e.write_u16(16)?;
                 e.write_u128((*addr).into())?;
             }
@@ -827,13 +831,13 @@ impl Encodable for DhcpOption {
             DhcpOption::ReconfAccept => {
                 e.write_u16(0)?;
             }
-            DhcpOption::DNSNameServer(addrs) => {
+            DhcpOption::DNSServers(addrs) => {
                 e.write_u16(addrs.len() as u16 * 16)?;
                 for addr in addrs {
                     e.write_u128((*addr).into())?;
                 }
             }
-            DhcpOption::DomainSearchList(names) => {
+            DhcpOption::DomainList(names) => {
                 let mut buf = Vec::new();
                 let mut name_encoder = BinEncoder::new(&mut buf);
                 for name in names {
@@ -842,7 +846,7 @@ impl Encodable for DhcpOption {
                 e.write_u16(buf.len() as u16)?;
                 e.write_slice(&buf)?;
             }
-            DhcpOption::IAPDPrefix(IAPDPrefix {
+            DhcpOption::IAPrefix(IAPrefix {
                 preferred_lifetime,
                 valid_lifetime,
                 prefix_len,
