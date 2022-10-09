@@ -54,6 +54,7 @@
 //!
 mod options;
 mod oro_codes;
+mod option_codes;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -63,6 +64,7 @@ use std::{convert::TryInto, fmt, net::Ipv6Addr};
 // re-export submodules from proto::msg
 pub use self::options::*;
 pub use self::oro_codes::*;
+pub use self::option_codes::*;
 
 pub use crate::{
     decoder::{Decodable, Decoder},
