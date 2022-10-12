@@ -1,12 +1,9 @@
-use super::{
-    DecodeResult, EncodeResult, OptionCode,
-};
+use super::{DecodeResult, EncodeResult, OptionCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Identity Association for Non-Temporary Addresses
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelayMsg {
@@ -17,7 +14,7 @@ impl Decodable for RelayMsg {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         decoder.read::<2>()?;
         let len = decoder.read_u16()? as usize;
-        
+
         Ok(RelayMsg {
             msg: decoder.read_slice(len)?.into(),
         })
@@ -40,9 +37,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_server_id_encode_decode() {
-        let option = RelayMsg {
-            msg: vec![1,2,3],
-        };
+        let option = RelayMsg { msg: vec![1, 2, 3] };
 
         let mut encoder = vec![];
 

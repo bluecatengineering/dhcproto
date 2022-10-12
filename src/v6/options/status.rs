@@ -14,7 +14,7 @@ pub struct StatusCode {
 
 impl Decodable for StatusCode {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
-		let _code = decoder.read_u16()?;
+        let _code = decoder.read_u16()?;
         let len = decoder.read_u16()? as usize;
         Ok(StatusCode {
             status: decoder.read_u16()?.into(),
@@ -25,7 +25,7 @@ impl Decodable for StatusCode {
 
 impl Encodable for StatusCode {
     fn encode(&self, e: &'_ mut Encoder<'_>) -> EncodeResult<()> {
-		e.write_u16(OptionCode::StatusCode.into())?;
+        e.write_u16(OptionCode::StatusCode.into())?;
         e.write_u16(2 + self.msg.len() as u16)?;
         e.write_u16(self.status.into())?;
         e.write_slice(self.msg.as_bytes())?;
@@ -132,18 +132,20 @@ mod tests {
     use super::*;
     #[test]
     fn test_status_code_encode_decode() {
-		let sc = StatusCode{status: 0xABCDu16.into(), msg: "message".into()};
+        let sc = StatusCode {
+            status: 0xABCDu16.into(),
+            msg: "message".into(),
+        };
         let mut encoder = vec![];
 
-		sc.encode(&mut Encoder::new(&mut encoder)).unwrap();
-		let decoded = StatusCode::decode(&mut Decoder::new(&encoder)).unwrap();
+        sc.encode(&mut Encoder::new(&mut encoder)).unwrap();
+        let decoded = StatusCode::decode(&mut Decoder::new(&encoder)).unwrap();
         assert_eq!(sc, decoded);
-		
-		encoder.push(50);
-		let mut decoder = Decoder::new(&encoder);
-		let decoded = StatusCode::decode(&mut decoder).unwrap();
-		assert_eq!(sc, decoded);
-		assert_eq!(50, decoder.read_u8().unwrap());
 
+        encoder.push(50);
+        let mut decoder = Decoder::new(&encoder);
+        let decoded = StatusCode::decode(&mut decoder).unwrap();
+        assert_eq!(sc, decoded);
+        assert_eq!(50, decoder.read_u8().unwrap());
     }
 }

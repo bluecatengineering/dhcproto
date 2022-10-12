@@ -1,12 +1,9 @@
-use super::{
-    DecodeResult, EncodeResult, OptionCode,
-};
+use super::{DecodeResult, EncodeResult, OptionCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Identity Association for Non-Temporary Addresses
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Preference {
@@ -37,9 +34,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_preference_encode_decode() {
-        let option = Preference {
-            pref: 1,
-        };
+        let option = Preference { pref: 1 };
 
         let mut encoder = vec![];
 

@@ -15,7 +15,7 @@
 //! let mut msg = v6::Message::new(v6::MessageType::Solicit);
 //! // set an option
 //! msg.opts_mut()
-//!     .insert(v6::DhcpOption::ClientId(v6::ClientId{id: duid}));
+//!     .insert(v6::ClientId{id: duid});
 //!
 //! // now encode to bytes
 //! let mut buf = Vec::new();
@@ -52,10 +52,10 @@
 //! # Ok(()) }
 //! ```
 //!
+mod duid;
+mod option_codes;
 mod options;
 mod oro_codes;
-mod option_codes;
-mod duid;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -63,10 +63,10 @@ use serde::{Deserialize, Serialize};
 use std::{convert::TryInto, fmt, net::Ipv6Addr};
 
 // re-export submodules from proto::msg
+pub use self::duid::*;
+pub use self::option_codes::*;
 pub use self::options::*;
 pub use self::oro_codes::*;
-pub use self::option_codes::*;
-pub use self::duid::*;
 
 pub use crate::{
     decoder::{Decodable, Decoder},

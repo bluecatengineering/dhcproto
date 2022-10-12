@@ -1,10 +1,9 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{Encodable,Decodable,Encoder,Decoder};
-use crate::v6::{Ipv6Addr, EncodeResult, DecodeResult};
 use crate::v4::HType;
-
+use crate::v6::{DecodeResult, EncodeResult, Ipv6Addr};
+use crate::{Decodable, Decoder, Encodable, Encoder};
 
 /// Duid helper type
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -79,10 +78,7 @@ impl From<Vec<u8>> for Duid {
 
 impl Decodable for Duid {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
-       
-        Ok(Duid (
-            decoder.buffer().into()
-        ))
+        Ok(Duid(decoder.buffer().into()))
     }
 }
 

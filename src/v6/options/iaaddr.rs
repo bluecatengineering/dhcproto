@@ -1,5 +1,5 @@
 use crate::v6::DhcpOption;
-use crate::v6::{DecodeResult, EncodeResult, Ipv6Addr, OptionCode, StatusCode, option_builder};
+use crate::v6::{option_builder, DecodeResult, EncodeResult, Ipv6Addr, OptionCode, StatusCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]
@@ -20,9 +20,9 @@ pub struct IAAddr {
 
 impl Decodable for IAAddr {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
-		decoder.read::<2>()?;
-		let len = decoder.read_u16()? as usize;
-		let mut decoder = Decoder::new(decoder.read_slice(len)?);
+        decoder.read::<2>()?;
+        let len = decoder.read_u16()? as usize;
+        let mut decoder = Decoder::new(decoder.read_slice(len)?);
         Ok(IAAddr {
             addr: decoder.read::<16>()?.into(),
             preferred_life: decoder.read_u32()?,
@@ -38,7 +38,7 @@ impl Encodable for IAAddr {
         let mut buf = Vec::new();
         let mut opt_enc = Encoder::new(&mut buf);
         self.opts.encode(&mut opt_enc)?;
-		e.write_u16(OptionCode::IAAddr.into())?;
+        e.write_u16(OptionCode::IAAddr.into())?;
         // buf now has total len
         e.write_u16(24 + buf.len() as u16)?;
         // data

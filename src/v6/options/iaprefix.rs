@@ -1,6 +1,4 @@
-use super::{
-    option_builder, DecodeResult, DhcpOption, EncodeResult, Ipv6Addr, OptionCode,
-};
+use super::{option_builder, DecodeResult, DhcpOption, EncodeResult, Ipv6Addr, OptionCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]
@@ -20,21 +18,20 @@ pub struct IAPrefix {
 
 impl Decodable for IAPrefix {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
-		decoder.read::<2>()?;
-		let len = decoder.read_u16()? as usize;
+        decoder.read::<2>()?;
+        let len = decoder.read_u16()? as usize;
         Ok(IAPrefix {
             preferred_lifetime: decoder.read_u32()?,
             valid_lifetime: decoder.read_u32()?,
             prefix_len: decoder.read_u8()?,
             prefix_ip: decoder.read::<16>()?.into(),
             opts: {
-                let mut dec = Decoder::new(decoder.read_slice(len-25)?);
+                let mut dec = Decoder::new(decoder.read_slice(len - 25)?);
                 IAPrefixOptions::decode(&mut dec)?
-            }
+            },
         })
     }
 }
-
 
 impl Encodable for IAPrefix {
     fn encode(&self, e: &'_ mut Encoder<'_>) -> EncodeResult<()> {
@@ -64,9 +61,9 @@ mod tests {
     fn test_iapd_encode_decode() {
         let option = IAPrefix {
             preferred_lifetime: 0,
-			valid_lifetime: 0,
-			prefix_len: 0,
-			prefix_ip: "FE80::".parse().unwrap(),
+            valid_lifetime: 0,
+            prefix_len: 0,
+            prefix_ip: "FE80::".parse().unwrap(),
             // 12 + opts.len()
             opts: IAPrefixOptions(vec![]),
         };

@@ -1,12 +1,9 @@
-use super::{
-    DecodeResult, EncodeResult, OptionCode,
-};
+use super::{DecodeResult, EncodeResult, OptionCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Identity Association for Non-Temporary Addresses
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InterfaceId {
@@ -38,7 +35,7 @@ mod tests {
     #[test]
     fn test_interface_id_encode_decode() {
         let option = InterfaceId {
-            id: vec![1,2,3,4],
+            id: vec![1, 2, 3, 4],
         };
 
         let mut encoder = vec![];

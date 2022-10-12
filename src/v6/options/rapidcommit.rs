@@ -1,21 +1,17 @@
-use super::{
-    DecodeResult, EncodeResult, OptionCode,
-};
+use super::{DecodeResult, EncodeResult, OptionCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Identity Association for Non-Temporary Addresses
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct RapidCommit {}
+pub struct RapidCommit;
 
 impl Decodable for RapidCommit {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         decoder.read::<4>()?;
-        Ok(RapidCommit {
-        })
+        Ok(RapidCommit)
     }
 }
 
@@ -32,7 +28,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_rapid_commit_encode_decode() {
-        let option = RapidCommit {};
+        let option = RapidCommit;
 
         let mut encoder = vec![];
 

@@ -17,7 +17,7 @@ pub struct IATA {
 
 impl Decodable for IATA {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
-		decoder.read::<2>()?;
+        decoder.read::<2>()?;
         let len = decoder.read_u16()? as usize;
         let mut decoder = Decoder::new(decoder.read_slice(len)?);
         Ok(IATA {
@@ -51,7 +51,7 @@ mod tests {
     #[test]
     fn test_iata_encode_decode() {
         let option = IATA {
-			id: 0,
+            id: 0,
             // 12 + opts.len()
             opts: IATAOptions(vec![StatusCode {
                 status: 0xABCDu16.into(),

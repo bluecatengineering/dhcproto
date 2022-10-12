@@ -3,15 +3,12 @@ use trust_dns_proto::{
     serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder},
 };
 
-use super::{
-    DecodeResult, EncodeResult, OptionCode, Domain,
-};
+use super::{DecodeResult, Domain, EncodeResult, OptionCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Identity Association for Non-Temporary Addresses
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DomainList {
@@ -21,16 +18,14 @@ pub struct DomainList {
 impl Decodable for DomainList {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         decoder.read::<2>()?;
-		let len = decoder.read_u16()?;
+        let len = decoder.read_u16()?;
         let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
         let mut names = Vec::new();
         while let Ok(name) = Name::read(&mut name_decoder) {
             names.push(Domain(name));
         }
 
-        Ok(DomainList {
-            domains: names,
-        })
+        Ok(DomainList { domains: names })
     }
 }
 
@@ -44,7 +39,6 @@ impl Encodable for DomainList {
         }
         e.write_u16(buf.len() as u16)?;
         e.write_slice(&buf)?;
-		Ok(())
+        Ok(())
     }
 }
-

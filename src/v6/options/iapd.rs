@@ -26,7 +26,7 @@ impl Decodable for IAPD {
             t1: decoder.read_u32()?,
             t2: decoder.read_u32()?,
             opts: {
-                let mut dec = Decoder::new(decoder.read_slice(len-12)?);
+                let mut dec = Decoder::new(decoder.read_slice(len - 12)?);
                 IAPDOptions::decode(&mut dec)?
             },
         })

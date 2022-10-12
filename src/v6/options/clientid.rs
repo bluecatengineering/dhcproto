@@ -1,12 +1,10 @@
-use super::{
-    DecodeResult, EncodeResult, OptionCode,  Duid
-};
+use super::{DecodeResult, Duid, EncodeResult, OptionCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Identity Association for Non-Temporary Addresses
+/// Client Identity
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ClientId {
@@ -37,14 +35,13 @@ impl Encodable for ClientId {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn test_client_id_encode_decode() {
         let option = ClientId {
-            id: Duid::enterprise(1, &[1,2,3]),
+            id: Duid::enterprise(1, &[1, 2, 3]),
         };
 
         let mut encoder = vec![];

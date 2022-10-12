@@ -1,6 +1,4 @@
-use super::{
-     DecodeResult, EncodeResult,  OptionCode,
-};
+use super::{DecodeResult, EncodeResult, OptionCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]
@@ -41,7 +39,7 @@ impl Encodable for Auth {
         e.write_u8(self.rdm)?;
         e.write_u64(self.replay_detection)?;
         e.write_slice(&self.info)?;
-		Ok(())
+        Ok(())
     }
 }
 
@@ -51,11 +49,11 @@ mod tests {
     #[test]
     fn test_iata_encode_decode() {
         let option = Auth {
-			proto: 0xC,
-			algo: 0xB,
-			rdm: 0xA,
-			replay_detection: 0xABCD,
-			info: vec![1,2,3],
+            proto: 0xC,
+            algo: 0xB,
+            rdm: 0xA,
+            replay_detection: 0xABCD,
+            info: vec![1, 2, 3],
         };
 
         let mut encoder = vec![];

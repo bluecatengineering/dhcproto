@@ -1,12 +1,10 @@
-use super::{
-    DecodeResult, EncodeResult, OptionCode,
-};
+use super::{DecodeResult, EncodeResult, OptionCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Identity Association for Non-Temporary Addresses
+/// Time in milliseconds elapsed since the start of negotiation.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ElapsedTime {
@@ -37,9 +35,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_server_id_encode_decode() {
-        let option = ElapsedTime {
-            time: 1,
-        };
+        let option = ElapsedTime { time: 1 };
 
         let mut encoder = vec![];
 

@@ -1,12 +1,9 @@
-use super::{
-    DecodeResult, EncodeResult, OptionCode, Ipv6Addr
-};
+use super::{DecodeResult, EncodeResult, Ipv6Addr, OptionCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Identity Association for Non-Temporary Addresses
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Unicast {

@@ -469,9 +469,9 @@ impl From<&DhcpOption> for OptionCode {
             DomainList(_) => OptionCode::DomainList,
             IAPD(_) => OptionCode::IAPD,
             IAPrefix(_) => OptionCode::IAPrefix,
-			InformationRefreshTime(_) => OptionCode::InformationRefreshTime,
-			SolMaxRt(_) => OptionCode::SolMaxRt,
-			InfMaxRt(_) => OptionCode::InfMaxRt,
+            InformationRefreshTime(_) => OptionCode::InformationRefreshTime,
+            SolMaxRt(_) => OptionCode::SolMaxRt,
+            InfMaxRt(_) => OptionCode::InfMaxRt,
             Unknown(unknown) => unknown.into(),
         }
     }

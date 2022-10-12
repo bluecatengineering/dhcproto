@@ -1,23 +1,21 @@
-use super::{
-    DecodeResult, EncodeResult, OptionCode, MessageType,
-};
+use super::{DecodeResult, EncodeResult, MessageType, OptionCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Identity Association for Non-Temporary Addresses
+/// Reconfigure message
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ReconfMsg {
-	msg_type: MessageType,
+    pub msg_type: MessageType,
 }
 
 impl Decodable for ReconfMsg {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         decoder.read::<4>()?;
         Ok(ReconfMsg {
-			msg_type: decoder.read_u8()?.into()
+            msg_type: decoder.read_u8()?.into(),
         })
     }
 }
@@ -26,7 +24,7 @@ impl Encodable for ReconfMsg {
     fn encode(&self, e: &'_ mut Encoder<'_>) -> EncodeResult<()> {
         e.write_u16(OptionCode::ReconfMsg.into())?;
         e.write_u16(1)?;
-		e.write_u8(self.msg_type.into())?;
+        e.write_u8(self.msg_type.into())?;
         Ok(())
     }
 }
@@ -39,8 +37,7 @@ pub struct ReconfAccept {}
 impl Decodable for ReconfAccept {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
         decoder.read::<4>()?;
-        Ok(ReconfAccept {
-        })
+        Ok(ReconfAccept {})
     }
 }
 
@@ -57,9 +54,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_reconf_msg_encode_decode() {
-        let option = ReconfMsg {
-			msg_type: 1.into(),
-		};
+        let option = ReconfMsg { msg_type: 1.into() };
 
         let mut encoder = vec![];
 
@@ -73,10 +68,9 @@ mod tests {
         assert_eq!(option, decoded);
         assert_eq!(50, decoder.read_u8().unwrap());
     }
-	#[test]
+    #[test]
     fn test_reconf_accept_encode_decode() {
-        let option = ReconfAccept {
-		};
+        let option = ReconfAccept {};
 
         let mut encoder = vec![];
 
