@@ -1,6 +1,7 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+//rfc8415
 mod iana;
 pub use iana::*;
 mod iaaddr;
@@ -17,11 +18,41 @@ mod auth;
 pub use auth::*;
 mod oro;
 pub use oro::*;
+mod clientid;
+pub use clientid::*;
+mod serverid;
+pub use serverid::*;
+mod preference;
+pub use preference::*;
+mod elapsedtime;
+pub use elapsedtime::*;
+mod relaymsg;
+pub use relaymsg::*;
+mod unicast;
+pub use unicast::*;
+mod interfaceid;
+pub use interfaceid::*;
+mod rapidcommit;
+pub use rapidcommit::*;
+mod reconfmsg;
+pub use reconfmsg::*;
+mod userclass;
+pub use userclass::*;
+mod vendorclass;
+pub use vendorclass::*;
+mod vendoropts;
+pub use vendoropts::*;
+mod maxrt;
+pub use maxrt::*;
+mod informationrefreshtime;
+pub use informationrefreshtime::*;
 
-use trust_dns_proto::{
-    rr::Name,
-    serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder},
-};
+//rfc3646
+mod dnsservers;
+pub use dnsservers::*;
+mod domainlist;
+pub use domainlist::*;
+
 
 use std::{cmp::Ordering, net::Ipv6Addr, ops::RangeInclusive};
 
@@ -30,7 +61,7 @@ use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
     error::{DecodeResult, EncodeResult},
-    v6::{Duid, MessageType, OROCode, OptionCode, RelayMessage},
+    v6::{Duid, MessageType, OROCode, OptionCode},
 };
 //helper macro for implementing sub-options (IANAOptions, ect)
 //useage: option_builder!(IANAOption, IANAOptions, DhcpOption, IAAddr, StatusCode);
@@ -93,6 +124,9 @@ macro_rules! option_builder{
 		#[derive(Debug, Clone, PartialEq, Eq, Default)]
 		pub struct $names(Vec<$name>);
 		impl $names {
+			pub fn new() -> Self{
+				Default::default()
+			}
 			/// insert a new option into the list of opts
 			pub fn insert<T: Into<$name>>(&mut self, opt: T){
 				self.0.push(opt.into())
@@ -137,6 +171,10 @@ macro_rules! option_builder{
 }
 
 pub(crate) use option_builder;
+
+option_builder!(MessageOption, MessageOptions, DhcpOption, ClientId, ServerId, IANA, IATA, IAAddr, IAPD, IAPrefix, ORO, Preference, ElapsedTime, Auth, Unicast, StatusCode, RapidCommit, UserClass, VendorClass, VendorOpts, ReconfMsg, ReconfAccept, InformationRefreshTime, SolMaxRt, InfMaxRt, DNSServers, DomainList);
+
+option_builder!(RelayMessageOption, RelayMessageOptions, DhcpOption, RelayMsg, VendorOpts); ///*interf. id?*/);
 
 // server can send multiple IA_NA options to request multiple addresses
 // so we must be able to handle multiple of the same option type
@@ -226,9 +264,9 @@ impl FromIterator<DhcpOption> for DhcpOptions {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DhcpOption {
     /// 1 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.2>
-    ClientId(Vec<u8>), // should duid for this be bytes or string?
+    ClientId(ClientId),
     /// 2 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.3>
-    ServerId(Vec<u8>),
+    ServerId(ServerId),
     /// 3 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.4>
     IANA(IANA),
     /// 4 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.5>
@@ -238,20 +276,20 @@ pub enum DhcpOption {
     /// 6 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.7>
     ORO(ORO),
     /// 7 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.8>
-    Preference(u8),
+    Preference(Preference),
     /// 8 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.9>
     /// Elapsed time in millis
-    ElapsedTime(u16),
+    ElapsedTime(ElapsedTime),
     /// 9 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.10>
-    RelayMsg(RelayMessage),
+    RelayMsg(RelayMsg),
     /// 11 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.11>
     Auth(Auth),
     /// 12 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.12>
-    Unicast(Ipv6Addr),
+    Unicast(Unicast),
     /// 13 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.13>
     StatusCode(StatusCode),
     /// 14 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.14>
-    RapidCommit,
+    RapidCommit(RapidCommit),
     /// 15 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.15>
     UserClass(UserClass),
     /// 16 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.16>
@@ -259,19 +297,22 @@ pub enum DhcpOption {
     /// 17 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.17>
     VendorOpts(VendorOpts),
     /// 18 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.18>
-    InterfaceId(Vec<u8>),
+    InterfaceId(InterfaceId),
     /// 19 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.19>
-    ReconfMsg(MessageType),
+    ReconfMsg(ReconfMsg),
     /// 20 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.20>
-    ReconfAccept,
+    ReconfAccept(ReconfAccept),
     /// 23 - <https://datatracker.ietf.org/doc/html/rfc3646>
-    DNSServers(Vec<Ipv6Addr>),
+    DNSServers(DNSServers),
     /// 24 - <https://datatracker.ietf.org/doc/html/rfc3646>
-    DomainList(Vec<Domain>),
+    DomainList(DomainList),
     /// 25 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.21>
     IAPD(IAPD),
     /// 26 - <https://datatracker.ietf.org/doc/html/rfc3633#section-10>
     IAPrefix(IAPrefix),
+	InformationRefreshTime(InformationRefreshTime),
+	SolMaxRt(SolMaxRt),
+	InfMaxRt(InfMaxRt),
     /// An unknown or unimplemented option type
     Unknown(UnknownOption),
 }
@@ -286,52 +327,6 @@ impl Ord for DhcpOption {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         OptionCode::from(self).cmp(&OptionCode::from(other))
     }
-}
-
-/// wrapper around interface id
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct InterfaceId {
-    pub id: String,
-}
-
-/// vendor options
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct VendorOpts {
-    pub num: u32,
-    // encapsulated options values
-    pub opts: DhcpOptions,
-}
-
-/// vendor class
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct VendorClass {
-    pub num: u32,
-    pub data: Vec<Vec<u8>>,
-    // each item in data is [len (2 bytes) | data]
-}
-
-/// user class
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct UserClass {
-    pub data: Vec<Vec<u8>>,
-    // each item in data is [len (2 bytes) | data]
-}
-
-#[inline]
-fn decode_data(decoder: &'_ mut Decoder<'_>) -> Vec<Vec<u8>> {
-    let mut data = Vec::new();
-    while let Ok(len) = decoder.read_u16() {
-        // if we can read the len and the string
-        match decoder.read_slice(len as usize) {
-            Ok(s) => data.push(s.to_vec()),
-            // push, otherwise stop
-            _ => break,
-        }
-    }
-    data
 }
 
 /// fallback for options not yet implemented
@@ -395,12 +390,10 @@ impl Decodable for DhcpOption {
 
         Ok(match code {
             OptionCode::ClientId => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                DhcpOption::ClientId(decoder.read_slice(len)?.to_vec())
+                DhcpOption::ClientId(ClientId::decode(decoder)?)
             }
             OptionCode::ServerId => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                DhcpOption::ServerId(decoder.read_slice(len)?.to_vec())
+                DhcpOption::ServerId(ServerId::decode(decoder)?)
             }
             OptionCode::IANA => {
                 DhcpOption::IANA(IANA::decode(decoder)?)
@@ -409,80 +402,52 @@ impl Decodable for DhcpOption {
                 DhcpOption::IATA(IATA::decode(decoder)?)
             }
             OptionCode::IAAddr => {
-                
                 DhcpOption::IAAddr(IAAddr::decode(decoder)?)
             }
             OptionCode::ORO => {
                 DhcpOption::ORO(ORO::decode(decoder)?)
             }
             OptionCode::Preference => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                DhcpOption::Preference(decoder.read_u8()?)
+                DhcpOption::Preference(Preference::decode(decoder)?)
             }
             OptionCode::ElapsedTime => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                DhcpOption::ElapsedTime(decoder.read_u16()?)
+                DhcpOption::ElapsedTime(ElapsedTime::decode(decoder)?)
             }
             OptionCode::RelayMsg => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                let mut relay_dec = Decoder::new(decoder.read_slice(len)?);
-                DhcpOption::RelayMsg(RelayMessage::decode(&mut relay_dec)?)
+                DhcpOption::RelayMsg(RelayMsg::decode(decoder)?)
             }
             OptionCode::Auth => {
                 DhcpOption::Auth(Auth::decode(decoder)?)
             }
             OptionCode::Unicast => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                DhcpOption::Unicast(decoder.read::<16>()?.into())
+                DhcpOption::Unicast(Unicast::decode(decoder)?)
             }
             OptionCode::StatusCode => {
                 DhcpOption::StatusCode(StatusCode::decode(decoder)?)
             }
             OptionCode::RapidCommit => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                DhcpOption::RapidCommit
+                DhcpOption::RapidCommit(RapidCommit::decode(decoder)?)
             }
             OptionCode::UserClass => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                let buf = decoder.read_slice(len)?;
-                DhcpOption::UserClass(UserClass {
-                    data: decode_data(&mut Decoder::new(buf)),
-                })
+                DhcpOption::UserClass(UserClass::decode(decoder)?)
             }
             OptionCode::VendorClass => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                let num = decoder.read_u32()?;
-                let buf = decoder.read_slice(len - 4)?;
-                DhcpOption::VendorClass(VendorClass {
-                    num,
-                    data: decode_data(&mut Decoder::new(buf)),
-                })
+				DhcpOption::VendorClass(VendorClass::decode(decoder)?)
             }
             OptionCode::VendorOpts => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                DhcpOption::VendorOpts(VendorOpts {
-                    num: decoder.read_u32()?,
-                    opts: {
-                        let mut opt_decoder = Decoder::new(decoder.read_slice(len - 4)?);
-                        DhcpOptions::decode(&mut opt_decoder)?
-                    },
-                })
+				DhcpOption::VendorOpts(VendorOpts::decode(decoder)?)
             }
             OptionCode::InterfaceId => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                DhcpOption::InterfaceId(decoder.read_slice(len)?.to_vec())
+				DhcpOption::InterfaceId(InterfaceId::decode(decoder)?)
             }
             OptionCode::ReconfMsg => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                DhcpOption::ReconfMsg(decoder.read_u8()?.into())
+                DhcpOption::ReconfMsg(ReconfMsg::decode(decoder)?)
             }
             OptionCode::ReconfAccept => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                DhcpOption::ReconfAccept
+                DhcpOption::ReconfAccept(ReconfAccept::decode(decoder)?)
             }
             OptionCode::DNSServers => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                DhcpOption::DNSServers(decoder.read_ipv6s(len)?)
+                DhcpOption::DNSServers(DNSServers::decode(decoder)?)
             }
             OptionCode::IAPD => {
                 DhcpOption::IAPD(IAPD::decode(decoder)?)
@@ -490,15 +455,17 @@ impl Decodable for DhcpOption {
             OptionCode::IAPrefix => {
                 DhcpOption::IAPrefix(IAPrefix::decode(decoder)?)
             }
+			OptionCode::InfMaxRt => {
+                DhcpOption::InfMaxRt(InfMaxRt::decode(decoder)?)
+            }
+			OptionCode::InformationRefreshTime => {
+                DhcpOption::InformationRefreshTime(InformationRefreshTime::decode(decoder)?)
+            }
+			OptionCode::SolMaxRt => {
+                DhcpOption::SolMaxRt(SolMaxRt::decode(decoder)?)
+            }
             OptionCode::DomainList => {
-				decoder.read_u16()?;decoder.read_u16()?;
-                let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
-                let mut names = Vec::new();
-                while let Ok(name) = Name::read(&mut name_decoder) {
-                    names.push(Domain(name));
-                }
-
-                DhcpOption::DomainList(names)
+				DhcpOption::DomainList(DomainList::decode(decoder)?)
             }
             // not yet implemented
             OptionCode::Unknown(code) => {
@@ -522,10 +489,11 @@ impl Encodable for DhcpOption {
     fn encode(&self, e: &'_ mut Encoder<'_>) -> EncodeResult<()> {
         let code: OptionCode = self.into();
         match self {
-            DhcpOption::ClientId(duid) | DhcpOption::ServerId(duid) => {
-				e.write_u16(code.into())?;
-                e.write_u16(duid.len() as u16)?;
-                e.write_slice(duid)?;
+            DhcpOption::ClientId(duid) => {
+				duid.encode(e)?;
+            }
+			DhcpOption::ServerId(duid) => {
+				duid.encode(e)?;
             }
             DhcpOption::IANA(iana) => {
                 iana.encode(e)?;
@@ -543,96 +511,58 @@ impl Encodable for DhcpOption {
 				oro.encode(e)?;
             }
             DhcpOption::Preference(pref) => {
-				e.write_u16(code.into())?;
-                e.write_u16(1)?;
-                e.write_u8(*pref)?;
+				pref.encode(e)?;
             }
             DhcpOption::ElapsedTime(elapsed) => {
-				e.write_u16(code.into())?;
-                e.write_u16(2)?;
-                e.write_u16(*elapsed)?;
+				elapsed.encode(e)?;
             }
             DhcpOption::RelayMsg(msg) => {
-				e.write_u16(code.into())?;
-                let mut buf = Vec::new();
-                let mut relay_enc = Encoder::new(&mut buf);
-                msg.encode(&mut relay_enc)?;
-
-                e.write_u16(buf.len() as u16)?;
-                e.write_slice(&buf)?;
+				msg.encode(e)?;
             }
             DhcpOption::Auth(auth) => {
 				auth.encode(e)?;
             }
             DhcpOption::Unicast(addr) => {
-				e.write_u16(code.into())?;
-                e.write_u16(16)?;
-                e.write_u128((*addr).into())?;
+				addr.encode(e)?;
             }
             DhcpOption::StatusCode(status) => {
 				status.encode(e)?;
             }
-            DhcpOption::RapidCommit => {
-				e.write_u16(code.into())?;
-                e.write_u16(0)?;
+            DhcpOption::RapidCommit(rc) => {
+				rc.encode(e)?;
             }
-            DhcpOption::UserClass(UserClass { data }) => {
-				e.write_u16(code.into())?;
-                e.write_u16(data.len() as u16)?;
-                for s in data {
-                    e.write_u16(s.len() as u16)?;
-                    e.write_slice(s)?;
-                }
+            DhcpOption::UserClass(uc) => {
+				uc.encode(e)?;
             }
-            DhcpOption::VendorClass(VendorClass { num, data }) => {
-				e.write_u16(code.into())?;
-                e.write_u16(4 + data.len() as u16)?;
-                e.write_u32(*num)?;
-                for s in data {
-                    e.write_u16(s.len() as u16)?;
-                    e.write_slice(s)?;
-                }
+            DhcpOption::VendorClass(vc) => {
+				vc.encode(e)?;
             }
-            DhcpOption::VendorOpts(VendorOpts { num, opts }) => {
-				e.write_u16(code.into())?;
-                let mut buf = Vec::new();
-                let mut opt_enc = Encoder::new(&mut buf);
-                opts.encode(&mut opt_enc)?;
-                // buf now has total len
-                e.write_u16(4 + buf.len() as u16)?;
-                e.write_u32(*num)?;
-                e.write_slice(&buf)?;
+            DhcpOption::VendorOpts(vopts) => {
+				vopts.encode(e)?;
             }
             DhcpOption::InterfaceId(id) => {
-				e.write_u16(code.into())?;
-                e.write_u16(id.len() as u16)?;
-                e.write_slice(id)?;
+				id.encode(e)?;
             }
             DhcpOption::ReconfMsg(msg_type) => {
-				e.write_u16(code.into())?;
-                e.write_u16(1)?;
-                e.write_u8((*msg_type).into())?;
+				msg_type.encode(e)?;
             }
-            DhcpOption::ReconfAccept => {
-				e.write_u16(code.into())?;
-                e.write_u16(0)?;
+            DhcpOption::ReconfAccept(accept) => {
+				accept.encode(e)?;
+            }
+			DhcpOption::SolMaxRt(auth) => {
+				auth.encode(e)?;
+            }
+			DhcpOption::InfMaxRt(auth) => {
+				auth.encode(e)?;
+            }
+			DhcpOption::InformationRefreshTime(auth) => {
+				auth.encode(e)?;
             }
             DhcpOption::DNSServers(addrs) => {
-				e.write_u16(code.into())?;
-                e.write_u16(addrs.len() as u16 * 16)?;
-                for addr in addrs {
-                    e.write_u128((*addr).into())?;
-                }
+				addrs.encode(e)?;
             }
             DhcpOption::DomainList(names) => {
-				e.write_u16(code.into())?;
-                let mut buf = Vec::new();
-                let mut name_encoder = BinEncoder::new(&mut buf);
-                for name in names {
-                    name.0.emit(&mut name_encoder)?;
-                }
-                e.write_u16(buf.len() as u16)?;
-                e.write_slice(&buf)?;
+				names.encode(e)?;
             }
             DhcpOption::IAPrefix(iaprefix) => {
 				iaprefix.encode(e)?;

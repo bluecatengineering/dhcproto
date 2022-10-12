@@ -1,4 +1,4 @@
-use super::{DecodeResult, DhcpOption, EncodeResult, OROCode, OptionCode};
+use super::{DecodeResult, EncodeResult, OROCode, OptionCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]

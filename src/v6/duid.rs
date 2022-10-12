@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{Encodable,Decodable,Encoder,Decoder};
-use crate::v6::{Ipv6Addr,EncodeError,DecodeError};
+use crate::v6::{Ipv6Addr, EncodeResult, DecodeResult};
 use crate::v4::HType;
 
 
@@ -74,5 +74,21 @@ impl AsRef<[u8]> for Duid {
 impl From<Vec<u8>> for Duid {
     fn from(v: Vec<u8>) -> Self {
         Self(v)
+    }
+}
+
+impl Decodable for Duid {
+    fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
+       
+        Ok(Duid (
+            decoder.buffer().into()
+        ))
+    }
+}
+
+impl Encodable for Duid {
+    fn encode(&self, e: &'_ mut Encoder<'_>) -> EncodeResult<()> {
+        e.write_slice(&self.0)?;
+        Ok(())
     }
 }

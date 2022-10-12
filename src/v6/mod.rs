@@ -8,14 +8,14 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use dhcproto::{v6, Encodable, Encoder};
 //! // arbitrary DUID
-//! let duid = vec![
+//! let duid = v6::Duid::from(vec![
 //!     29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44,
-//! ];
+//! ]);
 //! // construct a new Message with a random xid
 //! let mut msg = v6::Message::new(v6::MessageType::Solicit);
 //! // set an option
 //! msg.opts_mut()
-//!     .insert(v6::DhcpOption::ClientId(duid));
+//!     .insert(v6::DhcpOption::ClientId(v6::ClientId{id: duid}));
 //!
 //! // now encode to bytes
 //! let mut buf = Vec::new();
@@ -131,7 +131,7 @@ pub struct Message {
     xid: [u8; 3],
     /// Options
     /// <https://datatracker.ietf.org/doc/html/rfc8415#section-21>
-    opts: DhcpOptions,
+    opts: MessageOptions,
 }
 
 impl Default for Message {
@@ -139,7 +139,7 @@ impl Default for Message {
         Self {
             msg_type: MessageType::Solicit,
             xid: rand::random(),
-            opts: DhcpOptions::new(),
+            opts: MessageOptions::new(),
         }
     }
 }
@@ -199,18 +199,18 @@ impl Message {
     }
 
     /// Get a reference to the message's options.
-    pub fn opts(&self) -> &DhcpOptions {
+    pub fn opts(&self) -> &MessageOptions {
         &self.opts
     }
 
     /// Set DHCP opts
-    pub fn set_opts(&mut self, opts: DhcpOptions) -> &mut Self {
+    pub fn set_opts(&mut self, opts: MessageOptions) -> &mut Self {
         self.opts = opts;
         self
     }
 
     /// Get a mutable reference to the message's options.
-    pub fn opts_mut(&mut self) -> &mut DhcpOptions {
+    pub fn opts_mut(&mut self) -> &mut MessageOptions {
         &mut self.opts
     }
 }
@@ -346,7 +346,7 @@ impl Decodable for Message {
         Ok(Message {
             msg_type: decoder.read_u8()?.into(),
             xid: decoder.read::<3>()?,
-            opts: DhcpOptions::decode(decoder)?,
+            opts: MessageOptions::decode(decoder)?,
         })
     }
 }
@@ -387,7 +387,7 @@ pub struct RelayMessage {
     peer_addr: Ipv6Addr,
     /// Options
     /// <https://datatracker.ietf.org/doc/html/rfc8415#section-21>
-    opts: DhcpOptions,
+    opts: RelayMessageOptions,
 }
 
 impl RelayMessage {
@@ -404,18 +404,18 @@ impl RelayMessage {
         self.peer_addr
     }
     /// Get a reference to the message's options.
-    pub fn opts(&self) -> &DhcpOptions {
+    pub fn opts(&self) -> &RelayMessageOptions {
         &self.opts
     }
 
     /// Set DHCP opts
-    pub fn set_opts(&mut self, opts: DhcpOptions) -> &mut Self {
+    pub fn set_opts(&mut self, opts: RelayMessageOptions) -> &mut Self {
         self.opts = opts;
         self
     }
 
     /// Get a mutable reference to the message's options.
-    pub fn opts_mut(&mut self) -> &mut DhcpOptions {
+    pub fn opts_mut(&mut self) -> &mut RelayMessageOptions {
         &mut self.opts
     }
 }
@@ -427,7 +427,7 @@ impl Decodable for RelayMessage {
             hop_count: decoder.read_u8()?,
             link_addr: decoder.read::<16>()?.into(),
             peer_addr: decoder.read::<16>()?.into(),
-            opts: DhcpOptions::decode(decoder)?,
+            opts: RelayMessageOptions::decode(decoder)?,
         })
     }
 }
