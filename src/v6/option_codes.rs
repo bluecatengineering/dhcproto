@@ -1,4 +1,4 @@
-use crate::v6::DhcpOption;
+use crate::v6::options::DhcpOption;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -472,6 +472,11 @@ impl From<&DhcpOption> for OptionCode {
             InformationRefreshTime(_) => OptionCode::InformationRefreshTime,
             SolMaxRt(_) => OptionCode::SolMaxRt,
             InfMaxRt(_) => OptionCode::InfMaxRt,
+            LqQuery(_) => OptionCode::LqQuery,
+            ClientData(_) => OptionCode::ClientData,
+            CltTime(_) => OptionCode::CltTime,
+            LqRelayData(_) => OptionCode::LqRelayData,
+            LqClientLink(_) => OptionCode::LqClientLink,
             Unknown(unknown) => unknown.into(),
         }
     }

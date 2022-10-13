@@ -53,6 +53,16 @@ pub use dnsservers::*;
 mod domainlist;
 pub use domainlist::*;
 
+//rfc5007
+mod query;
+pub use query::*;
+mod clientdata;
+pub use clientdata::*;
+mod lqrelaydata;
+pub use lqrelaydata::*;
+mod lqclientlink;
+pub use lqclientlink::*;
+
 use std::{cmp::Ordering, net::Ipv6Addr, ops::RangeInclusive};
 
 pub use crate::Domain;
@@ -62,6 +72,7 @@ use crate::{
     error::{DecodeResult, EncodeResult},
     v6::{Duid, MessageType, OROCode, OptionCode},
 };
+
 //helper macro for implementing sub-options (IANAOptions, ect)
 //useage: option_builder!(IANAOption, IANAOptions, DhcpOption, IAAddr, StatusCode);
 //        option_builder!(name      , names      , master    , subname...        );
@@ -141,41 +152,41 @@ macro_rules! option_builder{
 			}
 			/// get the first element matching this option code
 			pub fn get(&self, code: OptionCode) -> Option<&$name>{
-				use crate::v6::first;
+				use crate::v6::options::first;
 				use crate::v6::OptionCode;
 				let first = first(&self.0, |x| OptionCode::from(x).cmp(&code))?;
 				self.0.get(first)
 			}
 			/// get all elements matching this option code
 			pub fn get_all(&self, code: OptionCode) -> Option<&[$name]>{
-				use crate::v6::range_binsearch;
+				use crate::v6::options::range_binsearch;
 				use crate::v6::OptionCode;
 				let range = range_binsearch(&self.0, |x| OptionCode::from(x).cmp(&code))?;
 				Some(&self.0[range])
 			}
 			/// get the first element matching this option code
 			pub fn get_mut(&mut self, code: OptionCode) -> Option<&mut $name>{
-				use crate::v6::first;
+				use crate::v6::options::first;
 				use crate::v6::OptionCode;
 				let first = first(&self.0, |x| OptionCode::from(x).cmp(&code))?;
 				self.0.get_mut(first)
 			}
 			/// get all elements matching this option
 			pub fn get_mut_all(&mut self, code: OptionCode) -> Option<&mut [$name]>{
-				use crate::v6::range_binsearch;
+				use crate::v6::options::range_binsearch;
 				use crate::v6::OptionCode;
 				let range = range_binsearch(&self.0, |x| OptionCode::from(x).cmp(&code))?;
 				Some(&mut self.0[range])
 			}
 			/// remove the first element with a matching option code
 			pub fn remove(&mut self, code: OptionCode) -> Option<$name>{
-				use crate::v6::first;
+				use crate::v6::options::first;
 				use crate::v6::OptionCode;
 				let first = first(&self.0, |x| OptionCode::from(x).cmp(&code))?;
 				Some(self.0.remove(first))
 			}
 			pub fn remove_all(&mut self, code: OptionCode) -> Option<impl Iterator<Item = $name> + '_>{
-				use crate::v6::range_binsearch;
+				use crate::v6::options::range_binsearch;
 				use crate::v6::OptionCode;
 				let range = range_binsearch(&self.0, |x| OptionCode::from(x).cmp(&code))?;
 				Some(self.0.drain(range))
@@ -226,45 +237,6 @@ macro_rules! option_builder{
 }
 
 pub(crate) use option_builder;
-
-option_builder!(
-    MessageOption,
-    MessageOptions,
-    DhcpOption,
-    ClientId,
-    ServerId,
-    IANA,
-    IATA,
-    IAAddr,
-    IAPD,
-    IAPrefix,
-    ORO,
-    Preference,
-    ElapsedTime,
-    Auth,
-    Unicast,
-    StatusCode,
-    RapidCommit,
-    UserClass,
-    VendorClass,
-    VendorOpts,
-    ReconfMsg,
-    ReconfAccept,
-    InformationRefreshTime,
-    SolMaxRt,
-    InfMaxRt,
-    DNSServers,
-    DomainList
-);
-
-option_builder!(
-    RelayMessageOption,
-    RelayMessageOptions,
-    DhcpOption,
-    RelayMsg,
-    VendorOpts,
-    InterfaceId
-);
 
 // server can send multiple IA_NA options to request multiple addresses
 // so we must be able to handle multiple of the same option type
@@ -403,6 +375,11 @@ pub enum DhcpOption {
     InformationRefreshTime(InformationRefreshTime),
     SolMaxRt(SolMaxRt),
     InfMaxRt(InfMaxRt),
+    LqQuery(LqQuery),
+    ClientData(ClientData),
+    CltTime(CltTime),
+    LqRelayData(LqRelayData),
+    LqClientLink(LqClientLink),
     /// An unknown or unimplemented option type
     Unknown(UnknownOption),
 }
@@ -507,6 +484,11 @@ impl Decodable for DhcpOption {
             }
             OptionCode::SolMaxRt => DhcpOption::SolMaxRt(SolMaxRt::decode(decoder)?),
             OptionCode::DomainList => DhcpOption::DomainList(DomainList::decode(decoder)?),
+            OptionCode::LqQuery => DhcpOption::LqQuery(LqQuery::decode(decoder)?),
+            OptionCode::ClientData => DhcpOption::ClientData(ClientData::decode(decoder)?),
+            OptionCode::CltTime => DhcpOption::CltTime(CltTime::decode(decoder)?),
+            OptionCode::LqRelayData => DhcpOption::LqRelayData(LqRelayData::decode(decoder)?),
+            OptionCode::LqClientLink => DhcpOption::LqClientLink(LqClientLink::decode(decoder)?),
             // not yet implemented
             OptionCode::Unknown(code) => {
                 decoder.read_u16()?;
@@ -608,6 +590,21 @@ impl Encodable for DhcpOption {
             }
             DhcpOption::IAPrefix(iaprefix) => {
                 iaprefix.encode(e)?;
+            }
+            DhcpOption::LqQuery(q) => {
+                q.encode(e)?;
+            }
+            DhcpOption::ClientData(q) => {
+                q.encode(e)?;
+            }
+            DhcpOption::CltTime(q) => {
+                q.encode(e)?;
+            }
+            DhcpOption::LqRelayData(q) => {
+                q.encode(e)?;
+            }
+            DhcpOption::LqClientLink(q) => {
+                q.encode(e)?;
             }
             DhcpOption::Unknown(UnknownOption { data, .. }) => {
                 e.write_u16(code.into())?;

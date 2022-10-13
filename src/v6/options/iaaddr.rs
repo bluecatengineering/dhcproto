@@ -1,5 +1,5 @@
-use crate::v6::DhcpOption;
-use crate::v6::{option_builder, DecodeResult, EncodeResult, Ipv6Addr, OptionCode, StatusCode};
+use crate::v6::options::{option_builder, DhcpOption};
+use crate::v6::{DecodeResult, EncodeResult, Ipv6Addr, OptionCode, StatusCode};
 use crate::{Decodable, Decoder, Encodable, Encoder};
 
 #[cfg(feature = "serde")]
