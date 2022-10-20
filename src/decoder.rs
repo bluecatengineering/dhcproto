@@ -39,6 +39,13 @@ impl<'a> Decoder<'a> {
         Ok(u8::from_be_bytes(self.peek::<{ mem::size_of::<u8>() }>()?))
     }
 
+    /// peek at the next u16 without advancing the internal pointer
+    pub fn peek_u16(&self) -> DecodeResult<u16> {
+        Ok(u16::from_be_bytes(
+            self.peek::<{ mem::size_of::<u16>() }>()?,
+        ))
+    }
+
     /// read a u8
     pub fn read_u8(&mut self) -> DecodeResult<u8> {
         Ok(u8::from_be_bytes(self.read::<{ mem::size_of::<u8>() }>()?))
