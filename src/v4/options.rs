@@ -1,19 +1,19 @@
 use std::{borrow::Cow, collections::HashMap, iter, net::Ipv4Addr};
 
-pub use crate::Domain;
+use crate::Domain;
 use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
     error::{DecodeResult, EncodeResult},
     v4::bulk_query,
-    v4::relay,
+    v4::{fqdn, relay},
 };
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use trust_dns_proto::{
     rr::Name,
-    serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder},
+    serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder, EncodeMode},
 };
 
 /// Options for DHCP. This implemention of options ignores PAD bytes.
@@ -355,7 +355,7 @@ pub enum OptionCode {
     /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
     RapidCommit,
     /// 81 FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>
-    // ClientFQDN(),
+    ClientFQDN,
     /// 82 Relay Agent Information
     RelayAgentInformation,
     /// 91 client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
@@ -470,6 +470,7 @@ impl From<u8> for OptionCode {
             61 => ClientIdentifier,
             65 => NISServerAddr,
             80 => RapidCommit,
+            81 => ClientFQDN,
             82 => RelayAgentInformation,
             91 => ClientLastTransactionTime,
             92 => AssociatedIp,
@@ -557,6 +558,7 @@ impl From<OptionCode> for u8 {
             ClientIdentifier => 61,
             NISServerAddr => 65,
             RapidCommit => 80,
+            ClientFQDN => 81,
             RelayAgentInformation => 82,
             ClientLastTransactionTime => 91,
             AssociatedIp => 92,
@@ -709,6 +711,8 @@ pub enum DhcpOption {
     NISServerAddr(Vec<Ipv4Addr>),
     /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
     RapidCommit,
+    /// 81 FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>
+    ClientFQDN(fqdn::FqdnFlags, u8, u8, Domain),
     /// 82 Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>
     RelayAgentInformation(relay::RelayAgentInformation),
     /// 91 client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
@@ -999,6 +1003,16 @@ fn decode_inner(
         OptionCode::DhcpState => BulkLeaseQueryDhcpState(decoder.read_u8()?.into()),
         OptionCode::DataSource => {
             BulkLeaseQueryDataSource(bulk_query::DataSourceFlags::new(decoder.read_u8()?))
+        }
+        OptionCode::ClientFQDN => {
+            debug_assert!(len >= 3);
+            let flags = decoder.read_u8()?.into();
+            let rcode1 = decoder.read_u8()?;
+            let rcode2 = decoder.read_u8()?;
+
+            let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize - 3)?);
+            let name = Name::read(&mut name_decoder)?;
+            ClientFQDN(flags, rcode1, rcode2, Domain(name))
         }
         OptionCode::End => End,
         // not yet implemented
@@ -1341,6 +1355,19 @@ impl Encodable for DhcpOption {
                 }
                 encode_long_opt_bytes(code, &buf, e)?;
             }
+            ClientFQDN(flags, r1, r2, domain) => {
+                let mut buf = vec![(*flags).into(), *r1, *r2];
+                if flags.e() {
+                    // emits in canonical format
+                    // start encoding at byte 3 because we had some preamble
+                    let mut name_encoder = BinEncoder::with_offset(&mut buf, 3, EncodeMode::Normal);
+                    domain.0.emit_as_canonical(&mut name_encoder, true)?;
+                } else {
+                    // TODO: not sure if this is correct
+                    buf.extend(domain.0.to_ascii().as_bytes());
+                }
+                encode_long_opt_bytes(code, &buf, e)?;
+            }
             // not yet implemented
             Unknown(opt) => {
                 encode_long_opt_bytes(code, &opt.data, e)?;
@@ -1414,6 +1441,7 @@ impl From<&DhcpOption> for OptionCode {
             ClassIdentifier(_) => OptionCode::ClassIdentifier,
             ClientIdentifier(_) => OptionCode::ClientIdentifier,
             RapidCommit => OptionCode::RapidCommit,
+            ClientFQDN(_, _, _, _) => OptionCode::ClientFQDN,
             RelayAgentInformation(_) => OptionCode::RelayAgentInformation,
             ClientLastTransactionTime(_) => OptionCode::ClientLastTransactionTime,
             AssociatedIp(_) => OptionCode::AssociatedIp,
@@ -1776,6 +1804,24 @@ mod tests {
             vec![
                 119, 27, 3, b'e', b'n', b'g', 5, b'a', b'p', b'p', b'l', b'e', 3, b'c', b'o', b'm',
                 0, 9, b'm', b'a', b'r', b'k', b'e', b't', b'i', b'n', b'g', 0xC0, 0x04,
+            ],
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_client_fqdn() -> Result<()> {
+        test_opt(
+            DhcpOption::ClientFQDN(
+                fqdn::FqdnFlags::default().set_e(),
+                0,
+                0,
+                Domain(Name::from_str("www.google.com.").unwrap()),
+            ),
+            vec![
+                81, 19, 0x04, 0, 0, 3, b'w', b'w', b'w', 6, b'g', b'o', b'o', b'g', b'l', b'e', 3,
+                b'c', b'o', b'm', 0,
             ],
         )?;
 
