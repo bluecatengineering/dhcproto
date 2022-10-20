@@ -18,7 +18,7 @@
 //!     .insert(v6::ClientId{id: duid});
 //!
 //! //access an option
-//! let _id = msg.opts().get<v6::ClientId>();
+//! let _id = msg.opts().get::<v6::ClientId>();
 //!
 //! // now encode to bytes
 //! let mut buf = Vec::new();
