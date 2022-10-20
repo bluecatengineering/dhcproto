@@ -50,7 +50,13 @@ impl Encodable for IAAddr {
     }
 }
 
-option_builder!(IAAddrOption, IAAddrOptions, DhcpOption, StatusCode);
+option_builder!(
+    IAAddrOption,
+    IAAddrOptions,
+    IsAIIdrOption,
+    DhcpOption,
+    StatusCode
+);
 
 #[cfg(test)]
 mod tests {

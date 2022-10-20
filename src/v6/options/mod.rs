@@ -63,6 +63,14 @@ pub use lqrelaydata::*;
 mod lqclientlink;
 pub use lqclientlink::*;
 
+//rfc5460
+mod relayid;
+pub use relayid::*;
+
+//rfc6977
+mod linkaddress;
+pub use linkaddress::*;
+
 use std::{cmp::Ordering, net::Ipv6Addr, ops::RangeInclusive};
 
 pub use crate::Domain;
@@ -74,10 +82,13 @@ use crate::{
 };
 
 //helper macro for implementing sub-options (IANAOptions, ect)
-//useage: option_builder!(IANAOption, IANAOptions, DhcpOption, IAAddr, StatusCode);
-//        option_builder!(name      , names      , master    , subname...        );
+//useage: option_builder!(IANAOption, IANAOptions, IsIANAOption, DhcpOption, IAAddr, StatusCode);
+//        option_builder!(name      , names      , isname      , master    , subname...        );
 macro_rules! option_builder{
-    ($name: ident, $names: ident, $mastername: ident, $($subnames: ident),*) => {
+    ($name: ident, $names: ident, $isname: ident, $mastername: ident, $($subnames: ident),*) => {
+		pub trait $isname{
+			fn code() -> OptionCode;
+		}
 		#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 		#[derive(Debug, Clone, PartialEq, Eq)]
         pub enum $name {
@@ -91,6 +102,29 @@ macro_rules! option_builder{
 			impl From<$subnames> for $name {
 				fn from(sc: $subnames) -> Self{
 					$name :: $subnames(sc)
+				}
+			}
+			impl<'a> TryFrom<&'a $name> for &'a $subnames {
+				type Error = &'static str;
+				fn try_from(name: &'a $name) -> Result<&'a $subnames, Self::Error>{
+					match name{
+						$name :: $subnames(opt) => Ok(opt),
+						_ => Err("$subname is not a $name"),
+					}
+				}
+			}
+			impl TryFrom<$name> for $subnames {
+				type Error = &'static str;
+				fn try_from(name: $name) -> Result<$subnames, Self::Error>{
+					match name{
+						$name :: $subnames(opt) => Ok(opt),
+						_ => Err("$subname is not a $name"),
+					}
+				}
+			}
+			impl $isname for $subnames {
+				fn code() -> OptionCode{
+					OptionCode::$subnames
 				}
 			}
 		)*
@@ -150,46 +184,48 @@ macro_rules! option_builder{
 			pub fn new() -> Self{
 				Default::default()
 			}
-			/// get the first element matching this option code
-			pub fn get(&self, code: OptionCode) -> Option<&$name>{
+			/// get the first element matching this type
+			pub fn get<'a, T: $isname>(&'a self) -> Option<&'a T> where &'a T: TryFrom<&'a $name>{
 				use crate::v6::options::first;
 				use crate::v6::OptionCode;
-				let first = first(&self.0, |x| OptionCode::from(x).cmp(&code))?;
-				self.0.get(first)
+				let first = first(&self.0, |x| OptionCode::from(x).cmp(&T::code()))?;
+				//unwrap can not fail, it has already been checked.
+				self.0.get(first).map(|opt| <&T>::try_from(opt).ok().unwrap())
 			}
-			/// get all elements matching this option code
-			pub fn get_all(&self, code: OptionCode) -> Option<&[$name]>{
+			/// get all elements matching this type
+			pub fn get_all<T: $isname>(&self) -> Option<&[$name]>{
 				use crate::v6::options::range_binsearch;
 				use crate::v6::OptionCode;
-				let range = range_binsearch(&self.0, |x| OptionCode::from(x).cmp(&code))?;
+				let range = range_binsearch(&self.0, |x| OptionCode::from(x).cmp(&T::code()))?;
 				Some(&self.0[range])
 			}
-			/// get the first element matching this option code
-			pub fn get_mut(&mut self, code: OptionCode) -> Option<&mut $name>{
+			/// get the first element matching the type
+			pub fn get_mut<'a, T: $isname>(&'a mut self) -> Option<&'a mut T> where &'a mut T: TryFrom<&'a mut $name>{
 				use crate::v6::options::first;
 				use crate::v6::OptionCode;
-				let first = first(&self.0, |x| OptionCode::from(x).cmp(&code))?;
-				self.0.get_mut(first)
+				let first = first(&self.0, |x| OptionCode::from(x).cmp(&T::code()))?;
+				//unwrap can not fail, it has already been checked.
+				self.0.get_mut(first).map(|opt| <&mut T>::try_from(opt).ok().unwrap())
 			}
 			/// get all elements matching this option
-			pub fn get_mut_all(&mut self, code: OptionCode) -> Option<&mut [$name]>{
+			pub fn get_mut_all<T: $isname>(&mut self) -> Option<&mut [$name]>{
 				use crate::v6::options::range_binsearch;
 				use crate::v6::OptionCode;
-				let range = range_binsearch(&self.0, |x| OptionCode::from(x).cmp(&code))?;
+				let range = range_binsearch(&self.0, |x| OptionCode::from(x).cmp(&T::code()))?;
 				Some(&mut self.0[range])
 			}
-			/// remove the first element with a matching option code
-			pub fn remove(&mut self, code: OptionCode) -> Option<$name>{
+			/// remove the first element with a matching type
+			pub fn remove<T: $isname>(&mut self) -> Option<T> where T: TryFrom<$name>{
 				use crate::v6::options::first;
 				use crate::v6::OptionCode;
-				let first = first(&self.0, |x| OptionCode::from(x).cmp(&code))?;
-				Some(self.0.remove(first))
+				let first = first(&self.0, |x| OptionCode::from(x).cmp(&T::code()))?;
+				T::try_from(self.0.remove(first)).ok()
 			}
-			pub fn remove_all(&mut self, code: OptionCode) -> Option<impl Iterator<Item = $name> + '_>{
+			pub fn remove_all<T: $isname>(&mut self) -> Option<impl Iterator<Item = T> + '_> where T: TryFrom<$name>{
 				use crate::v6::options::range_binsearch;
 				use crate::v6::OptionCode;
-				let range = range_binsearch(&self.0, |x| OptionCode::from(x).cmp(&code))?;
-				Some(self.0.drain(range))
+				let range = range_binsearch(&self.0, |x| OptionCode::from(x).cmp(&T::code()))?;
+				Some(self.0.drain(range).map(|opt| T::try_from(opt).ok().unwrap()))
 			}
 			/// insert a new option into the list of opts
 			pub fn insert<T: Into<$name>>(&mut self, opt: T){
@@ -380,6 +416,8 @@ pub enum DhcpOption {
     CltTime(CltTime),
     LqRelayData(LqRelayData),
     LqClientLink(LqClientLink),
+    RelayId(RelayId),
+    LinkAddress(LinkAddress),
     /// An unknown or unimplemented option type
     Unknown(UnknownOption),
 }
@@ -489,6 +527,8 @@ impl Decodable for DhcpOption {
             OptionCode::CltTime => DhcpOption::CltTime(CltTime::decode(decoder)?),
             OptionCode::LqRelayData => DhcpOption::LqRelayData(LqRelayData::decode(decoder)?),
             OptionCode::LqClientLink => DhcpOption::LqClientLink(LqClientLink::decode(decoder)?),
+            OptionCode::RelayId => DhcpOption::RelayId(RelayId::decode(decoder)?),
+            OptionCode::LinkAddress => DhcpOption::LinkAddress(LinkAddress::decode(decoder)?),
             // not yet implemented
             OptionCode::Unknown(code) => {
                 decoder.read_u16()?;
@@ -604,6 +644,12 @@ impl Encodable for DhcpOption {
                 q.encode(e)?;
             }
             DhcpOption::LqClientLink(q) => {
+                q.encode(e)?;
+            }
+            DhcpOption::RelayId(q) => {
+                q.encode(e)?;
+            }
+            DhcpOption::LinkAddress(q) => {
                 q.encode(e)?;
             }
             DhcpOption::Unknown(UnknownOption { data, .. }) => {

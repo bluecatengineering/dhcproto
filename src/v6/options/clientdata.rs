@@ -41,6 +41,7 @@ impl Encodable for ClientData {
 option_builder!(
     ClientDataOption,
     ClientDataOptions,
+    IsClientDataOption,
     DhcpOption,
     ClientId,
     IAAddr,

@@ -49,7 +49,14 @@ impl Encodable for IANA {
     }
 }
 
-option_builder!(IANAOption, IANAOptions, DhcpOption, IAAddr, StatusCode);
+option_builder!(
+    IANAOption,
+    IANAOptions,
+    IsIANAOption,
+    DhcpOption,
+    IAAddr,
+    StatusCode
+);
 
 #[cfg(test)]
 mod tests {

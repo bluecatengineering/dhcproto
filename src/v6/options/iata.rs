@@ -43,7 +43,14 @@ impl Encodable for IATA {
     }
 }
 
-option_builder!(IATAOption, IATAOptions, DhcpOption, IAAddr, StatusCode);
+option_builder!(
+    IATAOption,
+    IATAOptions,
+    IsIATAOption,
+    DhcpOption,
+    IAAddr,
+    StatusCode
+);
 
 #[cfg(test)]
 mod tests {

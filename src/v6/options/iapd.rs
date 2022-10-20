@@ -51,7 +51,14 @@ impl Encodable for IAPD {
     }
 }
 
-option_builder!(IAPDOption, IAPDOptions, DhcpOption, IAPrefix, StatusCode);
+option_builder!(
+    IAPDOption,
+    IAPDOptions,
+    IsIAPDOption,
+    DhcpOption,
+    IAPrefix,
+    StatusCode
+);
 
 #[cfg(test)]
 mod tests {

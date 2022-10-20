@@ -52,7 +52,12 @@ impl Encodable for IAPrefix {
     }
 }
 
-option_builder!(IAPrefixOption, IAPrefixOptions, DhcpOption,);
+option_builder!(
+    IAPrefixOption,
+    IAPrefixOptions,
+    IsIAPrefixOption,
+    DhcpOption,
+);
 
 #[cfg(test)]
 mod tests {

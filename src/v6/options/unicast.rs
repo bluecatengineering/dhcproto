@@ -29,8 +29,6 @@ impl Encodable for Unicast {
     }
 }
 
-//impl From<Unicast> for Message?
-
 #[cfg(test)]
 mod tests {
     use super::*;

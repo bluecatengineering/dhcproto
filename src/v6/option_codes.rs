@@ -477,6 +477,8 @@ impl From<&DhcpOption> for OptionCode {
             CltTime(_) => OptionCode::CltTime,
             LqRelayData(_) => OptionCode::LqRelayData,
             LqClientLink(_) => OptionCode::LqClientLink,
+            RelayId(_) => OptionCode::RelayId,
+            LinkAddress(_) => OptionCode::LinkAddress,
             Unknown(unknown) => unknown.into(),
         }
     }

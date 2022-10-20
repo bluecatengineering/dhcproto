@@ -52,6 +52,7 @@ impl Encodable for LqQuery {
 option_builder!(
     LqQueryOption,
     LqQueryOptions,
+    IsLqQueryOption,
     DhcpOption,
     IAAddr,
     ClientId,
@@ -63,6 +64,9 @@ option_builder!(
 pub enum QueryType {
     QueryByAddress,
     QueryByClientID,
+    QueryByRelayID,
+    QueryByLinkAaddress,
+    QueryByRemoteID,
     Unknown(u8),
 }
 
@@ -72,6 +76,9 @@ impl From<u8> for QueryType {
         match qtype {
             1 => QueryByAddress,
             2 => QueryByClientID,
+            3 => QueryByRelayID,
+            4 => QueryByLinkAaddress,
+            5 => QueryByRemoteID,
             t => Unknown(t),
         }
     }
@@ -83,6 +90,9 @@ impl From<QueryType> for u8 {
         match num {
             QueryByAddress => 1,
             QueryByClientID => 2,
+            QueryByRelayID => 3,
+            QueryByLinkAaddress => 4,
+            QueryByRemoteID => 5,
             Unknown(t) => t,
         }
     }

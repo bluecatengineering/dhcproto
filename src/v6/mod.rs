@@ -17,6 +17,9 @@
 //! msg.opts_mut()
 //!     .insert(v6::ClientId{id: duid});
 //!
+//! //access an option
+//! let _id = msg.opts().get<v6::ClientId>();
+//!
 //! // now encode to bytes
 //! let mut buf = Vec::new();
 //! let mut e = Encoder::new(&mut buf);
@@ -58,16 +61,17 @@ pub mod options;
 ///options
 pub use options::{
     Auth, ClientData, ClientId, CltTime, DNSServers, DomainList, ElapsedTime, IAAddr, IAPrefix,
-    InfMaxRt, InformationRefreshTime, InterfaceId, LqClientLink, LqQuery, LqRelayData, Preference,
-    RapidCommit, ReconfAccept, ReconfMsg, RelayMsg, ServerId, SolMaxRt, StatusCode, Unicast,
-    UserClass, VendorClass, VendorOpts, IANA, IAPD, IATA, ORO,
+    InfMaxRt, InformationRefreshTime, InterfaceId, LinkAddress, LqClientLink, LqQuery, LqRelayData,
+    Preference, RapidCommit, ReconfAccept, ReconfMsg, RelayId, RelayMsg, ServerId, SolMaxRt,
+    StatusCode, Unicast, UserClass, VendorClass, VendorOpts, IANA, IAPD, IATA, ORO,
 };
 pub mod messages;
 mod oro_codes;
 ///messages
 pub use messages::{
-    Advertise, Confirm, Decline, InformationRequest, LeaseQuery, LeaseQueryReply, Message, Rebind,
-    Reconfigure, RelayForw, RelayRepl, Release, Renew, Reply, Request, Solicit,
+    Advertise, BulkLeaseQueryMessage, Confirm, Decline, InformationRequest, LeaseQuery,
+    LeaseQueryData, LeaseQueryDone, LeaseQueryReply, Message, Rebind, Reconfigure, RelayForw,
+    RelayRepl, Release, Renew, Reply, Request, Solicit,
 };
 
 #[cfg(feature = "serde")]
@@ -90,47 +94,6 @@ pub use crate::{
 pub const SERVER_PORT: u16 = 547;
 /// default dhcpv6 client port
 pub const CLIENT_PORT: u16 = 546;
-
-/// See RFC 8415 for updated DHCPv6 info
-/// [DHCP for Ipv6](https://datatracker.ietf.org/doc/html/rfc8415)
-///
-///   All DHCP messages sent between clients and servers share an identical
-///   fixed-format header and a variable-format area for options.
-///
-///   All values in the message header and in options are in network byte
-///   order.
-///
-///   Options are stored serially in the "options" field, with no padding
-///   between the options.  Options are byte-aligned but are not aligned in
-///   any other way (such as on 2-byte or 4-byte boundaries).
-///
-///   The following diagram illustrates the format of DHCP messages sent
-///   between clients and servers:
-///
-/// ```text
-///       0                   1                   2                   3
-///       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-///      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-///      |    msg-type   |               transaction-id                  |
-///      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-///      |                                                               |
-///      .                            options                            .
-///      .                 (variable number and length)                  .
-///      |                                                               |
-///      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-///
-///      msg-type             Identifies the DHCP message type; the
-///                           available message types are listed in
-///                           Section 7.3.  A 1-octet field.
-///
-///      transaction-id       The transaction ID for this message exchange.
-///                           A 3-octet field.
-///
-///      options              Options carried in this message; options are
-///                           described in Section 21.  A variable-length
-///                           field (4 octets less than the size of the
-///                           message).
-/// ```
 
 /// DHCPv6 message types
 /// <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
