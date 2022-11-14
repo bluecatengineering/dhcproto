@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - internally, v6 DhcpOptions are now kept sorted by OptionCode (may become `HashMap<_, Vec<_>>` in future)
 - `DhcpOptions::RelayMsg()` type changed to `RelayMessage`
+- moved Duid to duid module
+- added oro_codes
 
 ### Fixed
 

@@ -7,14 +7,13 @@ use trust_dns_proto::{
 
 use std::{cmp::Ordering, net::Ipv6Addr, ops::RangeInclusive};
 
-use crate::Domain;
 use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
     error::{DecodeResult, EncodeResult},
-    v4::HType,
     v6::{MessageType, RelayMessage},
 };
+use crate::{v6::option_codes::OptionCode, Domain};
 
 // server can send multiple IA_NA options to request multiple addresses
 // so we must be able to handle multiple of the same option type
@@ -99,77 +98,6 @@ impl FromIterator<DhcpOption> for DhcpOptions {
     }
 }
 
-/// Duid helper type
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Duid(Vec<u8>);
-// TODO: define specific duid types
-
-impl Duid {
-    /// new DUID link layer address with time
-    pub fn link_layer_time(htype: HType, time: u32, addr: Ipv6Addr) -> Self {
-        let mut buf = Vec::new();
-        let mut e = Encoder::new(&mut buf);
-        e.write_u16(1).unwrap(); // duid type
-        e.write_u16(u8::from(htype) as u16).unwrap();
-        e.write_u32(time).unwrap();
-        e.write_u128(addr.into()).unwrap();
-        Self(buf)
-    }
-    /// new DUID enterprise number
-    pub fn enterprise(enterprise: u32, id: &[u8]) -> Self {
-        let mut buf = Vec::new();
-        let mut e = Encoder::new(&mut buf);
-        e.write_u16(2).unwrap(); // duid type
-        e.write_u32(enterprise).unwrap();
-        e.write_slice(id).unwrap();
-        Self(buf)
-    }
-    /// new link layer DUID
-    pub fn link_layer(htype: HType, addr: Ipv6Addr) -> Self {
-        let mut buf = Vec::new();
-        let mut e = Encoder::new(&mut buf);
-        e.write_u16(3).unwrap(); // duid type
-        e.write_u16(u8::from(htype) as u16).unwrap();
-        e.write_u128(addr.into()).unwrap();
-        Self(buf)
-    }
-    /// new DUID-UUID
-    /// `uuid` must be 16 bytes long
-    pub fn uuid(uuid: &[u8]) -> Self {
-        assert!(uuid.len() == 16);
-        let mut buf = Vec::new();
-        let mut e = Encoder::new(&mut buf);
-        e.write_u16(4).unwrap(); // duid type
-        e.write_slice(uuid).unwrap();
-        Self(buf)
-    }
-    /// create a DUID of unknown type
-    pub fn unknown(duid: &[u8]) -> Self {
-        Self(duid.to_vec())
-    }
-    /// total length of contained DUID
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-    /// is contained DUID empty
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-}
-
-impl AsRef<[u8]> for Duid {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl From<Vec<u8>> for Duid {
-    fn from(v: Vec<u8>) -> Self {
-        Self(v)
-    }
-}
-
 /// DHCPv6 option types
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -214,13 +142,23 @@ pub enum DhcpOption {
     /// 20 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.20>
     ReconfAccept,
     /// 23 - <https://datatracker.ietf.org/doc/html/rfc3646>
-    DNSNameServer(Vec<Ipv6Addr>),
+    DomainNameServers(Vec<Ipv6Addr>),
     /// 24 - <https://datatracker.ietf.org/doc/html/rfc3646>
     DomainSearchList(Vec<Domain>),
     /// 25 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.21>
     IAPD(IAPD),
     /// 26 - <https://datatracker.ietf.org/doc/html/rfc3633#section-10>
-    IAPDPrefix(IAPDPrefix),
+    IAPrefix(IAPrefix),
+    InformationRefreshTime(u32),
+    // SolMaxRt(u32),
+    // InfMaxRt(u32),
+    // LqQuery(_),
+    // ClientData(_),
+    // CltTime(_),
+    // LqRelayData(_),
+    // LqClientLink(_),
+    // RelayId(_),
+    // LinkAddress(_),
     /// An unknown or unimplemented option type
     Unknown(UnknownOption),
 }
@@ -503,7 +441,7 @@ impl Decodable for IAPD {
 /// Identity Association Prefix Delegation Prefix Option
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct IAPDPrefix {
+pub struct IAPrefix {
     pub preferred_lifetime: u32,
     pub valid_lifetime: u32,
     pub prefix_len: u8,
@@ -512,9 +450,9 @@ pub struct IAPDPrefix {
     pub opts: DhcpOptions,
 }
 
-impl Decodable for IAPDPrefix {
+impl Decodable for IAPrefix {
     fn decode(decoder: &'_ mut Decoder<'_>) -> DecodeResult<Self> {
-        Ok(IAPDPrefix {
+        Ok(IAPrefix {
             preferred_lifetime: decoder.read_u32()?,
             valid_lifetime: decoder.read_u32()?,
             prefix_len: decoder.read_u8()?,
@@ -552,8 +490,8 @@ impl Decodable for IAAddr {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnknownOption {
-    code: u16,
-    data: Vec<u8>,
+    pub(crate) code: u16,
+    pub(crate) data: Vec<u8>,
 }
 
 impl UnknownOption {
@@ -658,14 +596,16 @@ impl Decodable for DhcpOption {
             OptionCode::InterfaceId => DhcpOption::InterfaceId(decoder.read_slice(len)?.to_vec()),
             OptionCode::ReconfMsg => DhcpOption::ReconfMsg(decoder.read_u8()?.into()),
             OptionCode::ReconfAccept => DhcpOption::ReconfAccept,
-            OptionCode::DNSNameServer => DhcpOption::DNSNameServer(decoder.read_ipv6s(len)?),
+            OptionCode::DomainNameServers => {
+                DhcpOption::DomainNameServers(decoder.read_ipv6s(len)?)
+            }
             OptionCode::IAPD => {
                 let mut dec = Decoder::new(decoder.read_slice(len)?);
                 DhcpOption::IAPD(IAPD::decode(&mut dec)?)
             }
-            OptionCode::IAPDPrefix => {
+            OptionCode::IAPrefix => {
                 let mut dec = Decoder::new(decoder.read_slice(len)?);
-                DhcpOption::IAPDPrefix(IAPDPrefix::decode(&mut dec)?)
+                DhcpOption::IAPrefix(IAPrefix::decode(&mut dec)?)
             }
             OptionCode::DomainSearchList => {
                 let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
@@ -679,6 +619,10 @@ impl Decodable for DhcpOption {
             // not yet implemented
             OptionCode::Unknown(code) => DhcpOption::Unknown(UnknownOption {
                 code,
+                data: decoder.read_slice(len)?.to_vec(),
+            }),
+            _ => DhcpOption::Unknown(UnknownOption {
+                code: code.into(),
                 data: decoder.read_slice(len)?.to_vec(),
             }),
         })
@@ -821,7 +765,7 @@ impl Encodable for DhcpOption {
             DhcpOption::ReconfAccept => {
                 e.write_u16(0)?;
             }
-            DhcpOption::DNSNameServer(addrs) => {
+            DhcpOption::DomainNameServers(addrs) => {
                 e.write_u16(addrs.len() as u16 * 16)?;
                 for addr in addrs {
                     e.write_u128((*addr).into())?;
@@ -836,7 +780,7 @@ impl Encodable for DhcpOption {
                 e.write_u16(buf.len() as u16)?;
                 e.write_slice(&buf)?;
             }
-            DhcpOption::IAPDPrefix(IAPDPrefix {
+            DhcpOption::IAPrefix(IAPrefix {
                 preferred_lifetime,
                 valid_lifetime,
                 prefix_len,
@@ -855,174 +799,16 @@ impl Encodable for DhcpOption {
                 e.write_u128((*prefix_ip).into())?;
                 e.write_slice(&buf)?;
             }
+            DhcpOption::InformationRefreshTime(time) => {
+                e.write_u16(4)?;
+                e.write_u32(*time)?;
+            }
             DhcpOption::Unknown(UnknownOption { data, .. }) => {
                 e.write_u16(data.len() as u16)?;
                 e.write_slice(data)?;
             }
         };
         Ok(())
-    }
-}
-
-/// option code type
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum OptionCode {
-    /// 1
-    ClientId, // should duid for this be bytes or string?
-    /// 2
-    ServerId,
-    /// 3
-    IANA,
-    /// 4
-    IATA,
-    /// 5
-    IAAddr,
-    /// 6
-    ORO,
-    /// 7
-    Preference,
-    /// 8
-    ElapsedTime,
-    /// 9
-    RelayMsg,
-    /// 11
-    Authentication,
-    /// 12
-    ServerUnicast,
-    /// 13
-    StatusCode,
-    /// 14
-    RapidCommit,
-    /// 15
-    UserClass,
-    /// 16
-    VendorClass,
-    /// 17
-    VendorOpts,
-    /// 18
-    InterfaceId,
-    /// 19
-    ReconfMsg,
-    /// 20
-    ReconfAccept,
-    /// 23
-    DNSNameServer,
-    /// 24
-    DomainSearchList,
-    /// 25
-    IAPD,
-    /// 26
-    IAPDPrefix,
-    /// an unknown or unimplemented option type
-    Unknown(u16),
-}
-
-impl PartialOrd for OptionCode {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for OptionCode {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        u16::from(*self).cmp(&u16::from(*other))
-    }
-}
-
-impl From<OptionCode> for u16 {
-    fn from(opt: OptionCode) -> Self {
-        use OptionCode::*;
-        match opt {
-            ClientId => 1,
-            ServerId => 2,
-            IANA => 3,
-            IATA => 4,
-            IAAddr => 5,
-            ORO => 6,
-            Preference => 7,
-            ElapsedTime => 8,
-            RelayMsg => 9,
-            Authentication => 11,
-            ServerUnicast => 12,
-            StatusCode => 13,
-            RapidCommit => 14,
-            UserClass => 15,
-            VendorClass => 16,
-            VendorOpts => 17,
-            InterfaceId => 18,
-            ReconfMsg => 19,
-            ReconfAccept => 20,
-            DNSNameServer => 23,
-            DomainSearchList => 24,
-            IAPD => 25,
-            IAPDPrefix => 26,
-            Unknown(n) => n,
-        }
-    }
-}
-
-impl From<u16> for OptionCode {
-    fn from(n: u16) -> Self {
-        use OptionCode::*;
-        match n {
-            1 => ClientId,
-            2 => ServerId,
-            3 => IANA,
-            4 => IATA,
-            5 => IAAddr,
-            6 => ORO,
-            7 => Preference,
-            8 => ElapsedTime,
-            9 => RelayMsg,
-            11 => Authentication,
-            12 => ServerUnicast,
-            13 => StatusCode,
-            14 => RapidCommit,
-            15 => UserClass,
-            16 => VendorClass,
-            17 => VendorOpts,
-            18 => InterfaceId,
-            19 => ReconfMsg,
-            20 => ReconfAccept,
-            23 => DNSNameServer,
-            24 => DomainSearchList,
-            25 => IAPD,
-            26 => IAPDPrefix,
-            _ => Unknown(n),
-        }
-    }
-}
-
-impl From<&DhcpOption> for OptionCode {
-    fn from(opt: &DhcpOption) -> Self {
-        use DhcpOption::*;
-        match opt {
-            ClientId(_) => OptionCode::ClientId,
-            ServerId(_) => OptionCode::ServerId,
-            IANA(_) => OptionCode::IANA,
-            IATA(_) => OptionCode::IATA,
-            IAAddr(_) => OptionCode::IAAddr,
-            ORO(_) => OptionCode::ORO,
-            Preference(_) => OptionCode::Preference,
-            ElapsedTime(_) => OptionCode::ElapsedTime,
-            RelayMsg(_) => OptionCode::RelayMsg,
-            Authentication(_) => OptionCode::Authentication,
-            ServerUnicast(_) => OptionCode::ServerUnicast,
-            StatusCode(_) => OptionCode::StatusCode,
-            RapidCommit => OptionCode::RapidCommit,
-            UserClass(_) => OptionCode::UserClass,
-            VendorClass(_) => OptionCode::VendorClass,
-            VendorOpts(_) => OptionCode::VendorOpts,
-            InterfaceId(_) => OptionCode::InterfaceId,
-            ReconfMsg(_) => OptionCode::ReconfMsg,
-            ReconfAccept => OptionCode::ReconfAccept,
-            DNSNameServer(_) => OptionCode::DNSNameServer,
-            DomainSearchList(_) => OptionCode::DomainSearchList,
-            IAPD(_) => OptionCode::IAPD,
-            IAPDPrefix(_) => OptionCode::IAPDPrefix,
-            Unknown(UnknownOption { code, .. }) => OptionCode::Unknown(*code),
-        }
     }
 }
 
