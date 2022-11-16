@@ -9,6 +9,7 @@ use crate::{
     v4::{fqdn, relay},
 };
 
+use ipnet::Ipv4Net;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use trust_dns_proto::{
@@ -374,6 +375,8 @@ pub enum OptionCode {
     SubnetSelection,
     /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
     DomainSearch,
+    /// 121 Classless Static Route - <https://www.rfc-editor.org/rfc/rfc3442>
+    ClasslessStaticRoute,
     /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
     StatusCode,
     /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
@@ -480,6 +483,7 @@ impl From<u8> for OptionCode {
             114 => CaptivePortal,
             118 => SubnetSelection,
             119 => DomainSearch,
+            121 => ClasslessStaticRoute,
             151 => StatusCode,
             152 => BaseTime,
             153 => StartTimeOfState,
@@ -568,6 +572,7 @@ impl From<OptionCode> for u8 {
             CaptivePortal => 114,
             SubnetSelection => 118,
             DomainSearch => 119,
+            ClasslessStaticRoute => 121,
             StatusCode => 151,
             BaseTime => 152,
             StartTimeOfState => 153,
@@ -731,6 +736,8 @@ pub enum DhcpOption {
     SubnetSelection(Ipv4Addr),
     /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
     DomainSearch(Vec<Domain>),
+    /// 121 Classless Static Route - <https://www.rfc-editor.org/rfc/rfc3442>
+    ClasslessStaticRoute(Vec<(Ipv4Net, Ipv4Addr)>),
     /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
     BulkLeaseQueryStatusCode(bulk_query::Code, String),
     /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
@@ -1013,6 +1020,34 @@ fn decode_inner(
             let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize - 3)?);
             let name = Name::read(&mut name_decoder)?;
             ClientFQDN(flags, rcode1, rcode2, Domain(name))
+        }
+        OptionCode::ClasslessStaticRoute => {
+            let mut routes = Vec::new();
+            let mut read = 0;
+
+            // Min size for a route is 5 bytes (len of 0 + gw)
+            while len - read >= 5 {
+                let prefix_len = decoder.read_u8()?;
+                if prefix_len > 32 {
+                    break;
+                }
+
+                // Significant bytes to hold the prefix
+                let sig_bytes = (prefix_len as usize + 7) / 8;
+
+                let mut dest = [0u8; 4];
+                dest[0..sig_bytes].clone_from_slice(decoder.read_slice(sig_bytes)?);
+
+                let dest = Ipv4Net::new(dest.into(), prefix_len).unwrap();
+                let gw = decoder.read_ipv4(4)?;
+
+                routes.push((dest, gw));
+                read += sig_bytes + 5;
+            }
+
+            debug_assert_eq!(len, read);
+
+            ClasslessStaticRoute(routes)
         }
         OptionCode::End => End,
         // not yet implemented
@@ -1368,6 +1403,36 @@ impl Encodable for DhcpOption {
                 }
                 encode_long_opt_bytes(code, &buf, e)?;
             }
+            ClasslessStaticRoute(routes) => {
+                let mut to_write = Vec::new();
+                let mut size = 0usize;
+
+                let mut write =
+                    |to_write: &mut Vec<(u8, &Ipv4Net, &Ipv4Addr)>, size| -> EncodeResult<()> {
+                        e.write_u8(code.into())?;
+                        e.write_u8(size as u8)?;
+                        for (len, dest, gw) in to_write.drain(..) {
+                            e.write_u8(dest.prefix_len())?;
+                            e.write_slice(&dest.addr().octets()[0..len as usize])?;
+                            e.write(gw.octets())?;
+                        }
+                        Ok(())
+                    };
+
+                for (dest, gw) in routes {
+                    let byte_len = (dest.prefix_len() + 7) / 8;
+                    if size + byte_len as usize + 5 > u8::MAX as usize {
+                        write(&mut to_write, size)?;
+                        size = 0;
+                    }
+                    to_write.push((byte_len, dest, gw));
+                    size += byte_len as usize + 5;
+                }
+
+                if size > 0 {
+                    write(&mut to_write, size)?;
+                }
+            }
             // not yet implemented
             Unknown(opt) => {
                 encode_long_opt_bytes(code, &opt.data, e)?;
@@ -1458,6 +1523,7 @@ impl From<&DhcpOption> for OptionCode {
             BulkLeaseQueryQueryEndTime(_) => OptionCode::QueryEndTime,
             BulkLeaseQueryDhcpState(_) => OptionCode::DhcpState,
             BulkLeaseQueryDataSource(_) => OptionCode::DataSource,
+            ClasslessStaticRoute(_) => OptionCode::ClasslessStaticRoute,
             End => OptionCode::End,
             // TODO: implement more
             Unknown(n) => OptionCode::Unknown(n.code),
@@ -1849,6 +1915,23 @@ mod tests {
                 Ipv4Addr::new(127, 0, 0, 2),
             ]),
             vec![65, 8, 127, 0, 0, 1, 127, 0, 0, 2],
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_classless_static_route() -> Result<()> {
+        test_opt(
+            DhcpOption::ClasslessStaticRoute(vec![
+                ("10.0.0.0/8".parse()?, "192.168.1.1".parse()?),
+                ("172.16.0.0/24".parse()?, "192.168.1.1".parse()?),
+            ]),
+            vec![
+                121, 14, // Option & length
+                8, 10, 192, 168, 1, 1, // 10.0.0.0/8 -> 192.168.1.1
+                24, 172, 16, 0, 192, 168, 1, 1, // 172.16.0.0/24 -> 192.168.1.1
+            ],
         )?;
 
         Ok(())
