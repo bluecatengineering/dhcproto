@@ -352,6 +352,10 @@ pub enum OptionCode {
     ClientIdentifier,
     /// 65 NIS-Server-Addr
     NISServerAddr,
+    /// 66 TFTP Server Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
+    TFTPServerName,
+    /// 67 Bootfile Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
+    BootfileName,
     /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
     RapidCommit,
     /// 81 FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>
@@ -374,6 +378,8 @@ pub enum OptionCode {
     SubnetSelection,
     /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
     DomainSearch,
+    /// 150 TFTP Server Adress - <https://www.rfc-editor.org/rfc/rfc5859.html>
+    TFTPServerAdress,
     /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
     StatusCode,
     /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
@@ -557,6 +563,8 @@ impl From<OptionCode> for u8 {
             ClassIdentifier => 60,
             ClientIdentifier => 61,
             NISServerAddr => 65,
+            TFTPServerName => 66,
+            BootfileName => 67,
             RapidCommit => 80,
             ClientFQDN => 81,
             RelayAgentInformation => 82,
@@ -568,6 +576,7 @@ impl From<OptionCode> for u8 {
             CaptivePortal => 114,
             SubnetSelection => 118,
             DomainSearch => 119,
+            TFTPServerAdress => 150,
             StatusCode => 151,
             BaseTime => 152,
             StartTimeOfState => 153,
@@ -709,6 +718,10 @@ pub enum DhcpOption {
     ClientIdentifier(Vec<u8>),
     /// 65 NIS-Server-Addr
     NISServerAddr(Vec<Ipv4Addr>),
+    /// 66 TFTP Server Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
+    TFTPServerName(String),
+    /// 67 Bootfile Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
+    BootfileName(String),
     /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
     RapidCommit,
     /// 81 FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>
@@ -731,6 +744,8 @@ pub enum DhcpOption {
     SubnetSelection(Ipv4Addr),
     /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
     DomainSearch(Vec<Domain>),
+    /// 150 TFTP Server Adress - <https://www.rfc-editor.org/rfc/rfc5859.html>
+    TFTPServerAdress(Ipv4Addr),
     /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
     BulkLeaseQueryStatusCode(bulk_query::Code, String),
     /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
@@ -880,6 +895,9 @@ fn decode_inner(
     use DhcpOption::*;
     Ok(match code {
         OptionCode::Pad => Pad,
+        OptionCode::BootfileName => BootfileName(decoder.read_string(len)?),
+        OptionCode::TFTPServerName => TFTPServerName(decoder.read_string(len)?),
+        OptionCode::TFTPServerAdress => TFTPServerAdress(decoder.read_ipv4(len)?),
         OptionCode::SubnetMask => SubnetMask(decoder.read_ipv4(len)?),
         OptionCode::TimeOffset => TimeOffset(decoder.read_i32()?),
         OptionCode::Router => Router(decoder.read_ipv4s(len)?),
@@ -1199,7 +1217,8 @@ impl Encodable for DhcpOption {
             | RouterSolicitationAddr(addr)
             | RequestedIpAddress(addr)
             | ServerIdentifier(addr)
-            | SubnetSelection(addr) => {
+            | SubnetSelection(addr)
+            | TFTPServerAdress(addr) => {
                 e.write_u8(code.into())?;
                 e.write_u8(4)?;
                 e.write_u32((*addr).into())?
@@ -1235,7 +1254,7 @@ impl Encodable for DhcpOption {
                 // }
             }
             Hostname(s) | MeritDumpFile(s) | DomainName(s) | ExtensionsPath(s) | NISDomain(s)
-            | RootPath(s) | NetBiosScope(s) | Message(s) => {
+            | RootPath(s) | NetBiosScope(s) | Message(s) | TFTPServerName(s) | BootfileName(s) => {
                 encode_long_opt_bytes(code, s.as_bytes(), e)?;
             }
             BootFileSize(num) | MaxDatagramSize(num) | InterfaceMtu(num) | MaxMessageSize(num) => {
@@ -1382,6 +1401,9 @@ impl From<&DhcpOption> for OptionCode {
         use DhcpOption::*;
         match opt {
             Pad => OptionCode::Pad,
+            TFTPServerAdress(_) => OptionCode::TFTPServerAdress,
+            TFTPServerName(_) => OptionCode::TFTPServerName,
+            BootfileName(_) => OptionCode::BootfileName,
             SubnetMask(_) => OptionCode::SubnetMask,
             TimeOffset(_) => OptionCode::TimeOffset,
             Router(_) => OptionCode::Router,
