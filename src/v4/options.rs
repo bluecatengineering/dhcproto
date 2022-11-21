@@ -1023,29 +1023,21 @@ fn decode_inner(
         }
         OptionCode::ClasslessStaticRoute => {
             let mut routes = Vec::new();
-            let mut read = 0;
 
-            // Min size for a route is 5 bytes (len of 0 + gw)
-            while len - read >= 5 {
-                let prefix_len = decoder.read_u8()?;
-                if prefix_len > 32 {
-                    break;
-                }
-
+            let mut route_dec = Decoder::new(decoder.read_slice(len)?);
+            while let Ok(prefix_len) = route_dec.read_u8() {
+                debug_assert!(prefix_len <= 32);
                 // Significant bytes to hold the prefix
                 let sig_bytes = (prefix_len as usize + 7) / 8;
 
                 let mut dest = [0u8; 4];
-                dest[0..sig_bytes].clone_from_slice(decoder.read_slice(sig_bytes)?);
+                dest[0..sig_bytes].clone_from_slice(route_dec.read_slice(sig_bytes)?);
 
                 let dest = Ipv4Net::new(dest.into(), prefix_len).unwrap();
-                let gw = decoder.read_ipv4(4)?;
+                let gw = route_dec.read_ipv4(4)?;
 
                 routes.push((dest, gw));
-                read += sig_bytes + 5;
             }
-
-            debug_assert_eq!(len, read);
 
             ClasslessStaticRoute(routes)
         }
@@ -1404,34 +1396,16 @@ impl Encodable for DhcpOption {
                 encode_long_opt_bytes(code, &buf, e)?;
             }
             ClasslessStaticRoute(routes) => {
-                let mut to_write = Vec::new();
-                let mut size = 0usize;
-
-                let mut write =
-                    |to_write: &mut Vec<(u8, &Ipv4Net, &Ipv4Addr)>, size| -> EncodeResult<()> {
-                        e.write_u8(code.into())?;
-                        e.write_u8(size as u8)?;
-                        for (len, dest, gw) in to_write.drain(..) {
-                            e.write_u8(dest.prefix_len())?;
-                            e.write_slice(&dest.addr().octets()[0..len as usize])?;
-                            e.write(gw.octets())?;
-                        }
-                        Ok(())
-                    };
-
+                let mut buf = Vec::new();
+                let mut route_enc = Encoder::new(&mut buf);
                 for (dest, gw) in routes {
                     let byte_len = (dest.prefix_len() + 7) / 8;
-                    if size + byte_len as usize + 5 > u8::MAX as usize {
-                        write(&mut to_write, size)?;
-                        size = 0;
-                    }
-                    to_write.push((byte_len, dest, gw));
-                    size += byte_len as usize + 5;
+                    route_enc.write_u8(dest.prefix_len())?;
+                    route_enc.write_slice(&dest.addr().octets()[0..byte_len as usize])?;
+                    route_enc.write(gw.octets())?;
                 }
 
-                if size > 0 {
-                    write(&mut to_write, size)?;
-                }
+                encode_long_opt_bytes(code, &buf, e)?;
             }
             // not yet implemented
             Unknown(opt) => {
@@ -1933,6 +1907,31 @@ mod tests {
                 24, 172, 16, 0, 192, 168, 1, 1, // 172.16.0.0/24 -> 192.168.1.1
             ],
         )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_classless_static_route_long_opt() -> Result<()> {
+        let buf = vec![
+            121, 14, // Option & length
+            8, 10, 192, 168, 1, 1, // 10.0.0.0/8 -> 192.168.1.1
+            24, 172, 16, 0, 192, 168, 1, 1, // 172.16.0.0/24 -> 192.168.1.1
+            121, 14, // Option & length
+            8, 10, 192, 168, 1, 1, // 10.0.0.0/8 -> 192.168.1.1
+            24, 172, 16, 0, 192, 168, 1, 1, // 172.16.0.0/24 -> 192.168.1.1
+        ];
+        let mut dec = Decoder::new(&buf);
+        let opt = DhcpOption::decode(&mut dec)?;
+        assert_eq!(
+            DhcpOption::ClasslessStaticRoute(vec![
+                ("10.0.0.0/8".parse()?, "192.168.1.1".parse()?),
+                ("172.16.0.0/24".parse()?, "192.168.1.1".parse()?),
+                ("10.0.0.0/8".parse()?, "192.168.1.1".parse()?),
+                ("172.16.0.0/24".parse()?, "192.168.1.1".parse()?),
+            ]),
+            opt
+        );
 
         Ok(())
     }
