@@ -9,13 +9,6 @@ pub type DecodeResult<T> = Result<T, DecodeError>;
 /// Returned from types that decode
 #[derive(Error, Debug)]
 pub enum DecodeError {
-    /// encountered end of buffer
-    #[error("decoder ran out of bytes to read on byte {index}")]
-    EndOfBuffer {
-        /// index in buffer
-        index: usize,
-    },
-
     /// add overflow
     #[error("decoder checked_add failed")]
     AddOverflow,
