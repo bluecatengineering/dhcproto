@@ -8,7 +8,6 @@ use crate::{
     v4::bulk_query,
     v4::{fqdn, relay},
 };
-
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use trust_dns_proto::{
@@ -17,7 +16,97 @@ use trust_dns_proto::{
 };
 
 /// Options for DHCP. This implemention of options ignores PAD bytes.
-///
+
+/// implements step 1-7 given sets of
+/// {numeric_code, TypeName, "extra doc comment", (DataType)[optional] }
+macros::declare_codes!(
+    {0, Pad, "Padding"},
+    {1,  SubnetMask, "Subnet Mask", (Ipv4Addr)},
+    {2,  TimeOffset, "Time Offset", (i32)},
+    {3,  Router, "Router", (Vec<Ipv4Addr>)},
+    {4,  TimeServer, "Router", (Vec<Ipv4Addr>)},
+    {5,  NameServer, "Name Server", (Vec<Ipv4Addr>)},
+    {6,  DomainNameServer, "Name Server", (Vec<Ipv4Addr>)},
+    {7,  LogServer, "Log Server", (Vec<Ipv4Addr>)},
+    {8,  QuoteServer, "Quote Server", (Vec<Ipv4Addr>)},
+    {9,  LprServer, "LPR Server", (Vec<Ipv4Addr>)},
+    {10,  ImpressServer, "Impress server", (Vec<Ipv4Addr>)},
+    {11,  ResourceLocationServer, "Resource Location Server", (Vec<Ipv4Addr>)},
+    {12,  Hostname, "Host name", (String)},
+    {13,  BootFileSize, "Boot file size", (u16)},
+    {14,  MeritDumpFile, "Merit Dump File", (String)},
+    {15,  DomainName, "Domain Name", (String)},
+    {16,  SwapServer, "Swap server", (Ipv4Addr)},
+    {17,  RootPath, "Root Path", (String)},
+    {18,  ExtensionsPath, "Extensions path", (String)},
+    {19,  IpForwarding, "IP forwarding", (bool)},
+    {20,  NonLocalSrcRouting, "Non-local source routing", (bool)},
+     // TODO: Policy filter is a varlen 8 bit ipv4 / 32-bit subnetmask
+     // need to think of a good way to represent this Vec<(Ipv4Addr, Ipv4Addr)>?
+     // can it be changed into Ipv4Net and a prefix mask field?
+     //{21,  // PolicyFilter, "Policy Filter", (Vec<Ipv4Net>)},
+    {22,  MaxDatagramSize, "Max Datagram reassembly size", (u16)},
+    {23,  DefaultIpTtl, "Ip TTL", (u8)},
+    {26,  InterfaceMtu, "Interface MTU", (u16)},
+    {27,  AllSubnetsLocal, "All Subnets Local", (bool)},
+    {28,  BroadcastAddr, "Broadcast address", (Ipv4Addr)},
+    {29,  PerformMaskDiscovery, "Perform mask discovery", (bool)},
+    {30,  MaskSupplier, "Mask supplier", (bool)},
+    {31,  PerformRouterDiscovery, "Perform router discovery", (bool)},
+    {32,  RouterSolicitationAddr, "Router solicitation address", (Ipv4Addr)},
+    {33,  StaticRoutingTable, "Static routing table", (Vec<(Ipv4Addr, Ipv4Addr)>)},
+    {35,  ArpCacheTimeout, "ARP timeout", (u32)},
+    {36,  EthernetEncapsulation, "Ethernet encapsulation", (bool)},
+    {37,  DefaultTcpTtl, "Default TCP TTL", (u8)},
+    {38,  TcpKeepaliveInterval, "TCP keepalive interval", (u32)},
+    {39,  TcpKeepaliveGarbage, "TCP keealive garbage", (bool)},
+    {40,  NISDomain, "Network information service domain", (String)},
+    {41,  NIS, "Network infomration servers", (Vec<Ipv4Addr>)},
+    {42,  NTPServers, "NTP servers", (Vec<Ipv4Addr>)},
+    {43,  VendorExtensions, "Vendor Extensions", (Vec<u8>)},
+    {44,  NetBiosNameServers, "NetBIOS over TCP/IP name server", (Vec<Ipv4Addr>)},
+    {45,  NetBiosDatagramDistributionServer, "NetBIOS over TCP/IP Datagram Distribution Server", (Vec<Ipv4Addr>)},
+    {46,  NetBiosNodeType, "NetBIOS over TCP/IP Node Type", (NodeType)},
+    {47,  NetBiosScope, "NetBIOS over TCP/IP Scope", (String)},
+    {48,  XFontServer, "X Window System Font Server", (Vec<Ipv4Addr>)},
+    //changed!
+    {49, XDisplayManager, "Window System Display Manager", (Vec<Ipv4Addr>)},
+    {50,  RequestedIpAddress, "Requested IP Address", (Ipv4Addr)},
+    {51,  AddressLeaseTime, "IP Address Lease Time", (u32)},
+    {52,  OptionOverload, "Option Overload", (u8)},
+    {53,  MessageType, "Message Type", (MessageType)},
+    {54,  ServerIdentifier, "Server Identifier", (Ipv4Addr)},
+    {55,  ParameterRequestList, "Parameter Request List", (Vec<OptionCode>)},
+    {56,  Message, "Message", (String)},
+    {57,  MaxMessageSize, "Maximum DHCP Message Size", (u16)},
+    {58,  Renewal, "Renewal (T1) Time Value", (u32)},
+    {59,  Rebinding, "Rebinding (T2) Time Value", (u32)},
+    {60,  ClassIdentifier, "Class-identifier", (Vec<u8>)},
+    {61,  ClientIdentifier, "Client Identifier", (Vec<u8>)},
+    {65,  NISServerAddr, "NIS-Server-Addr", (Vec<Ipv4Addr>)},
+    {66,  TFTPServerName, "TFTP Server Name - <https://www.rfc-editor.org/rfc/rfc2132.html>", (String)},
+    {67,  BootfileName, "Bootfile Name - <https://www.rfc-editor.org/rfc/rfc2132.html>", (String)},
+    {80, RapidCommit, "Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>"},
+    {81,  ClientFQDN, "FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>", (fqdn::FqdnFlags, u8, u8, Domain)},
+    {82,  RelayAgentInformation, "Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>", (relay::RelayAgentInformation)},
+    {91,  ClientLastTransactionTime, "client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>", (u32)},
+    {92,  AssociatedIp, "associated-ip - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>", (Vec<Ipv4Addr>)},
+    {93,  ClientSystemArchitecture, "Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>", (Architecture)},
+    {94,  ClientNetworkInterface, "Client Network Interface - <https://www.rfc-editor.org/rfc/rfc4578.html>", (u8, u8, u8)},
+    {97,  ClientMachineIdentifier, "Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>", (Vec<u8>)},
+    {114,  CaptivePortal, "Captive Portal - <https://datatracker.ietf.org/doc/html/rfc8910>", (url::Url)},
+    {118,  SubnetSelection, "Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>", (Ipv4Addr)},
+    {119,  DomainSearch, "Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>", (Vec<Domain>)},
+    {150,  TFTPServerAdress, "TFTP Server Adress - <https://www.rfc-editor.org/rfc/rfc5859.html>", (Ipv4Addr)},
+    {151,  BulkLeaseQueryStatusCode, "status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>", (bulk_query::Code, String)},
+    {152,  BulkLeaseQueryBaseTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>", (u32)},
+    {153,  BulkLeasQueryStartTimeOfState, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.4>", (u32)},
+    {154,  BulkLeaseQueryQueryStartTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.5>", (u32)},
+    {155,  BulkLeaseQueryQueryEndTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.6>", (u32)},
+    {156,  BulkLeaseQueryDhcpState, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.7>", (bulk_query::QueryState)},
+    {157,  BulkLeaseQueryDataSource, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>", (bulk_query::DataSourceFlags)},
+    {255, End, "end-of-list marker"}
+);
 /// ex
 /// ```rust
 /// use dhcproto::v4;
@@ -43,19 +132,19 @@ pub struct DhcpOptions(HashMap<OptionCode, DhcpOption>);
 impl DhcpOptions {
     /// Create new [`DhcpOptions`]
     ///
-    /// [`DhcpOptions`]: crate::v4::DhcpOptions
+    /// [`DhcpOptions`]: DhcpOptions
     pub fn new() -> Self {
         Self::default()
     }
     /// Get the data for a particular [`OptionCode`]
     ///
-    /// [`OptionCode`]: crate::v4::OptionCode
+    /// [`OptionCode`]: OptionCode
     pub fn get(&self, code: OptionCode) -> Option<&DhcpOption> {
         self.0.get(&code)
     }
     /// Get the mutable data for a particular [`OptionCode`]
     ///
-    /// [`OptionCode`]: crate::v4::OptionCode
+    /// [`OptionCode`]: OptionCode
     pub fn get_mut(&mut self, code: OptionCode) -> Option<&mut DhcpOption> {
         self.0.get_mut(&code)
     }
@@ -70,7 +159,7 @@ impl DhcpOptions {
     /// let mut opts = DhcpOptions::new();
     /// opts.insert(DhcpOption::MessageType(MessageType::Discover));
     /// ```
-    /// [`DhcpOption`]: crate::v4::DhcpOption
+    /// [`DhcpOption`]: DhcpOption
     pub fn insert(&mut self, opt: DhcpOption) -> Option<DhcpOption> {
         self.0.insert((&opt).into(), opt)
     }
@@ -230,176 +319,6 @@ impl Encodable for DhcpOptions {
     }
 }
 
-/// Each option type is represented by an 8-bit code
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
-pub enum OptionCode {
-    /// 0 Padding
-    Pad,
-    /// 1 Subnet Mask
-    SubnetMask,
-    /// 2 Time Offset
-    TimeOffset,
-    /// 3 Router
-    Router,
-    /// 4 Router
-    TimeServer,
-    /// 5 Name Server
-    NameServer,
-    /// 6 Name Server
-    DomainNameServer,
-    /// 7 Log Server
-    LogServer,
-    /// 8 Quote Server
-    QuoteServer,
-    /// 9 LPR Server
-    LprServer,
-    /// 10 Impress server
-    ImpressServer,
-    /// 11 Resource Location Server
-    ResourceLocationServer,
-    /// 12 Host name
-    Hostname,
-    /// 13 Boot file size
-    BootFileSize,
-    /// 14 Merit Dump File
-    MeritDumpFile,
-    /// 15 Domain Name
-    DomainName,
-    /// 16 Swap server
-    SwapServer,
-    /// 17 Root Path
-    RootPath,
-    /// 18 Extensions path
-    ExtensionsPath,
-    /// 19 IP forwarding
-    IpForwarding,
-    /// 20 Non-local source routing
-    NonLocalSrcRouting,
-    /// 22 Max Datagram reassembly size
-    MaxDatagramSize,
-    /// 23 Ip TTL
-    DefaultIpTtl,
-    /// 26 Interface MTU
-    InterfaceMtu,
-    /// 27 All Subnets Local
-    AllSubnetsLocal,
-    /// 28 Broadcast address
-    BroadcastAddr,
-    /// 29 Perform mask discovery
-    PerformMaskDiscovery,
-    /// 30 Mask supplier
-    MaskSupplier,
-    /// 31 Perform router discovery
-    PerformRouterDiscovery,
-    /// 32 Router solicitation address
-    RouterSolicitationAddr,
-    /// 33 Static routing table
-    StaticRoutingTable,
-    /// 35 ARP timeout
-    ArpCacheTimeout,
-    /// 36 Ethernet encapsulation
-    EthernetEncapsulation,
-    /// 37 Default TCP TTL
-    DefaultTcpTtl,
-    /// 38 TCP keepalive interval
-    TcpKeepaliveInterval,
-    /// 39 TCP keealive garbage
-    TcpKeepaliveGarbage,
-    /// 40 Network information service domain
-    NISDomain,
-    /// 41 Network infomration servers
-    NIS,
-    /// 42 NTP servers
-    NTPServers,
-    /// 43 Vendor Extensions
-    VendorExtensions,
-    /// 44 NetBIOS over TCP/IP name server
-    NetBiosNameServers,
-    /// 45 NetBIOS over TCP/IP Datagram Distribution Server
-    NetBiosDatagramDistributionServer,
-    /// 46 NetBIOS over TCP/IP Node Type
-    NetBiosNodeType,
-    /// 47 NetBIOS over TCP/IP Scope
-    NetBiosScope,
-    /// 48 X Window System Font Server
-    XFontServer,
-    /// 49 Window System Display Manager
-    XDisplayManager,
-    /// 50 Requested IP Address
-    RequestedIpAddress,
-    /// 51 IP Address Lease Time
-    AddressLeaseTime,
-    /// 52 Option Overload
-    OptionOverload,
-    /// 53 Message Type
-    MessageType,
-    /// 54 Server Identifier
-    ServerIdentifier,
-    /// 55 Parameter Request List
-    ParameterRequestList,
-    /// 56 Message
-    Message,
-    /// 57 Maximum DHCP Message Size
-    MaxMessageSize,
-    /// 58 Renewal (T1) Time Value
-    Renewal,
-    /// 59 Rebinding (T2) Time Value
-    Rebinding,
-    /// 60 Class-identifier
-    ClassIdentifier,
-    /// 61 Client Identifier
-    ClientIdentifier,
-    /// 65 NIS-Server-Addr
-    NISServerAddr,
-    /// 66 TFTP Server Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
-    TFTPServerName,
-    /// 67 Bootfile Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
-    BootfileName,
-    /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
-    RapidCommit,
-    /// 81 FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>
-    ClientFQDN,
-    /// 82 Relay Agent Information
-    RelayAgentInformation,
-    /// 91 client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
-    ClientLastTransactionTime,
-    /// 92 associated-ip - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
-    AssociatedIp,
-    /// 93 Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>
-    ClientSystemArchitecture,
-    /// 94 Client Network Interface - <https://www.rfc-editor.org/rfc/rfc4578.html>
-    ClientNetworkInterface,
-    /// 97 Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>
-    ClientMachineIdentifier,
-    /// 114 Captive portal - <https://datatracker.ietf.org/doc/html/rfc8910>
-    CaptivePortal,
-    /// 118 Subnet option - <https://datatracker.ietf.org/doc/html/rfc3011>
-    SubnetSelection,
-    /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
-    DomainSearch,
-    /// 150 TFTP Server Adress - <https://www.rfc-editor.org/rfc/rfc5859.html>
-    TFTPServerAdress,
-    /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
-    StatusCode,
-    /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
-    BaseTime,
-    /// 153 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.4>
-    StartTimeOfState,
-    /// 154 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.5>
-    QueryStartTime,
-    /// 155 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.6>
-    QueryEndTime,
-    /// 156 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.7>
-    DhcpState,
-    /// 157 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>
-    DataSource,
-    /// Unknown option
-    Unknown(u8),
-    /// 255 End
-    End,
-}
-
 impl PartialOrd for OptionCode {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
@@ -410,360 +329,6 @@ impl Ord for OptionCode {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         u8::from(*self).cmp(&u8::from(*other))
     }
-}
-
-impl From<u8> for OptionCode {
-    fn from(n: u8) -> Self {
-        use OptionCode::*;
-        match n {
-            0 => Pad,
-            1 => SubnetMask,
-            2 => TimeOffset,
-            3 => Router,
-            4 => TimeServer,
-            5 => NameServer,
-            6 => DomainNameServer,
-            7 => LogServer,
-            8 => QuoteServer,
-            9 => LprServer,
-            10 => ImpressServer,
-            11 => ResourceLocationServer,
-            12 => Hostname,
-            13 => BootFileSize,
-            14 => MeritDumpFile,
-            15 => DomainName,
-            16 => SwapServer,
-            17 => RootPath,
-            18 => ExtensionsPath,
-            19 => IpForwarding,
-            20 => NonLocalSrcRouting,
-            22 => MaxDatagramSize,
-            23 => DefaultIpTtl,
-            26 => InterfaceMtu,
-            27 => AllSubnetsLocal,
-            28 => BroadcastAddr,
-            29 => PerformMaskDiscovery,
-            30 => MaskSupplier,
-            31 => PerformRouterDiscovery,
-            32 => RouterSolicitationAddr,
-            33 => StaticRoutingTable,
-            35 => ArpCacheTimeout,
-            36 => EthernetEncapsulation,
-            37 => DefaultTcpTtl,
-            38 => TcpKeepaliveInterval,
-            39 => TcpKeepaliveGarbage,
-            40 => NISDomain,
-            41 => NIS,
-            42 => NTPServers,
-            43 => VendorExtensions,
-            44 => NetBiosNameServers,
-            45 => NetBiosDatagramDistributionServer,
-            46 => NetBiosNodeType,
-            47 => NetBiosScope,
-            48 => XFontServer,
-            49 => XDisplayManager,
-            50 => RequestedIpAddress,
-            51 => AddressLeaseTime,
-            52 => OptionOverload,
-            53 => MessageType,
-            54 => ServerIdentifier,
-            55 => ParameterRequestList,
-            56 => Message,
-            57 => MaxMessageSize,
-            58 => Renewal,
-            59 => Rebinding,
-            60 => ClassIdentifier,
-            61 => ClientIdentifier,
-            65 => NISServerAddr,
-            80 => RapidCommit,
-            81 => ClientFQDN,
-            82 => RelayAgentInformation,
-            91 => ClientLastTransactionTime,
-            92 => AssociatedIp,
-            93 => ClientSystemArchitecture,
-            94 => ClientNetworkInterface,
-            97 => ClientMachineIdentifier,
-            114 => CaptivePortal,
-            118 => SubnetSelection,
-            119 => DomainSearch,
-            151 => StatusCode,
-            152 => BaseTime,
-            153 => StartTimeOfState,
-            154 => QueryStartTime,
-            155 => QueryEndTime,
-            156 => DhcpState,
-            157 => DataSource,
-            255 => End,
-            // TODO: implement more
-            n => Unknown(n),
-        }
-    }
-}
-
-impl From<OptionCode> for u8 {
-    fn from(opt: OptionCode) -> Self {
-        use OptionCode::*;
-        match opt {
-            Pad => 0,
-            SubnetMask => 1,
-            TimeOffset => 2,
-            Router => 3,
-            TimeServer => 4,
-            NameServer => 5,
-            DomainNameServer => 6,
-            LogServer => 7,
-            QuoteServer => 8,
-            LprServer => 9,
-            ImpressServer => 10,
-            ResourceLocationServer => 11,
-            Hostname => 12,
-            BootFileSize => 13,
-            MeritDumpFile => 14,
-            DomainName => 15,
-            SwapServer => 16,
-            RootPath => 17,
-            ExtensionsPath => 18,
-            IpForwarding => 19,
-            NonLocalSrcRouting => 20,
-            MaxDatagramSize => 22,
-            DefaultIpTtl => 23,
-            InterfaceMtu => 26,
-            AllSubnetsLocal => 27,
-            BroadcastAddr => 28,
-            PerformMaskDiscovery => 29,
-            MaskSupplier => 30,
-            PerformRouterDiscovery => 31,
-            RouterSolicitationAddr => 32,
-            StaticRoutingTable => 33,
-            ArpCacheTimeout => 35,
-            EthernetEncapsulation => 36,
-            DefaultTcpTtl => 37,
-            TcpKeepaliveInterval => 38,
-            TcpKeepaliveGarbage => 39,
-            NISDomain => 40,
-            NIS => 41,
-            NTPServers => 42,
-            VendorExtensions => 43,
-            NetBiosNameServers => 44,
-            NetBiosDatagramDistributionServer => 45,
-            NetBiosNodeType => 46,
-            NetBiosScope => 47,
-            XFontServer => 48,
-            XDisplayManager => 49,
-            RequestedIpAddress => 50,
-            AddressLeaseTime => 51,
-            OptionOverload => 52,
-            MessageType => 53,
-            ServerIdentifier => 54,
-            ParameterRequestList => 55,
-            Message => 56,
-            MaxMessageSize => 57,
-            Renewal => 58,
-            Rebinding => 59,
-            ClassIdentifier => 60,
-            ClientIdentifier => 61,
-            NISServerAddr => 65,
-            TFTPServerName => 66,
-            BootfileName => 67,
-            RapidCommit => 80,
-            ClientFQDN => 81,
-            RelayAgentInformation => 82,
-            ClientLastTransactionTime => 91,
-            AssociatedIp => 92,
-            ClientSystemArchitecture => 93,
-            ClientNetworkInterface => 94,
-            ClientMachineIdentifier => 97,
-            CaptivePortal => 114,
-            SubnetSelection => 118,
-            DomainSearch => 119,
-            TFTPServerAdress => 150,
-            StatusCode => 151,
-            BaseTime => 152,
-            StartTimeOfState => 153,
-            QueryStartTime => 154,
-            QueryEndTime => 155,
-            DhcpState => 156,
-            DataSource => 157,
-            End => 255,
-            // TODO: implement more
-            Unknown(n) => n,
-        }
-    }
-}
-
-/// DHCP Options
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DhcpOption {
-    /// 0 Padding
-    Pad,
-    /// 1 Subnet Mask
-    SubnetMask(Ipv4Addr),
-    /// 2 Time Offset
-    TimeOffset(i32),
-    /// 3 Router
-    Router(Vec<Ipv4Addr>),
-    /// 4 Router
-    TimeServer(Vec<Ipv4Addr>),
-    /// 5 Name Server
-    NameServer(Vec<Ipv4Addr>),
-    /// 6 Name Server
-    DomainNameServer(Vec<Ipv4Addr>),
-    /// 7 Log Server
-    LogServer(Vec<Ipv4Addr>),
-    /// 8 Quote Server
-    QuoteServer(Vec<Ipv4Addr>),
-    /// 9 LPR Server
-    LprServer(Vec<Ipv4Addr>),
-    /// 10 Impress server
-    ImpressServer(Vec<Ipv4Addr>),
-    /// 11 Resource Location Server
-    ResourceLocationServer(Vec<Ipv4Addr>),
-    /// 12 Host name
-    Hostname(String),
-    /// 13 Boot file size
-    BootFileSize(u16),
-    /// 14 Merit Dump File
-    MeritDumpFile(String),
-    /// 15 Domain Name
-    DomainName(String),
-    /// 16 Swap server
-    SwapServer(Ipv4Addr),
-    /// 17 Root Path
-    RootPath(String),
-    /// 18 Extensions path
-    ExtensionsPath(String),
-    /// 19 IP forwarding
-    IpForwarding(bool),
-    /// 20 Non-local source routing
-    NonLocalSrcRouting(bool),
-    // TODO: Policy filter is a varlen 8 bit ipv4 / 32-bit subnetmask
-    // need to think of a good way to represent this Vec<(Ipv4Addr, Ipv4Addr)>?
-    // can it be changed into Ipv4Net and a prefix mask field?
-    // /// 21 Policy Filter
-    // PolicyFilter(Vec<Ipv4Net>),
-    /// 22 Max Datagram reassembly size
-    MaxDatagramSize(u16),
-    /// 23 Ip TTL
-    DefaultIpTtl(u8),
-    /// 26 Interface MTU
-    InterfaceMtu(u16),
-    /// 27 All Subnets Local
-    AllSubnetsLocal(bool),
-    /// 28 Broadcast address
-    BroadcastAddr(Ipv4Addr),
-    /// 29 Perform mask discovery
-    PerformMaskDiscovery(bool),
-    /// 30 Mask supplier
-    MaskSupplier(bool),
-    /// 31 Perform router discovery
-    PerformRouterDiscovery(bool),
-    /// 32 Router solicitation address
-    RouterSolicitationAddr(Ipv4Addr),
-    /// 33 Static routing table
-    StaticRoutingTable(Vec<(Ipv4Addr, Ipv4Addr)>),
-    /// 35 ARP timeout
-    ArpCacheTimeout(u32),
-    /// 36 Ethernet encapsulation
-    EthernetEncapsulation(bool),
-    /// 37 Default TCP TTL
-    DefaultTcpTtl(u8),
-    /// 38 TCP keepalive interval
-    TcpKeepaliveInterval(u32),
-    /// 39 TCP keealive garbage
-    TcpKeepaliveGarbage(bool),
-    /// 40 Network information service domain
-    NISDomain(String),
-    /// 41 Network infomration servers
-    NIS(Vec<Ipv4Addr>),
-    /// 42 NTP servers
-    NTPServers(Vec<Ipv4Addr>),
-    /// 43 Vendor Extensions
-    VendorExtensions(Vec<u8>),
-    /// 44 NetBIOS over TCP/IP name server
-    NetBiosNameServers(Vec<Ipv4Addr>),
-    /// 45 NetBIOS over TCP/IP Datagram Distribution Server
-    NetBiosDatagramDistributionServer(Vec<Ipv4Addr>),
-    /// 46 NetBIOS over TCP/IP Node Type
-    NetBiosNodeType(NodeType),
-    /// 47 NetBIOS over TCP/IP Scope
-    NetBiosScope(String),
-    /// 48 X Window System Font Server
-    XFontServer(Vec<Ipv4Addr>),
-    /// 48X Window System Display Manager
-    XDisplayManager(Vec<Ipv4Addr>),
-    /// 50 Requested IP Address
-    RequestedIpAddress(Ipv4Addr),
-    /// 51 IP Address Lease Time
-    AddressLeaseTime(u32),
-    /// 52 Option Overload
-    OptionOverload(u8),
-    /// 53 Message Type
-    MessageType(MessageType),
-    /// 54 Server Identifier
-    ServerIdentifier(Ipv4Addr),
-    /// 55 Parameter Request List
-    ParameterRequestList(Vec<OptionCode>),
-    /// 56 Message
-    Message(String),
-    /// 57 Maximum DHCP Message Size
-    MaxMessageSize(u16),
-    /// 58 Renewal (T1) Time Value
-    Renewal(u32),
-    /// 59 Rebinding (T2) Time Value
-    Rebinding(u32),
-    /// 60 Class-identifier
-    ClassIdentifier(Vec<u8>),
-    /// 61 Client Identifier
-    ClientIdentifier(Vec<u8>),
-    /// 65 NIS-Server-Addr
-    NISServerAddr(Vec<Ipv4Addr>),
-    /// 66 TFTP Server Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
-    TFTPServerName(String),
-    /// 67 Bootfile Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
-    BootfileName(String),
-    /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
-    RapidCommit,
-    /// 81 FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>
-    ClientFQDN(fqdn::FqdnFlags, u8, u8, Domain),
-    /// 82 Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>
-    RelayAgentInformation(relay::RelayAgentInformation),
-    /// 91 client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
-    ClientLastTransactionTime(u32),
-    /// 92 associated-ip - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
-    AssociatedIp(Vec<Ipv4Addr>),
-    /// 93 Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>
-    ClientSystemArchitecture(Architecture),
-    /// 94 Client Network Interface - <https://www.rfc-editor.org/rfc/rfc4578.html>
-    ClientNetworkInterface(u8, u8, u8),
-    /// 97 Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>
-    ClientMachineIdentifier(Vec<u8>),
-    /// 114 Captive Portal - <https://datatracker.ietf.org/doc/html/rfc8910>
-    CaptivePortal(url::Url),
-    /// 118 Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>
-    SubnetSelection(Ipv4Addr),
-    /// 119 Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>
-    DomainSearch(Vec<Domain>),
-    /// 150 TFTP Server Adress - <https://www.rfc-editor.org/rfc/rfc5859.html>
-    TFTPServerAdress(Ipv4Addr),
-    /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
-    BulkLeaseQueryStatusCode(bulk_query::Code, String),
-    /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
-    BulkLeaseQueryBaseTime(u32),
-    /// 153 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.4>
-    BulkLeasQueryStartTimeOfState(u32),
-    /// 154 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.5>
-    BulkLeaseQueryQueryStartTime(u32),
-    /// 155 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.6>
-    BulkLeaseQueryQueryEndTime(u32),
-    /// 156 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.7>
-    BulkLeaseQueryDhcpState(bulk_query::QueryState),
-    /// 157 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>
-    BulkLeaseQueryDataSource(bulk_query::DataSourceFlags),
-    /// Unknown option
-    Unknown(UnknownOption),
-    /// 255 End
-    End,
 }
 
 impl PartialOrd for DhcpOption {
@@ -996,30 +561,30 @@ fn decode_inner(
 
             DomainSearch(names)
         }
-        OptionCode::StatusCode => {
+        OptionCode::BulkLeaseQueryStatusCode => {
             let code = decoder.read_u8()?.into();
             // len - 1 because code is included in length
             let message = decoder.read_string(len - 1)?;
             BulkLeaseQueryStatusCode(code, message)
         }
-        OptionCode::BaseTime => {
+        OptionCode::BulkLeaseQueryBaseTime => {
             debug_assert!(len == 4);
             BulkLeaseQueryBaseTime(decoder.read_u32()?)
         }
-        OptionCode::StartTimeOfState => {
+        OptionCode::BulkLeasQueryStartTimeOfState => {
             debug_assert!(len == 4);
             BulkLeasQueryStartTimeOfState(decoder.read_u32()?)
         }
-        OptionCode::QueryStartTime => {
+        OptionCode::BulkLeaseQueryQueryStartTime => {
             debug_assert!(len == 4);
             BulkLeaseQueryQueryStartTime(decoder.read_u32()?)
         }
-        OptionCode::QueryEndTime => {
+        OptionCode::BulkLeaseQueryQueryEndTime => {
             debug_assert!(len == 4);
             BulkLeaseQueryQueryEndTime(decoder.read_u32()?)
         }
-        OptionCode::DhcpState => BulkLeaseQueryDhcpState(decoder.read_u8()?.into()),
-        OptionCode::DataSource => {
+        OptionCode::BulkLeaseQueryDhcpState => BulkLeaseQueryDhcpState(decoder.read_u8()?.into()),
+        OptionCode::BulkLeaseQueryDataSource => {
             BulkLeaseQueryDataSource(bulk_query::DataSourceFlags::new(decoder.read_u8()?))
         }
         OptionCode::ClientFQDN => {
@@ -1473,13 +1038,13 @@ impl From<&DhcpOption> for OptionCode {
             CaptivePortal(_) => OptionCode::CaptivePortal,
             SubnetSelection(_) => OptionCode::SubnetSelection,
             DomainSearch(_) => OptionCode::DomainSearch,
-            BulkLeaseQueryStatusCode(_, _) => OptionCode::StatusCode,
-            BulkLeaseQueryBaseTime(_) => OptionCode::BaseTime,
-            BulkLeasQueryStartTimeOfState(_) => OptionCode::StartTimeOfState,
-            BulkLeaseQueryQueryStartTime(_) => OptionCode::QueryStartTime,
-            BulkLeaseQueryQueryEndTime(_) => OptionCode::QueryEndTime,
-            BulkLeaseQueryDhcpState(_) => OptionCode::DhcpState,
-            BulkLeaseQueryDataSource(_) => OptionCode::DataSource,
+            BulkLeaseQueryStatusCode(_, _) => OptionCode::BulkLeaseQueryStatusCode,
+            BulkLeaseQueryBaseTime(_) => OptionCode::BulkLeaseQueryBaseTime,
+            BulkLeasQueryStartTimeOfState(_) => OptionCode::BulkLeasQueryStartTimeOfState,
+            BulkLeaseQueryQueryStartTime(_) => OptionCode::BulkLeaseQueryQueryStartTime,
+            BulkLeaseQueryQueryEndTime(_) => OptionCode::BulkLeaseQueryQueryEndTime,
+            BulkLeaseQueryDhcpState(_) => OptionCode::BulkLeaseQueryDhcpState,
+            BulkLeaseQueryDataSource(_) => OptionCode::BulkLeaseQueryDataSource,
             End => OptionCode::End,
             // TODO: implement more
             Unknown(n) => OptionCode::Unknown(n.code),
