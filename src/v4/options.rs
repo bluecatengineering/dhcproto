@@ -1026,7 +1026,10 @@ fn decode_inner(
 
             let mut route_dec = Decoder::new(decoder.read_slice(len)?);
             while let Ok(prefix_len) = route_dec.read_u8() {
-                debug_assert!(prefix_len <= 32);
+                if prefix_len > 32 {
+                    break;
+                }
+
                 // Significant bytes to hold the prefix
                 let sig_bytes = (prefix_len as usize + 7) / 8;
 
