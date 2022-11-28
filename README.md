@@ -2,6 +2,8 @@
 
 A DHCP parser and encoder for DHCPv4/DHCPv6. `dhcproto` aims to be a functionally complete DHCP implementation. Many common option types are implemented, PRs are welcome to flesh out missing types.
 
+**Attention!** We are developing a DHCP server using this library called [dora](https://github.com/bluecatengineering/dora)!
+
 ## features
 
 - v4 is 100% safe rust (v6 uses `get_unchecked` after bounds have been checked)
