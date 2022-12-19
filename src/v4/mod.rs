@@ -85,7 +85,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod bulk_query;
 mod flags;
-mod fqdn;
+pub mod fqdn;
 mod htype;
 mod opcode;
 mod options;
