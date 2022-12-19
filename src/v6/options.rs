@@ -608,7 +608,7 @@ impl Decodable for DhcpOption {
                 DhcpOption::IAPrefix(IAPrefix::decode(&mut dec)?)
             }
             OptionCode::DomainSearchList => {
-                let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
+                let mut name_decoder = BinDecoder::new(decoder.read_slice(len)?);
                 let mut names = Vec::new();
                 while let Ok(name) = Name::read(&mut name_decoder) {
                     names.push(Domain(name));
