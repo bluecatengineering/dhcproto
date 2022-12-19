@@ -3,9 +3,64 @@ use std::fmt;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+use crate::Domain;
+
+/// A client FQDN
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct ClientFQDN {
+    pub(crate) flags: FqdnFlags,
+    pub(crate) r1: u8,
+    pub(crate) r2: u8,
+    pub(crate) domain: Domain,
+}
+
+impl ClientFQDN {
+    // creates a new client fqdn setting the rcode1/rcode2 fields to 255
+    pub fn new(flags: FqdnFlags, domain: Domain) -> Self {
+        Self {
+            flags,
+            r1: 0xFF,
+            r2: 0xFF,
+            domain,
+        }
+    }
+    pub fn flags(&self) -> FqdnFlags {
+        self.flags
+    }
+    pub fn set_flags(&mut self, flags: FqdnFlags) -> &mut Self {
+        self.flags = flags;
+        self
+    }
+    pub fn r1(&self) -> u8 {
+        self.r1
+    }
+    pub fn set_r1(&mut self, rcode1: u8) -> &mut Self {
+        self.r1 = rcode1;
+        self
+    }
+    pub fn r2(&self) -> u8 {
+        self.r2
+    }
+    pub fn set_r2(&mut self, rcode2: u8) -> &mut Self {
+        self.r2 = rcode2;
+        self
+    }
+    pub fn domain(&self) -> &Domain {
+        &self.domain
+    }
+    pub fn set_domain(&mut self, domain: Domain) -> &mut Self {
+        self.domain = domain;
+        self
+    }
+    pub fn domain_mut(&mut self) -> &mut Domain {
+        &mut self.domain
+    }
+}
+
 /// Represents available flags on message
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Copy, Default, Clone, PartialEq, Eq)]
+#[derive(Copy, Default, Clone, PartialEq, Eq, Hash)]
 pub struct FqdnFlags(u8);
 
 impl fmt::Debug for FqdnFlags {
