@@ -89,11 +89,14 @@ impl FqdnFlags {
     pub fn n(&self) -> bool {
         (self.0 & 0x08) > 0
     }
-    /// set the n bit, whether the server SHOULD NOT perform any DNS updates.
-    /// clients set this to 0 to indicate the server SHOULD update, and 1
-    /// to indicate it SHOULD NOT
-    pub fn set_n(mut self) -> Self {
-        self.0 |= 0x08;
+    /// set the n bit, if true will also set the s bit to false.
+    pub fn set_n(mut self, bit: bool) -> Self {
+        if bit {
+            self.0 |= 0x08; // 1000
+            self.set_s(false);
+        } else {
+            self.0 &= 0x07; // 0111
+        }
         self
     }
     /// get the status of the e flag
@@ -101,8 +104,12 @@ impl FqdnFlags {
         (self.0 & 0x04) > 0
     }
     /// set the e bit
-    pub fn set_e(mut self) -> Self {
-        self.0 |= 0x04;
+    pub fn set_e(mut self, bit: bool) -> Self {
+        if bit {
+            self.0 |= 0x04; // 0100
+        } else {
+            self.0 &= 0x0b; // 1011
+        }
         self
     }
     /// get the status of the o flag
@@ -110,8 +117,12 @@ impl FqdnFlags {
         (self.0 & 0x02) > 0
     }
     /// set the o bit
-    pub fn set_o(mut self) -> Self {
-        self.0 |= 0x02;
+    pub fn set_o(mut self, bit: bool) -> Self {
+        if bit {
+            self.0 |= 0x02; // 0010
+        } else {
+            self.0 &= 0x0d; // 1101
+        }
         self
     }
     /// get the status of the s flag
@@ -119,8 +130,12 @@ impl FqdnFlags {
         (self.0 & 0x01) > 0
     }
     /// set the s bit. Indicates whether the server should perform an A RR update
-    pub fn set_s(mut self) -> Self {
-        self.0 |= 0x01;
+    pub fn set_s(mut self, bit: bool) -> Self {
+        if bit {
+            self.0 |= 0x01; // 0001
+        } else {
+            self.0 &= 0x0e; // 1110
+        }
         self
     }
 }
@@ -144,21 +159,26 @@ mod tests {
     fn test_fqdn_flags() {
         let flag = FqdnFlags::default();
         assert_eq!(flag.0, 0);
-        let flag = flag.set_n();
+        let flag = flag.set_n(true);
         assert!(flag.n());
         assert_eq!(flag.0, 0x08);
+        let flag = flag.set_n(false);
+        assert!(!flag.n());
+        assert_eq!(flag.0, 0x00);
 
-        let flag = FqdnFlags::new(0x40).set_s();
+        let flag = FqdnFlags::new(0x40).set_s(true);
         assert!(!flag.e());
         assert!(flag.s());
         assert!(!flag.n());
         assert!(!flag.o());
         assert_eq!(flag.0, 0x41);
-        let flag = flag.set_e();
+        let flag = flag.set_e(true);
         assert!(flag.e() && flag.s());
 
-        let flag = FqdnFlags::default().set_e();
+        let flag = FqdnFlags::default().set_e(true);
         assert!(flag.e());
         assert_eq!(flag.0, 0x04);
+        let flag = flag.set_s(true);
+        assert_eq!(flag.0, 0x05);
     }
 }

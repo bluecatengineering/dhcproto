@@ -977,7 +977,7 @@ fn decode_inner(
         OptionCode::CaptivePortal => CaptivePortal(decoder.read_str(len)?.parse()?),
         OptionCode::SubnetSelection => SubnetSelection(decoder.read_ipv4(len)?),
         OptionCode::DomainSearch => {
-            let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
+            let mut name_decoder = BinDecoder::new(decoder.read_slice(len)?);
             let mut names = Vec::new();
             while let Ok(name) = Name::read(&mut name_decoder) {
                 names.push(Domain(name));
@@ -1017,7 +1017,7 @@ fn decode_inner(
             let rcode1 = decoder.read_u8()?;
             let rcode2 = decoder.read_u8()?;
 
-            let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize - 3)?);
+            let mut name_decoder = BinDecoder::new(decoder.read_slice(len - 3)?);
             let name = Name::read(&mut name_decoder)?;
             ClientFQDN(fqdn::ClientFQDN {
                 flags,
@@ -1868,7 +1868,7 @@ mod tests {
     fn test_client_fqdn() -> Result<()> {
         test_opt(
             DhcpOption::ClientFQDN(fqdn::ClientFQDN {
-                flags: fqdn::FqdnFlags::default().set_e(),
+                flags: fqdn::FqdnFlags::default().set_e(true),
                 r1: 0,
                 r2: 0,
                 domain: Domain(Name::from_str("www.google.com.").unwrap()),

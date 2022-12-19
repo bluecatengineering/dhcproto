@@ -158,7 +158,7 @@ impl<'a> Decoder<'a> {
         if length % 4 != 0 {
             return Err(DecodeError::NotEnoughBytes);
         }
-        let ips = self.read_slice(length as usize)?;
+        let ips = self.read_slice(length)?;
         Ok(ips
             .chunks(4)
             .map(|bytes| [bytes[0], bytes[1], bytes[2], bytes[3]].into())
@@ -171,7 +171,7 @@ impl<'a> Decoder<'a> {
         if length % 16 != 0 {
             return Err(DecodeError::NotEnoughBytes);
         }
-        let ips = self.read_slice(length as usize)?;
+        let ips = self.read_slice(length)?;
         // type annotations needed below
         Ok(ips
             .chunks(16)
@@ -185,7 +185,7 @@ impl<'a> Decoder<'a> {
         if length % 8 != 0 {
             return Err(DecodeError::NotEnoughBytes);
         }
-        let ips = self.read_slice(length as usize)?;
+        let ips = self.read_slice(length)?;
         Ok(ips
             .chunks(8)
             .map(|bytes| {
