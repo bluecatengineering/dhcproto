@@ -99,6 +99,10 @@ impl FqdnFlags {
         }
         self
     }
+    pub fn set_n_mut(&mut self, bit: bool) -> &mut Self {
+        *self = self.set_n(bit);
+        self
+    }
     /// get the status of the e flag
     pub fn e(&self) -> bool {
         (self.0 & 0x04) > 0
@@ -110,6 +114,10 @@ impl FqdnFlags {
         } else {
             self.0 &= 0x0b; // 1011
         }
+        self
+    }
+    pub fn set_e_mut(&mut self, bit: bool) -> &mut Self {
+        *self = self.set_e(bit);
         self
     }
     /// get the status of the o flag
@@ -125,6 +133,10 @@ impl FqdnFlags {
         }
         self
     }
+    pub fn set_o_mut(&mut self, bit: bool) -> &mut Self {
+        *self = self.set_o(bit);
+        self
+    }
     /// get the status of the s flag
     pub fn s(&self) -> bool {
         (self.0 & 0x01) > 0
@@ -136,6 +148,10 @@ impl FqdnFlags {
         } else {
             self.0 &= 0x0e; // 1110
         }
+        self
+    }
+    pub fn set_s_mut(&mut self, bit: bool) -> &mut Self {
+        *self = self.set_s(bit);
         self
     }
 }
@@ -157,12 +173,12 @@ mod tests {
 
     #[test]
     fn test_fqdn_flags() {
-        let flag = FqdnFlags::default();
+        let mut flag = FqdnFlags::default();
         assert_eq!(flag.0, 0);
-        let flag = flag.set_n(true);
+        flag.set_n_mut(true);
         assert!(flag.n());
         assert_eq!(flag.0, 0x08);
-        let flag = flag.set_n(false);
+        flag.set_n_mut(false);
         assert!(!flag.n());
         assert_eq!(flag.0, 0x00);
 
