@@ -24,7 +24,7 @@ ipnet = "2.5"
 
 [features]
 default = []
-serde = ["dep:serde", "url/serde", "ipnet/serde"]
+serde = ["dep:serde", "url/serde", "ipnet/serde", "trust-dns-proto/serde-config"]
 
 [dev-dependencies]
 criterion = "0.3"

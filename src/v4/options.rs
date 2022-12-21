@@ -1,6 +1,5 @@
 use std::{borrow::Cow, collections::HashMap, iter, net::Ipv4Addr};
 
-use crate::Domain;
 use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
@@ -106,7 +105,7 @@ macros::declare_codes!(
     {97,  ClientMachineIdentifier, "Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>", (Vec<u8>)},
     {114, CaptivePortal, "Captive Portal - <https://datatracker.ietf.org/doc/html/rfc8910>", (url::Url)},
     {118, SubnetSelection, "Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>", (Ipv4Addr)},
-    {119, DomainSearch, "Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>", (Vec<Domain>)},
+    {119, DomainSearch, "Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>", (Vec<Name>)},
     {121, ClasslessStaticRoute, "Classless Static Route - <https://www.rfc-editor.org/rfc/rfc3442>", (Vec<(Ipv4Net, Ipv4Addr)>)},
     {150, TFTPServerAddress, "TFTP Server Address - <https://www.rfc-editor.org/rfc/rfc5859.html>", (Ipv4Addr)},
     {151, BulkLeaseQueryStatusCode, "status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>", (bulk_query::Code, String)},
@@ -566,7 +565,7 @@ fn decode_inner(
             let mut name_decoder = BinDecoder::new(decoder.read_slice(len)?);
             let mut names = Vec::new();
             while let Ok(name) = Name::read(&mut name_decoder) {
-                names.push(Domain(name));
+                names.push(name);
             }
 
             DomainSearch(names)
@@ -610,7 +609,7 @@ fn decode_inner(
                 flags,
                 r1: rcode1,
                 r2: rcode2,
-                domain: Domain(name),
+                domain: name,
             })
         }
         OptionCode::ClasslessStaticRoute => {
@@ -976,7 +975,7 @@ impl Encodable for DhcpOption {
                 let mut buf = Vec::new();
                 let mut name_encoder = BinEncoder::new(&mut buf);
                 for name in names {
-                    name.0.emit(&mut name_encoder)?;
+                    name.emit(&mut name_encoder)?;
                 }
                 encode_long_opt_bytes(code, &buf, e)?;
             }
@@ -992,10 +991,10 @@ impl Encodable for DhcpOption {
                     // emits in canonical format
                     // start encoding at byte 3 because we had some preamble
                     let mut name_encoder = BinEncoder::with_offset(&mut buf, 3, EncodeMode::Normal);
-                    domain.0.emit_as_canonical(&mut name_encoder, true)?;
+                    domain.emit_as_canonical(&mut name_encoder, true)?;
                 } else {
                     // TODO: not sure if this is correct
-                    buf.extend(domain.0.to_ascii().as_bytes());
+                    buf.extend(domain.to_ascii().as_bytes());
                 }
                 encode_long_opt_bytes(code, &buf, e)?;
             }
@@ -1353,8 +1352,8 @@ mod tests {
     fn test_domainsearch() -> Result<()> {
         test_opt(
             DhcpOption::DomainSearch(vec![
-                Domain(Name::from_str("eng.apple.com.").unwrap()),
-                Domain(Name::from_str("marketing.apple.com.").unwrap()),
+                Name::from_str("eng.apple.com.").unwrap(),
+                Name::from_str("marketing.apple.com.").unwrap(),
             ]),
             vec![
                 119, 27, 3, b'e', b'n', b'g', 5, b'a', b'p', b'p', b'l', b'e', 3, b'c', b'o', b'm',
@@ -1372,7 +1371,7 @@ mod tests {
                 flags: fqdn::FqdnFlags::default().set_e(true),
                 r1: 0,
                 r2: 0,
-                domain: Domain(Name::from_str("www.google.com.").unwrap()),
+                domain: Name::from_str("www.google.com.").unwrap(),
             }),
             vec![
                 81, 19, 0x04, 0, 0, 3, b'w', b'w', b'w', 6, b'g', b'o', b'o', b'g', b'l', b'e', 3,
