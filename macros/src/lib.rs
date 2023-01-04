@@ -132,10 +132,44 @@ pub fn declare_codes(input: TokenStream) -> TokenStream {
     "
         .to_owned(),
     ));
+
+    let impl_optioncode_from_dhcpoption_ref = std::iter::once(
+        "
+        impl From<&DhcpOption> for OptionCode {
+            fn from(opt: &DhcpOption) -> Self {
+                use DhcpOption::*;
+                match opt {
+        "
+        .to_owned(),
+    )
+    .chain(entries.iter().map(|e| {
+        let id = &e.id;
+        let var_field = if let Some(data_description) = &e.data_type {
+            // format!("///{id}(_) => ,")
+            std::iter::once("(_")
+                .chain(data_description.stream().into_iter().filter_map(|e| {
+                    if let TokenTree::Punct(p) = e {
+                        (p.as_char() == ',').then_some(",_")
+                    } else {
+                        None
+                    }
+                }))
+                .chain(std::iter::once(")"))
+                .collect()
+        } else {
+            // format!("/// {code} - {description}\n{id},")
+            "".to_owned()
+        };
+        format!("{id}{var_field} => OptionCode::{id},")
+    }))
+    .chain(std::iter::once(
+        "Unknown(n) => OptionCode::Unknown(n.code)}}}".to_owned(),
+    ));
     let output_token_stream_str: TokenStream = enum_impl
         .chain(impl_option_from_u8)
         .chain(impl_u8_from_option)
         .chain(impl_dhcp_option)
+        .chain(impl_optioncode_from_dhcpoption_ref)
         .collect::<String>()
         .parse()
         .unwrap();

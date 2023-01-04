@@ -17,10 +17,19 @@ use trust_dns_proto::{
     serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder, EncodeMode},
 };
 
-/// Options for DHCP. This implemention of options ignores PAD bytes.
-
-/// implements step 1-7 given sets of
-/// {numeric_code, TypeName, "extra doc comment", (DataType)[optional] }
+// declares DHCP Option codes.
+// generates:
+// * the `OptionCode` enum and its From<u8>, Into<u8>
+// * the DhcpOption enum
+// * From<&DhcpOption> for OptionCode
+//
+// Syntax is {N, Name, "DocString" [,(T0,..TN,)]}
+// where:
+// * N is the numeric code associated with this option
+// * Name is the name to use for the enum variants
+// * "Docstring" is the documentation string that will be added to the variant in the OptionCode enum
+// * (T0,..TN) is the associated variables (if any). e.g. Ipv4Addr for "SubnetMask" or bool for "IpForwarding".
+//   can contain more than one type but needs to be enclosed in parenthesis even if it's just a single variable.
 macros::declare_codes!(
     {0, Pad, "Padding"},
     {1,  SubnetMask, "Subnet Mask", (Ipv4Addr)},
@@ -1007,98 +1016,6 @@ impl Encodable for DhcpOption {
             }
         };
         Ok(())
-    }
-}
-
-impl From<&DhcpOption> for OptionCode {
-    fn from(opt: &DhcpOption) -> Self {
-        use DhcpOption::*;
-        match opt {
-            Pad => OptionCode::Pad,
-            TFTPServerAdress(_) => OptionCode::TFTPServerAdress,
-            TFTPServerName(_) => OptionCode::TFTPServerName,
-            BootfileName(_) => OptionCode::BootfileName,
-            SubnetMask(_) => OptionCode::SubnetMask,
-            TimeOffset(_) => OptionCode::TimeOffset,
-            Router(_) => OptionCode::Router,
-            TimeServer(_) => OptionCode::TimeServer,
-            NameServer(_) => OptionCode::NameServer,
-            DomainNameServer(_) => OptionCode::DomainNameServer,
-            LogServer(_) => OptionCode::LogServer,
-            QuoteServer(_) => OptionCode::QuoteServer,
-            LprServer(_) => OptionCode::LprServer,
-            ImpressServer(_) => OptionCode::ImpressServer,
-            ResourceLocationServer(_) => OptionCode::ResourceLocationServer,
-            Hostname(_) => OptionCode::Hostname,
-            BootFileSize(_) => OptionCode::BootFileSize,
-            MeritDumpFile(_) => OptionCode::MeritDumpFile,
-            DomainName(_) => OptionCode::DomainName,
-            SwapServer(_) => OptionCode::SwapServer,
-            RootPath(_) => OptionCode::RootPath,
-            ExtensionsPath(_) => OptionCode::ExtensionsPath,
-            IpForwarding(_) => OptionCode::IpForwarding,
-            NonLocalSrcRouting(_) => OptionCode::NonLocalSrcRouting,
-            MaxDatagramSize(_) => OptionCode::MaxDatagramSize,
-            DefaultIpTtl(_) => OptionCode::DefaultIpTtl,
-            InterfaceMtu(_) => OptionCode::InterfaceMtu,
-            AllSubnetsLocal(_) => OptionCode::AllSubnetsLocal,
-            BroadcastAddr(_) => OptionCode::BroadcastAddr,
-            PerformMaskDiscovery(_) => OptionCode::PerformMaskDiscovery,
-            MaskSupplier(_) => OptionCode::MaskSupplier,
-            PerformRouterDiscovery(_) => OptionCode::PerformRouterDiscovery,
-            RouterSolicitationAddr(_) => OptionCode::RouterSolicitationAddr,
-            StaticRoutingTable(_) => OptionCode::StaticRoutingTable,
-            ArpCacheTimeout(_) => OptionCode::ArpCacheTimeout,
-            EthernetEncapsulation(_) => OptionCode::EthernetEncapsulation,
-            DefaultTcpTtl(_) => OptionCode::DefaultTcpTtl,
-            TcpKeepaliveInterval(_) => OptionCode::TcpKeepaliveInterval,
-            TcpKeepaliveGarbage(_) => OptionCode::TcpKeepaliveGarbage,
-            NISDomain(_) => OptionCode::NISDomain,
-            NIS(_) => OptionCode::NIS,
-            NISServerAddr(_) => OptionCode::NISServerAddr,
-            NTPServers(_) => OptionCode::NTPServers,
-            VendorExtensions(_) => OptionCode::VendorExtensions,
-            NetBiosNameServers(_) => OptionCode::NetBiosNameServers,
-            NetBiosDatagramDistributionServer(_) => OptionCode::NetBiosDatagramDistributionServer,
-            NetBiosNodeType(_) => OptionCode::NetBiosNodeType,
-            NetBiosScope(_) => OptionCode::NetBiosScope,
-            XFontServer(_) => OptionCode::XFontServer,
-            XDisplayManager(_) => OptionCode::XDisplayManager,
-            RequestedIpAddress(_) => OptionCode::RequestedIpAddress,
-            AddressLeaseTime(_) => OptionCode::AddressLeaseTime,
-            OptionOverload(_) => OptionCode::OptionOverload,
-            MessageType(_) => OptionCode::MessageType,
-            ServerIdentifier(_) => OptionCode::ServerIdentifier,
-            ParameterRequestList(_) => OptionCode::ParameterRequestList,
-            Message(_) => OptionCode::Message,
-            MaxMessageSize(_) => OptionCode::MaxMessageSize,
-            Renewal(_) => OptionCode::Renewal,
-            Rebinding(_) => OptionCode::Rebinding,
-            ClassIdentifier(_) => OptionCode::ClassIdentifier,
-            ClientIdentifier(_) => OptionCode::ClientIdentifier,
-            RapidCommit => OptionCode::RapidCommit,
-            ClientFQDN(_) => OptionCode::ClientFQDN,
-            RelayAgentInformation(_) => OptionCode::RelayAgentInformation,
-            ClientLastTransactionTime(_) => OptionCode::ClientLastTransactionTime,
-            AssociatedIp(_) => OptionCode::AssociatedIp,
-            ClientSystemArchitecture(_) => OptionCode::ClientSystemArchitecture,
-            ClientNetworkInterface(_, _, _) => OptionCode::ClientNetworkInterface,
-            ClientMachineIdentifier(_) => OptionCode::ClientMachineIdentifier,
-            CaptivePortal(_) => OptionCode::CaptivePortal,
-            SubnetSelection(_) => OptionCode::SubnetSelection,
-            DomainSearch(_) => OptionCode::DomainSearch,
-            BulkLeaseQueryStatusCode(_, _) => OptionCode::BulkLeaseQueryStatusCode,
-            BulkLeaseQueryBaseTime(_) => OptionCode::BulkLeaseQueryBaseTime,
-            BulkLeasQueryStartTimeOfState(_) => OptionCode::BulkLeasQueryStartTimeOfState,
-            BulkLeaseQueryQueryStartTime(_) => OptionCode::BulkLeaseQueryQueryStartTime,
-            BulkLeaseQueryQueryEndTime(_) => OptionCode::BulkLeaseQueryQueryEndTime,
-            BulkLeaseQueryDhcpState(_) => OptionCode::BulkLeaseQueryDhcpState,
-            BulkLeaseQueryDataSource(_) => OptionCode::BulkLeaseQueryDataSource,
-            ClasslessStaticRoute(_) => OptionCode::ClasslessStaticRoute,
-            End => OptionCode::End,
-            // TODO: implement more
-            Unknown(n) => OptionCode::Unknown(n.code),
-        }
     }
 }
 
