@@ -80,7 +80,6 @@ macros::declare_codes!(
     {46,  NetBiosNodeType, "NetBIOS over TCP/IP Node Type", (NodeType)},
     {47,  NetBiosScope, "NetBIOS over TCP/IP Scope", (String)},
     {48,  XFontServer, "X Window System Font Server", (Vec<Ipv4Addr>)},
-    //changed!
     {49, XDisplayManager, "Window System Display Manager", (Vec<Ipv4Addr>)},
     {50,  RequestedIpAddress, "Requested IP Address", (Ipv4Addr)},
     {51,  AddressLeaseTime, "IP Address Lease Time", (u32)},
@@ -95,8 +94,6 @@ macros::declare_codes!(
     {60,  ClassIdentifier, "Class-identifier", (Vec<u8>)},
     {61,  ClientIdentifier, "Client Identifier", (Vec<u8>)},
     {65,  NISServerAddr, "NIS-Server-Addr", (Vec<Ipv4Addr>)},
-    {66,  TFTPServerName, "TFTP Server Name - <https://www.rfc-editor.org/rfc/rfc2132.html>", (String)},
-    {67,  BootfileName, "Bootfile Name - <https://www.rfc-editor.org/rfc/rfc2132.html>", (String)},
     {80, RapidCommit, "Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>"},
     {81,  ClientFQDN, "FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>", (fqdn::ClientFQDN)},
     {82,  RelayAgentInformation, "Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>", (relay::RelayAgentInformation)},
@@ -109,7 +106,6 @@ macros::declare_codes!(
     {118,  SubnetSelection, "Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>", (Ipv4Addr)},
     {119,  DomainSearch, "Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>", (Vec<Domain>)},
     {121,  ClasslessStaticRoute, "Classless Static Route - <https://www.rfc-editor.org/rfc/rfc3442>", (Vec<(Ipv4Net, Ipv4Addr)>)},
-    {150,  TFTPServerAdress, "TFTP Server Adress - <https://www.rfc-editor.org/rfc/rfc5859.html>", (Ipv4Addr)},
     {151,  BulkLeaseQueryStatusCode, "status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>", (bulk_query::Code, String)},
     {152,  BulkLeaseQueryBaseTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>", (u32)},
     {153,  BulkLeasQueryStartTimeOfState, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.4>", (u32)},
@@ -144,19 +140,19 @@ pub struct DhcpOptions(HashMap<OptionCode, DhcpOption>);
 impl DhcpOptions {
     /// Create new [`DhcpOptions`]
     ///
-    /// [`DhcpOptions`]: DhcpOptions
+    /// [`DhcpOptions`]: crate::v4::DhcpOptions
     pub fn new() -> Self {
         Self::default()
     }
     /// Get the data for a particular [`OptionCode`]
     ///
-    /// [`OptionCode`]: OptionCode
+    /// [`OptionCode`]: crate::v4::OptionCode
     pub fn get(&self, code: OptionCode) -> Option<&DhcpOption> {
         self.0.get(&code)
     }
     /// Get the mutable data for a particular [`OptionCode`]
     ///
-    /// [`OptionCode`]: OptionCode
+    /// [`OptionCode`]: crate::v4::OptionCode
     pub fn get_mut(&mut self, code: OptionCode) -> Option<&mut DhcpOption> {
         self.0.get_mut(&code)
     }
@@ -171,7 +167,7 @@ impl DhcpOptions {
     /// let mut opts = DhcpOptions::new();
     /// opts.insert(DhcpOption::MessageType(MessageType::Discover));
     /// ```
-    /// [`DhcpOption`]: DhcpOption
+    /// [`DhcpOption`]: crate::v4::DhcpOption
     pub fn insert(&mut self, opt: DhcpOption) -> Option<DhcpOption> {
         self.0.insert((&opt).into(), opt)
     }
@@ -472,9 +468,6 @@ fn decode_inner(
     use DhcpOption::*;
     Ok(match code {
         OptionCode::Pad => Pad,
-        OptionCode::BootfileName => BootfileName(decoder.read_string(len)?),
-        OptionCode::TFTPServerName => TFTPServerName(decoder.read_string(len)?),
-        OptionCode::TFTPServerAdress => TFTPServerAdress(decoder.read_ipv4(len)?),
         OptionCode::SubnetMask => SubnetMask(decoder.read_ipv4(len)?),
         OptionCode::TimeOffset => TimeOffset(decoder.read_i32()?),
         OptionCode::Router => Router(decoder.read_ipv4s(len)?),
@@ -822,8 +815,7 @@ impl Encodable for DhcpOption {
             | RouterSolicitationAddr(addr)
             | RequestedIpAddress(addr)
             | ServerIdentifier(addr)
-            | SubnetSelection(addr)
-            | TFTPServerAdress(addr) => {
+            | SubnetSelection(addr) => {
                 e.write_u8(code.into())?;
                 e.write_u8(4)?;
                 e.write_u32((*addr).into())?
@@ -859,7 +851,7 @@ impl Encodable for DhcpOption {
                 // }
             }
             Hostname(s) | MeritDumpFile(s) | DomainName(s) | ExtensionsPath(s) | NISDomain(s)
-            | RootPath(s) | NetBiosScope(s) | Message(s) | TFTPServerName(s) | BootfileName(s) => {
+            | RootPath(s) | NetBiosScope(s) | Message(s) => {
                 encode_long_opt_bytes(code, s.as_bytes(), e)?;
             }
             BootFileSize(num) | MaxDatagramSize(num) | InterfaceMtu(num) | MaxMessageSize(num) => {
