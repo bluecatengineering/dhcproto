@@ -1,16 +1,12 @@
 use proc_macro::{Group, Ident, TokenStream, TokenTree};
+struct Entry {
+    code: u8,
+    id: Ident,
+    description: String,
+    data_type: Option<Group>,
+}
 
-#[proc_macro]
-pub fn declare_codes(input: TokenStream) -> TokenStream {
-    // 1. Use syn to parse the input tokens into a syntax tree.
-    // 2. Use quote to generate new tokens based on what we parsed.
-    // 3. Return the generated tokens.
-    struct Entry {
-        code: u8,
-        id: Ident,
-        description: String,
-        data_type: Option<Group>,
-    }
+fn parse_input(input: TokenStream) -> Vec<Entry> {
     let mut entries = Vec::new();
     for x in input.into_iter() {
         if let TokenTree::Group(group) = x {
@@ -50,7 +46,10 @@ pub fn declare_codes(input: TokenStream) -> TokenStream {
             })
         }
     }
+    entries
+}
 
+fn generate_optioncode_code<'a>(entries: &'a [Entry]) -> impl Iterator<Item = String> + 'a {
     let enum_impl = std::iter::once(
         "
         /// DHCP Options
@@ -106,6 +105,12 @@ pub fn declare_codes(input: TokenStream) -> TokenStream {
         "OptionCode::Unknown(code) => code }}}".to_owned(),
     ));
 
+    enum_impl
+        .chain(impl_option_from_u8)
+        .chain(impl_u8_from_option)
+}
+
+fn generate_dhcpoption_code<'a>(entries: &'a [Entry]) -> impl Iterator<Item = String> + 'a {
     let impl_dhcp_option = std::iter::once(
         "
         /// DHCP Options
@@ -145,7 +150,6 @@ pub fn declare_codes(input: TokenStream) -> TokenStream {
     .chain(entries.iter().map(|e| {
         let id = &e.id;
         let var_field = if let Some(data_description) = &e.data_type {
-            // format!("///{id}(_) => ,")
             std::iter::once("(_")
                 .chain(data_description.stream().into_iter().filter_map(|e| {
                     if let TokenTree::Punct(p) = e {
@@ -157,7 +161,6 @@ pub fn declare_codes(input: TokenStream) -> TokenStream {
                 .chain(std::iter::once(")"))
                 .collect()
         } else {
-            // format!("/// {code} - {description}\n{id},")
             "".to_owned()
         };
         format!("{id}{var_field} => OptionCode::{id},")
@@ -165,14 +168,18 @@ pub fn declare_codes(input: TokenStream) -> TokenStream {
     .chain(std::iter::once(
         "Unknown(n) => OptionCode::Unknown(n.code)}}}".to_owned(),
     ));
-    let output_token_stream_str: TokenStream = enum_impl
-        .chain(impl_option_from_u8)
-        .chain(impl_u8_from_option)
-        .chain(impl_dhcp_option)
-        .chain(impl_optioncode_from_dhcpoption_ref)
+
+    impl_dhcp_option.chain(impl_optioncode_from_dhcpoption_ref)
+}
+
+#[proc_macro]
+pub fn declare_codes(input: TokenStream) -> TokenStream {
+    let entries = parse_input(input);
+    let enum_code = generate_optioncode_code(&entries);
+    let dhcpoption_code = generate_dhcpoption_code(&entries);
+    enum_code
+        .chain(dhcpoption_code)
         .collect::<String>()
         .parse()
-        .unwrap();
-    let output = output_token_stream_str;
-    output
+        .unwrap()
 }
