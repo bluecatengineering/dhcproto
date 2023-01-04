@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `v6::Message` `Display` impl
 - `v6::RelayMessage`
 - `v4::NISServerAddr` added to options
+- `v4::Message::clear_sname`/`clear_fname` added
 - dhcpv4 opt client fqdn added. uses trust-dns-proto's `Domain` type to decode the domain
 
 ### Changed

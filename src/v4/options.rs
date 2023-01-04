@@ -8,6 +8,8 @@ use crate::{
     v4::bulk_query,
     v4::{fqdn, relay},
 };
+
+use ipnet::Ipv4Net;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use trust_dns_proto::{
@@ -87,7 +89,7 @@ macros::declare_codes!(
     {66,  TFTPServerName, "TFTP Server Name - <https://www.rfc-editor.org/rfc/rfc2132.html>", (String)},
     {67,  BootfileName, "Bootfile Name - <https://www.rfc-editor.org/rfc/rfc2132.html>", (String)},
     {80, RapidCommit, "Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>"},
-    {81,  ClientFQDN, "FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>", (fqdn::FqdnFlags, u8, u8, Domain)},
+    {81,  ClientFQDN, "FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>", (fqdn::ClientFQDN)},
     {82,  RelayAgentInformation, "Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>", (relay::RelayAgentInformation)},
     {91,  ClientLastTransactionTime, "client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>", (u32)},
     {92,  AssociatedIp, "associated-ip - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>", (Vec<Ipv4Addr>)},
@@ -97,6 +99,7 @@ macros::declare_codes!(
     {114,  CaptivePortal, "Captive Portal - <https://datatracker.ietf.org/doc/html/rfc8910>", (url::Url)},
     {118,  SubnetSelection, "Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>", (Ipv4Addr)},
     {119,  DomainSearch, "Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>", (Vec<Domain>)},
+    {121,  ClasslessStaticRoute, "Classless Static Route - <https://www.rfc-editor.org/rfc/rfc3442>", (Vec<(Ipv4Net, Ipv4Addr)>)},
     {150,  TFTPServerAdress, "TFTP Server Adress - <https://www.rfc-editor.org/rfc/rfc5859.html>", (Ipv4Addr)},
     {151,  BulkLeaseQueryStatusCode, "status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>", (bulk_query::Code, String)},
     {152,  BulkLeaseQueryBaseTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>", (u32)},
@@ -553,7 +556,7 @@ fn decode_inner(
         OptionCode::CaptivePortal => CaptivePortal(decoder.read_str(len)?.parse()?),
         OptionCode::SubnetSelection => SubnetSelection(decoder.read_ipv4(len)?),
         OptionCode::DomainSearch => {
-            let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
+            let mut name_decoder = BinDecoder::new(decoder.read_slice(len)?);
             let mut names = Vec::new();
             while let Ok(name) = Name::read(&mut name_decoder) {
                 names.push(Domain(name));
@@ -593,9 +596,37 @@ fn decode_inner(
             let rcode1 = decoder.read_u8()?;
             let rcode2 = decoder.read_u8()?;
 
-            let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize - 3)?);
+            let mut name_decoder = BinDecoder::new(decoder.read_slice(len - 3)?);
             let name = Name::read(&mut name_decoder)?;
-            ClientFQDN(flags, rcode1, rcode2, Domain(name))
+            ClientFQDN(fqdn::ClientFQDN {
+                flags,
+                r1: rcode1,
+                r2: rcode2,
+                domain: Domain(name),
+            })
+        }
+        OptionCode::ClasslessStaticRoute => {
+            let mut routes = Vec::new();
+
+            let mut route_dec = Decoder::new(decoder.read_slice(len)?);
+            while let Ok(prefix_len) = route_dec.read_u8() {
+                if prefix_len > 32 {
+                    break;
+                }
+
+                // Significant bytes to hold the prefix
+                let sig_bytes = (prefix_len as usize + 7) / 8;
+
+                let mut dest = [0u8; 4];
+                dest[0..sig_bytes].clone_from_slice(route_dec.read_slice(sig_bytes)?);
+
+                let dest = Ipv4Net::new(dest.into(), prefix_len).unwrap();
+                let gw = route_dec.read_ipv4(4)?;
+
+                routes.push((dest, gw));
+            }
+
+            ClasslessStaticRoute(routes)
         }
         OptionCode::End => End,
         // not yet implemented
@@ -939,7 +970,13 @@ impl Encodable for DhcpOption {
                 }
                 encode_long_opt_bytes(code, &buf, e)?;
             }
-            ClientFQDN(flags, r1, r2, domain) => {
+            ClientFQDN(fqdn) => {
+                let fqdn::ClientFQDN {
+                    flags,
+                    r1,
+                    r2,
+                    domain,
+                } = fqdn;
                 let mut buf = vec![(*flags).into(), *r1, *r2];
                 if flags.e() {
                     // emits in canonical format
@@ -950,6 +987,18 @@ impl Encodable for DhcpOption {
                     // TODO: not sure if this is correct
                     buf.extend(domain.0.to_ascii().as_bytes());
                 }
+                encode_long_opt_bytes(code, &buf, e)?;
+            }
+            ClasslessStaticRoute(routes) => {
+                let mut buf = Vec::new();
+                let mut route_enc = Encoder::new(&mut buf);
+                for (dest, gw) in routes {
+                    let byte_len = (dest.prefix_len() + 7) / 8;
+                    route_enc.write_u8(dest.prefix_len())?;
+                    route_enc.write_slice(&dest.addr().octets()[0..byte_len as usize])?;
+                    route_enc.write(gw.octets())?;
+                }
+
                 encode_long_opt_bytes(code, &buf, e)?;
             }
             // not yet implemented
@@ -1028,7 +1077,7 @@ impl From<&DhcpOption> for OptionCode {
             ClassIdentifier(_) => OptionCode::ClassIdentifier,
             ClientIdentifier(_) => OptionCode::ClientIdentifier,
             RapidCommit => OptionCode::RapidCommit,
-            ClientFQDN(_, _, _, _) => OptionCode::ClientFQDN,
+            ClientFQDN(_) => OptionCode::ClientFQDN,
             RelayAgentInformation(_) => OptionCode::RelayAgentInformation,
             ClientLastTransactionTime(_) => OptionCode::ClientLastTransactionTime,
             AssociatedIp(_) => OptionCode::AssociatedIp,
@@ -1045,6 +1094,7 @@ impl From<&DhcpOption> for OptionCode {
             BulkLeaseQueryQueryEndTime(_) => OptionCode::BulkLeaseQueryQueryEndTime,
             BulkLeaseQueryDhcpState(_) => OptionCode::BulkLeaseQueryDhcpState,
             BulkLeaseQueryDataSource(_) => OptionCode::BulkLeaseQueryDataSource,
+            ClasslessStaticRoute(_) => OptionCode::ClasslessStaticRoute,
             End => OptionCode::End,
             // TODO: implement more
             Unknown(n) => OptionCode::Unknown(n.code),
@@ -1400,12 +1450,12 @@ mod tests {
     #[test]
     fn test_client_fqdn() -> Result<()> {
         test_opt(
-            DhcpOption::ClientFQDN(
-                fqdn::FqdnFlags::default().set_e(),
-                0,
-                0,
-                Domain(Name::from_str("www.google.com.").unwrap()),
-            ),
+            DhcpOption::ClientFQDN(fqdn::ClientFQDN {
+                flags: fqdn::FqdnFlags::default().set_e(true),
+                r1: 0,
+                r2: 0,
+                domain: Domain(Name::from_str("www.google.com.").unwrap()),
+            }),
             vec![
                 81, 19, 0x04, 0, 0, 3, b'w', b'w', b'w', 6, b'g', b'o', b'o', b'g', b'l', b'e', 3,
                 b'c', b'o', b'm', 0,
@@ -1437,6 +1487,48 @@ mod tests {
             ]),
             vec![65, 8, 127, 0, 0, 1, 127, 0, 0, 2],
         )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_classless_static_route() -> Result<()> {
+        test_opt(
+            DhcpOption::ClasslessStaticRoute(vec![
+                ("10.0.0.0/8".parse()?, "192.168.1.1".parse()?),
+                ("172.16.0.0/24".parse()?, "192.168.1.1".parse()?),
+            ]),
+            vec![
+                121, 14, // Option & length
+                8, 10, 192, 168, 1, 1, // 10.0.0.0/8 -> 192.168.1.1
+                24, 172, 16, 0, 192, 168, 1, 1, // 172.16.0.0/24 -> 192.168.1.1
+            ],
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_classless_static_route_long_opt() -> Result<()> {
+        let buf = vec![
+            121, 14, // Option & length
+            8, 10, 192, 168, 1, 1, // 10.0.0.0/8 -> 192.168.1.1
+            24, 172, 16, 0, 192, 168, 1, 1, // 172.16.0.0/24 -> 192.168.1.1
+            121, 14, // Option & length
+            8, 10, 192, 168, 1, 1, // 10.0.0.0/8 -> 192.168.1.1
+            24, 172, 16, 0, 192, 168, 1, 1, // 172.16.0.0/24 -> 192.168.1.1
+        ];
+        let mut dec = Decoder::new(&buf);
+        let opt = DhcpOption::decode(&mut dec)?;
+        assert_eq!(
+            DhcpOption::ClasslessStaticRoute(vec![
+                ("10.0.0.0/8".parse()?, "192.168.1.1".parse()?),
+                ("172.16.0.0/24".parse()?, "192.168.1.1".parse()?),
+                ("10.0.0.0/8".parse()?, "192.168.1.1".parse()?),
+                ("172.16.0.0/24".parse()?, "192.168.1.1".parse()?),
+            ]),
+            opt
+        );
 
         Ok(())
     }

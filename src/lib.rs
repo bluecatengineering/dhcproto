@@ -87,7 +87,7 @@ pub use decoder::{Decodable, Decoder};
 pub use encoder::{Encodable, Encoder};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use trust_dns_proto::rr::Name;
+pub use trust_dns_proto::rr::Name;
 
 pub mod decoder;
 pub mod encoder;
@@ -97,6 +97,12 @@ pub mod v6;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Domain(Name);
+
+impl Domain {
+    pub fn new(name: Name) -> Self {
+        Domain(name)
+    }
+}
 
 impl AsRef<Name> for Domain {
     fn as_ref(&self) -> &Name {

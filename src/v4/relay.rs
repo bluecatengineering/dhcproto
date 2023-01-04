@@ -230,7 +230,7 @@ impl fmt::Debug for RelayFlags {
 
 impl fmt::Display for RelayFlags {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 

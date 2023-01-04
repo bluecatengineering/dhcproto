@@ -18,7 +18,7 @@ impl fmt::Debug for DataSourceFlags {
 
 impl fmt::Display for DataSourceFlags {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 

@@ -85,7 +85,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod bulk_query;
 mod flags;
-mod fqdn;
+pub mod fqdn;
 mod htype;
 mod opcode;
 mod options;
@@ -393,6 +393,10 @@ impl Message {
     pub fn fname(&self) -> Option<&[u8]> {
         self.fname.as_deref()
     }
+    /// Clear the `fname` header field.
+    pub fn clear_fname(&mut self) {
+        self.fname = None;
+    }
     /// Get a reference to the message's fname, UTF-8 encoded
     pub fn fname_str(&self) -> Option<Result<&str, Utf8Error>> {
         self.fname().map(std::str::from_utf8)
@@ -417,6 +421,10 @@ impl Message {
     /// Get a reference to the message's sname. No particular encoding is enforced.
     pub fn sname(&self) -> Option<&[u8]> {
         self.sname.as_deref()
+    }
+    /// Clear the `sname` header field.
+    pub fn clear_sname(&mut self) {
+        self.sname = None;
     }
     /// Get a reference to the message's sname as a UTF-8 encoded string.
     pub fn sname_str(&self) -> Option<Result<&str, Utf8Error>> {

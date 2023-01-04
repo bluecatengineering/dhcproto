@@ -20,10 +20,11 @@ hex = "0.4.3"
 trust-dns-proto = { version = "0.21.2", default-features = false }
 url = "2.2.2"
 macros = {path = "./macros"}
+ipnet = "2.5"
 
 [features]
 default = []
-serde = ["dep:serde", "url/serde"]
+serde = ["dep:serde", "url/serde", "ipnet/serde"]
 
 [dev-dependencies]
 criterion = "0.3"
