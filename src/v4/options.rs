@@ -353,6 +353,10 @@ pub enum OptionCode {
     ClientIdentifier,
     /// 65 NIS-Server-Addr
     NISServerAddr,
+    /// 66 TFTP Server Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
+    TFTPServerName,
+    /// 67 Bootfile Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
+    BootfileName,
     /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
     RapidCommit,
     /// 81 FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>
@@ -377,6 +381,8 @@ pub enum OptionCode {
     DomainSearch,
     /// 121 Classless Static Route - <https://www.rfc-editor.org/rfc/rfc3442>
     ClasslessStaticRoute,
+    /// 150 TFTP Server Adress - <https://www.rfc-editor.org/rfc/rfc5859.html>
+    TFTPServerAddress,
     /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
     StatusCode,
     /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
@@ -561,6 +567,8 @@ impl From<OptionCode> for u8 {
             ClassIdentifier => 60,
             ClientIdentifier => 61,
             NISServerAddr => 65,
+            TFTPServerName => 66,
+            BootfileName => 67,
             RapidCommit => 80,
             ClientFQDN => 81,
             RelayAgentInformation => 82,
@@ -573,6 +581,7 @@ impl From<OptionCode> for u8 {
             SubnetSelection => 118,
             DomainSearch => 119,
             ClasslessStaticRoute => 121,
+            TFTPServerAddress => 150,
             StatusCode => 151,
             BaseTime => 152,
             StartTimeOfState => 153,
@@ -714,6 +723,10 @@ pub enum DhcpOption {
     ClientIdentifier(Vec<u8>),
     /// 65 NIS-Server-Addr
     NISServerAddr(Vec<Ipv4Addr>),
+    /// 66 TFTP Server Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
+    TFTPServerName(Vec<u8>),
+    /// 67 Bootfile Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
+    BootfileName(Vec<u8>),
     /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
     RapidCommit,
     /// 81 FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>
@@ -738,6 +751,8 @@ pub enum DhcpOption {
     DomainSearch(Vec<Domain>),
     /// 121 Classless Static Route - <https://www.rfc-editor.org/rfc/rfc3442>
     ClasslessStaticRoute(Vec<(Ipv4Net, Ipv4Addr)>),
+    /// 150 TFTP Server Adress - <https://www.rfc-editor.org/rfc/rfc5859.html>
+    TFTPServerAddress(Ipv4Addr),
     /// 151 status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>
     BulkLeaseQueryStatusCode(bulk_query::Code, String),
     /// 152 - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>
@@ -924,6 +939,8 @@ fn decode_inner(
         OptionCode::TcpKeepaliveGarbage => TcpKeepaliveGarbage(decoder.read_bool()?),
         OptionCode::NISDomain => NISDomain(decoder.read_string(len)?),
         OptionCode::NISServerAddr => NISServerAddr(decoder.read_ipv4s(len)?),
+        OptionCode::TFTPServerName => TFTPServerName(decoder.read_slice(len)?.to_vec()),
+        OptionCode::BootfileName => BootfileName(decoder.read_slice(len)?.to_vec()),
         OptionCode::NIS => NIS(decoder.read_ipv4s(len)?),
         OptionCode::NTPServers => NTPServers(decoder.read_ipv4s(len)?),
         OptionCode::VendorExtensions => VendorExtensions(decoder.read_slice(len)?.to_vec()),
@@ -985,6 +1002,7 @@ fn decode_inner(
 
             DomainSearch(names)
         }
+        OptionCode::TFTPServerAddress => TFTPServerAddress(decoder.read_ipv4(len)?),
         OptionCode::StatusCode => {
             let code = decoder.read_u8()?.into();
             // len - 1 because code is included in length
@@ -1234,7 +1252,8 @@ impl Encodable for DhcpOption {
             | RouterSolicitationAddr(addr)
             | RequestedIpAddress(addr)
             | ServerIdentifier(addr)
-            | SubnetSelection(addr) => {
+            | SubnetSelection(addr)
+            | TFTPServerAddress(addr) => {
                 e.write_u8(code.into())?;
                 e.write_u8(4)?;
                 e.write_u32((*addr).into())?
@@ -1326,7 +1345,9 @@ impl Encodable for DhcpOption {
             VendorExtensions(bytes)
             | ClassIdentifier(bytes)
             | ClientIdentifier(bytes)
-            | ClientMachineIdentifier(bytes) => {
+            | ClientMachineIdentifier(bytes)
+            | TFTPServerName(bytes)
+            | BootfileName(bytes) => {
                 encode_long_opt_bytes(code, bytes, e)?;
             }
             ParameterRequestList(codes) => {
@@ -1493,6 +1514,8 @@ impl From<&DhcpOption> for OptionCode {
             Rebinding(_) => OptionCode::Rebinding,
             ClassIdentifier(_) => OptionCode::ClassIdentifier,
             ClientIdentifier(_) => OptionCode::ClientIdentifier,
+            TFTPServerName(_) => OptionCode::TFTPServerName,
+            BootfileName(_) => OptionCode::BootfileName,
             RapidCommit => OptionCode::RapidCommit,
             ClientFQDN(_) => OptionCode::ClientFQDN,
             RelayAgentInformation(_) => OptionCode::RelayAgentInformation,
@@ -1504,6 +1527,7 @@ impl From<&DhcpOption> for OptionCode {
             CaptivePortal(_) => OptionCode::CaptivePortal,
             SubnetSelection(_) => OptionCode::SubnetSelection,
             DomainSearch(_) => OptionCode::DomainSearch,
+            TFTPServerAddress(_) => OptionCode::TFTPServerAddress,
             BulkLeaseQueryStatusCode(_, _) => OptionCode::StatusCode,
             BulkLeaseQueryBaseTime(_) => OptionCode::BaseTime,
             BulkLeasQueryStartTimeOfState(_) => OptionCode::StartTimeOfState,
