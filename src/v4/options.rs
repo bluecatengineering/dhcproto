@@ -724,7 +724,7 @@ pub enum DhcpOption {
     /// 65 NIS-Server-Addr
     NISServerAddr(Vec<Ipv4Addr>),
     /// 66 TFTP Server Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
-    TFTPServerName(String),
+    TFTPServerName(Vec<u8>),
     /// 67 Bootfile Name - <https://www.rfc-editor.org/rfc/rfc2132.html>
     BootfileName(String),
     /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
@@ -903,7 +903,7 @@ fn decode_inner(
     Ok(match code {
         OptionCode::Pad => Pad,
         OptionCode::BootfileName => BootfileName(decoder.read_string(len)?),
-        OptionCode::TFTPServerName => TFTPServerName(decoder.read_string(len)?),
+        OptionCode::TFTPServerName => TFTPServerName(decoder.read_slice(len)?.to_vec()),
         OptionCode::TFTPServerAdress => TFTPServerAdress(decoder.read_ipv4(len)?),
         OptionCode::SubnetMask => SubnetMask(decoder.read_ipv4(len)?),
         OptionCode::TimeOffset => TimeOffset(decoder.read_i32()?),
@@ -1284,7 +1284,7 @@ impl Encodable for DhcpOption {
                 // }
             }
             Hostname(s) | MeritDumpFile(s) | DomainName(s) | ExtensionsPath(s) | NISDomain(s)
-            | RootPath(s) | NetBiosScope(s) | Message(s) | TFTPServerName(s) | BootfileName(s) => {
+            | RootPath(s) | NetBiosScope(s) | Message(s) | BootfileName(s) => {
                 encode_long_opt_bytes(code, s.as_bytes(), e)?;
             }
             BootFileSize(num) | MaxDatagramSize(num) | InterfaceMtu(num) | MaxMessageSize(num) => {
@@ -1340,7 +1340,8 @@ impl Encodable for DhcpOption {
             VendorExtensions(bytes)
             | ClassIdentifier(bytes)
             | ClientIdentifier(bytes)
-            | ClientMachineIdentifier(bytes) => {
+            | ClientMachineIdentifier(bytes)
+            | TFTPServerName(bytes) => {
                 encode_long_opt_bytes(code, bytes, e)?;
             }
             ParameterRequestList(codes) => {
