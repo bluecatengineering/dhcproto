@@ -730,7 +730,7 @@ pub enum DhcpOption {
     /// 80 Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>
     RapidCommit,
     /// 81 FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>
-    ClientFQDN(fqdn::FqdnFlags, u8, u8, Domain),
+    ClientFQDN(fqdn::ClientFQDN),
     /// 82 Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>
     RelayAgentInformation(relay::RelayAgentInformation),
     /// 91 client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>
@@ -995,7 +995,7 @@ fn decode_inner(
         OptionCode::CaptivePortal => CaptivePortal(decoder.read_str(len)?.parse()?),
         OptionCode::SubnetSelection => SubnetSelection(decoder.read_ipv4(len)?),
         OptionCode::DomainSearch => {
-            let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize)?);
+            let mut name_decoder = BinDecoder::new(decoder.read_slice(len)?);
             let mut names = Vec::new();
             while let Ok(name) = Name::read(&mut name_decoder) {
                 names.push(Domain(name));
@@ -1035,9 +1035,14 @@ fn decode_inner(
             let rcode1 = decoder.read_u8()?;
             let rcode2 = decoder.read_u8()?;
 
-            let mut name_decoder = BinDecoder::new(decoder.read_slice(len as usize - 3)?);
+            let mut name_decoder = BinDecoder::new(decoder.read_slice(len - 3)?);
             let name = Name::read(&mut name_decoder)?;
-            ClientFQDN(flags, rcode1, rcode2, Domain(name))
+            ClientFQDN(fqdn::ClientFQDN {
+                flags,
+                r1: rcode1,
+                r2: rcode2,
+                domain: Domain(name),
+            })
         }
         OptionCode::ClasslessStaticRoute => {
             let mut routes = Vec::new();
@@ -1405,7 +1410,13 @@ impl Encodable for DhcpOption {
                 }
                 encode_long_opt_bytes(code, &buf, e)?;
             }
-            ClientFQDN(flags, r1, r2, domain) => {
+            ClientFQDN(fqdn) => {
+                let fqdn::ClientFQDN {
+                    flags,
+                    r1,
+                    r2,
+                    domain,
+                } = fqdn;
                 let mut buf = vec![(*flags).into(), *r1, *r2];
                 if flags.e() {
                     // emits in canonical format
@@ -1506,7 +1517,7 @@ impl From<&DhcpOption> for OptionCode {
             ClassIdentifier(_) => OptionCode::ClassIdentifier,
             ClientIdentifier(_) => OptionCode::ClientIdentifier,
             RapidCommit => OptionCode::RapidCommit,
-            ClientFQDN(_, _, _, _) => OptionCode::ClientFQDN,
+            ClientFQDN(_) => OptionCode::ClientFQDN,
             RelayAgentInformation(_) => OptionCode::RelayAgentInformation,
             ClientLastTransactionTime(_) => OptionCode::ClientLastTransactionTime,
             AssociatedIp(_) => OptionCode::AssociatedIp,
@@ -1879,12 +1890,12 @@ mod tests {
     #[test]
     fn test_client_fqdn() -> Result<()> {
         test_opt(
-            DhcpOption::ClientFQDN(
-                fqdn::FqdnFlags::default().set_e(),
-                0,
-                0,
-                Domain(Name::from_str("www.google.com.").unwrap()),
-            ),
+            DhcpOption::ClientFQDN(fqdn::ClientFQDN {
+                flags: fqdn::FqdnFlags::default().set_e(true),
+                r1: 0,
+                r2: 0,
+                domain: Domain(Name::from_str("www.google.com.").unwrap()),
+            }),
             vec![
                 81, 19, 0x04, 0, 0, 3, b'w', b'w', b'w', 6, b'g', b'o', b'o', b'g', b'l', b'e', 3,
                 b'c', b'o', b'm', 0,

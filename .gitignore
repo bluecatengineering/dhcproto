@@ -2,6 +2,9 @@
 .idea/
 
 *.swp
+# Don't include Cargo.lock for library crates
+# see https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries
+Cargo.lock
 
 # Compiled files
 *.o
