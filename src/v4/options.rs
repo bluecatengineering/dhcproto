@@ -31,16 +31,16 @@ use trust_dns_proto::{
 // * (T0,..TN) is the associated variables (if any). e.g. Ipv4Addr for "SubnetMask" or bool for "IpForwarding".
 //   can contain more than one type but needs to be enclosed in parenthesis even if it's just a single variable.
 macros::declare_codes!(
-    {0, Pad, "Padding"},
-    {1,  SubnetMask, "Subnet Mask", (Ipv4Addr)},
-    {2,  TimeOffset, "Time Offset", (i32)},
-    {3,  Router, "Router", (Vec<Ipv4Addr>)},
-    {4,  TimeServer, "Router", (Vec<Ipv4Addr>)},
-    {5,  NameServer, "Name Server", (Vec<Ipv4Addr>)},
-    {6,  DomainNameServer, "Name Server", (Vec<Ipv4Addr>)},
-    {7,  LogServer, "Log Server", (Vec<Ipv4Addr>)},
-    {8,  QuoteServer, "Quote Server", (Vec<Ipv4Addr>)},
-    {9,  LprServer, "LPR Server", (Vec<Ipv4Addr>)},
+    {0,   Pad, "Padding"},
+    {1,   SubnetMask, "Subnet Mask", (Ipv4Addr)},
+    {2,   TimeOffset, "Time Offset", (i32)},
+    {3,   Router, "Router", (Vec<Ipv4Addr>)},
+    {4,   TimeServer, "Router", (Vec<Ipv4Addr>)},
+    {5,   NameServer, "Name Server", (Vec<Ipv4Addr>)},
+    {6,   DomainNameServer, "Name Server", (Vec<Ipv4Addr>)},
+    {7,   LogServer, "Log Server", (Vec<Ipv4Addr>)},
+    {8,   QuoteServer, "Quote Server", (Vec<Ipv4Addr>)},
+    {9,   LprServer, "LPR Server", (Vec<Ipv4Addr>)},
     {10,  ImpressServer, "Impress server", (Vec<Ipv4Addr>)},
     {11,  ResourceLocationServer, "Resource Location Server", (Vec<Ipv4Addr>)},
     {12,  Hostname, "Host name", (String)},
@@ -80,7 +80,7 @@ macros::declare_codes!(
     {46,  NetBiosNodeType, "NetBIOS over TCP/IP Node Type", (NodeType)},
     {47,  NetBiosScope, "NetBIOS over TCP/IP Scope", (String)},
     {48,  XFontServer, "X Window System Font Server", (Vec<Ipv4Addr>)},
-    {49, XDisplayManager, "Window System Display Manager", (Vec<Ipv4Addr>)},
+    {49,  XDisplayManager, "Window System Display Manager", (Vec<Ipv4Addr>)},
     {50,  RequestedIpAddress, "Requested IP Address", (Ipv4Addr)},
     {51,  AddressLeaseTime, "IP Address Lease Time", (u32)},
     {52,  OptionOverload, "Option Overload", (u8)},
@@ -94,7 +94,9 @@ macros::declare_codes!(
     {60,  ClassIdentifier, "Class-identifier", (Vec<u8>)},
     {61,  ClientIdentifier, "Client Identifier", (Vec<u8>)},
     {65,  NISServerAddr, "NIS-Server-Addr", (Vec<Ipv4Addr>)},
-    {80, RapidCommit, "Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>"},
+    {66,  TFTPServerName, "TFTP Server Name - <https://www.rfc-editor.org/rfc/rfc2132.html>", (Vec<u8>)},
+    {67,  BootfileName, "Bootfile Name - <https://www.rfc-editor.org/rfc/rfc2132.html>", (Vec<u8>)},
+    {80,  RapidCommit, "Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>"},
     {81,  ClientFQDN, "FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>", (fqdn::ClientFQDN)},
     {82,  RelayAgentInformation, "Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>", (relay::RelayAgentInformation)},
     {91,  ClientLastTransactionTime, "client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>", (u32)},
@@ -102,17 +104,18 @@ macros::declare_codes!(
     {93,  ClientSystemArchitecture, "Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>", (Architecture)},
     {94,  ClientNetworkInterface, "Client Network Interface - <https://www.rfc-editor.org/rfc/rfc4578.html>", (u8, u8, u8)},
     {97,  ClientMachineIdentifier, "Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>", (Vec<u8>)},
-    {114,  CaptivePortal, "Captive Portal - <https://datatracker.ietf.org/doc/html/rfc8910>", (url::Url)},
-    {118,  SubnetSelection, "Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>", (Ipv4Addr)},
-    {119,  DomainSearch, "Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>", (Vec<Domain>)},
-    {121,  ClasslessStaticRoute, "Classless Static Route - <https://www.rfc-editor.org/rfc/rfc3442>", (Vec<(Ipv4Net, Ipv4Addr)>)},
-    {151,  BulkLeaseQueryStatusCode, "status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>", (bulk_query::Code, String)},
-    {152,  BulkLeaseQueryBaseTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>", (u32)},
-    {153,  BulkLeasQueryStartTimeOfState, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.4>", (u32)},
-    {154,  BulkLeaseQueryQueryStartTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.5>", (u32)},
-    {155,  BulkLeaseQueryQueryEndTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.6>", (u32)},
-    {156,  BulkLeaseQueryDhcpState, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.7>", (bulk_query::QueryState)},
-    {157,  BulkLeaseQueryDataSource, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>", (bulk_query::DataSourceFlags)},
+    {114, CaptivePortal, "Captive Portal - <https://datatracker.ietf.org/doc/html/rfc8910>", (url::Url)},
+    {118, SubnetSelection, "Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>", (Ipv4Addr)},
+    {119, DomainSearch, "Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>", (Vec<Domain>)},
+    {121, ClasslessStaticRoute, "Classless Static Route - <https://www.rfc-editor.org/rfc/rfc3442>", (Vec<(Ipv4Net, Ipv4Addr)>)},
+    {150, TFTPServerAddress, "TFTP Server Address - <https://www.rfc-editor.org/rfc/rfc5859.html>", (Ipv4Addr)},
+    {151, BulkLeaseQueryStatusCode, "status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>", (bulk_query::Code, String)},
+    {152, BulkLeaseQueryBaseTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>", (u32)},
+    {153, BulkLeasQueryStartTimeOfState, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.4>", (u32)},
+    {154, BulkLeaseQueryQueryStartTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.5>", (u32)},
+    {155, BulkLeaseQueryQueryEndTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.6>", (u32)},
+    {156, BulkLeaseQueryDhcpState, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.7>", (bulk_query::QueryState)},
+    {157, BulkLeaseQueryDataSource, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>", (bulk_query::DataSourceFlags)},
     {255, End, "end-of-list marker"}
 );
 /// ex
@@ -505,6 +508,8 @@ fn decode_inner(
         OptionCode::TcpKeepaliveGarbage => TcpKeepaliveGarbage(decoder.read_bool()?),
         OptionCode::NISDomain => NISDomain(decoder.read_string(len)?),
         OptionCode::NISServerAddr => NISServerAddr(decoder.read_ipv4s(len)?),
+        OptionCode::TFTPServerName => TFTPServerName(decoder.read_slice(len)?.to_vec()),
+        OptionCode::BootfileName => BootfileName(decoder.read_slice(len)?.to_vec()),
         OptionCode::NIS => NIS(decoder.read_ipv4s(len)?),
         OptionCode::NTPServers => NTPServers(decoder.read_ipv4s(len)?),
         OptionCode::VendorExtensions => VendorExtensions(decoder.read_slice(len)?.to_vec()),
@@ -566,6 +571,7 @@ fn decode_inner(
 
             DomainSearch(names)
         }
+        OptionCode::TFTPServerAddress => TFTPServerAddress(decoder.read_ipv4(len)?),
         OptionCode::BulkLeaseQueryStatusCode => {
             let code = decoder.read_u8()?.into();
             // len - 1 because code is included in length
@@ -815,7 +821,8 @@ impl Encodable for DhcpOption {
             | RouterSolicitationAddr(addr)
             | RequestedIpAddress(addr)
             | ServerIdentifier(addr)
-            | SubnetSelection(addr) => {
+            | SubnetSelection(addr)
+            | TFTPServerAddress(addr) => {
                 e.write_u8(code.into())?;
                 e.write_u8(4)?;
                 e.write_u32((*addr).into())?
@@ -907,7 +914,9 @@ impl Encodable for DhcpOption {
             VendorExtensions(bytes)
             | ClassIdentifier(bytes)
             | ClientIdentifier(bytes)
-            | ClientMachineIdentifier(bytes) => {
+            | ClientMachineIdentifier(bytes)
+            | TFTPServerName(bytes)
+            | BootfileName(bytes) => {
                 encode_long_opt_bytes(code, bytes, e)?;
             }
             ParameterRequestList(codes) => {
