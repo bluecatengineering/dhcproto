@@ -818,6 +818,10 @@ where
     T: Ord,
     F: Fn(&T) -> Ordering,
 {
+    if arr.is_empty() {
+        return None;
+    }
+
     let mut l = 0;
     let mut r = arr.len() - 1;
     while l <= r {
@@ -846,6 +850,10 @@ where
     T: Ord,
     F: Fn(&T) -> Ordering,
 {
+    if arr.is_empty() {
+        return None;
+    }
+
     let n = arr.len();
     let mut l = 0;
     let mut r = n - 1;
