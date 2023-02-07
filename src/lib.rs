@@ -85,9 +85,6 @@
 
 pub use decoder::{Decodable, Decoder};
 pub use encoder::{Encodable, Encoder};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-pub use trust_dns_proto::rr::Name;
 
 pub mod decoder;
 pub mod encoder;
@@ -95,61 +92,5 @@ pub mod error;
 pub mod v4;
 pub mod v6;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Domain(Name);
-
-impl Domain {
-    pub fn new(name: Name) -> Self {
-        Domain(name)
-    }
-}
-
-impl AsRef<Name> for Domain {
-    fn as_ref(&self) -> &Name {
-        &self.0
-    }
-}
-
-impl AsMut<Name> for Domain {
-    fn as_mut(&mut self) -> &mut Name {
-        &mut self.0
-    }
-}
-
-impl From<Domain> for Name {
-    fn from(domain: Domain) -> Self {
-        domain.0
-    }
-}
-
-impl From<Name> for Domain {
-    fn from(name: Name) -> Self {
-        Domain(name)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl Serialize for Domain {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.collect_str(&self.0.to_string())
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de> Deserialize<'de> for Domain {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let name: &str = Deserialize::deserialize(deserializer)?;
-        name.parse().map(Domain).map_err(|_| {
-            serde::de::Error::invalid_value(
-                serde::de::Unexpected::Str(name),
-                &"unable to parse string into Name",
-            )
-        })
-    }
-}
+pub use trust_dns_proto::error::ProtoError as NameError;
+pub use trust_dns_proto::rr::Name;

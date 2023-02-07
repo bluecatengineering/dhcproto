@@ -17,14 +17,14 @@ thiserror = "1.0"
 rand = "0.8"
 serde = { version = "1.0", features = ["derive"], optional = true }
 hex = "0.4.3"
-trust-dns-proto = { version = "0.21.2", default-features = false }
+trust-dns-proto = { version = "0.22.0", default-features = false }
 url = "2.2.2"
 macros = { path = "./macros" }
 ipnet = "2.5"
 
 [features]
 default = []
-serde = ["dep:serde", "url/serde", "ipnet/serde"]
+serde = ["dep:serde", "url/serde", "ipnet/serde", "trust-dns-proto/serde-config"]
 
 [dev-dependencies]
 criterion = "0.3"

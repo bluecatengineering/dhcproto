@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `v6::RelayMessage`
 - `v4::NISServerAddr` added to options
 - `v4::Message::clear_sname`/`clear_fname` added
-- dhcpv4 opt client fqdn added. uses trust-dns-proto's `Domain` type to decode the domain
+- dhcpv4 opt client fqdn added. uses trust-dns-proto's `Name` type to decode the domain
 
 ### Changed
 
@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - relay agent info will be added before END opt if present [see here](https://datatracker.ietf.org/doc/html/rfc3046#section-2.1)
+- fixed panic on .get for v6 options
 
 ## [0.8.0]
 

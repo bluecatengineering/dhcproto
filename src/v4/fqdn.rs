@@ -2,8 +2,7 @@ use std::fmt;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-
-use crate::Domain;
+use trust_dns_proto::rr::Name;
 
 /// A client FQDN
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -12,12 +11,12 @@ pub struct ClientFQDN {
     pub(crate) flags: FqdnFlags,
     pub(crate) r1: u8,
     pub(crate) r2: u8,
-    pub(crate) domain: Domain,
+    pub(crate) domain: Name,
 }
 
 impl ClientFQDN {
     // creates a new client fqdn setting the rcode1/rcode2 fields to 255
-    pub fn new(flags: FqdnFlags, domain: Domain) -> Self {
+    pub fn new(flags: FqdnFlags, domain: Name) -> Self {
         Self {
             flags,
             r1: 0xFF,
@@ -46,14 +45,14 @@ impl ClientFQDN {
         self.r2 = rcode2;
         self
     }
-    pub fn domain(&self) -> &Domain {
+    pub fn domain(&self) -> &Name {
         &self.domain
     }
-    pub fn set_domain(&mut self, domain: Domain) -> &mut Self {
+    pub fn set_domain(&mut self, domain: Name) -> &mut Self {
         self.domain = domain;
         self
     }
-    pub fn domain_mut(&mut self) -> &mut Domain {
+    pub fn domain_mut(&mut self) -> &mut Name {
         &mut self.domain
     }
 }

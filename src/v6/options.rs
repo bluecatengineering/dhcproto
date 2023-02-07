@@ -7,13 +7,13 @@ use trust_dns_proto::{
 
 use std::{cmp::Ordering, net::Ipv6Addr, ops::RangeInclusive};
 
+use crate::v6::option_codes::OptionCode;
 use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
     error::{DecodeResult, EncodeResult},
     v6::{MessageType, RelayMessage},
 };
-use crate::{v6::option_codes::OptionCode, Domain};
 
 // server can send multiple IA_NA options to request multiple addresses
 // so we must be able to handle multiple of the same option type
@@ -144,7 +144,7 @@ pub enum DhcpOption {
     /// 23 - <https://datatracker.ietf.org/doc/html/rfc3646>
     DomainNameServers(Vec<Ipv6Addr>),
     /// 24 - <https://datatracker.ietf.org/doc/html/rfc3646>
-    DomainSearchList(Vec<Domain>),
+    DomainSearchList(Vec<Name>),
     /// 25 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.21>
     IAPD(IAPD),
     /// 26 - <https://datatracker.ietf.org/doc/html/rfc3633#section-10>
@@ -611,7 +611,7 @@ impl Decodable for DhcpOption {
                 let mut name_decoder = BinDecoder::new(decoder.read_slice(len)?);
                 let mut names = Vec::new();
                 while let Ok(name) = Name::read(&mut name_decoder) {
-                    names.push(Domain(name));
+                    names.push(name);
                 }
 
                 DhcpOption::DomainSearchList(names)
@@ -775,7 +775,7 @@ impl Encodable for DhcpOption {
                 let mut buf = Vec::new();
                 let mut name_encoder = BinEncoder::new(&mut buf);
                 for name in names {
-                    name.0.emit(&mut name_encoder)?;
+                    name.emit(&mut name_encoder)?;
                 }
                 e.write_u16(buf.len() as u16)?;
                 e.write_slice(&buf)?;
