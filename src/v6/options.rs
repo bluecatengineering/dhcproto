@@ -833,12 +833,11 @@ where
         } else {
             false
         };
-        if (mid == 0 || prev_cmp) && mid_cmp == Ordering::Equal {
-            return Some(mid);
-        } else if mid_cmp == Ordering::Less {
-            l = mid + 1;
-        } else {
-            r = mid - 1;
+        match mid_cmp {
+            Ordering::Less => l = mid + 1,
+            Ordering::Equal if (mid == 0 || prev_cmp) => return Some(mid),
+            Ordering::Greater | Ordering::Equal if mid == 0 => return None,
+            Ordering::Greater | Ordering::Equal => r = mid - 1,
         }
     }
     None
@@ -866,12 +865,11 @@ where
         } else {
             false
         };
-        if (mid == n - 1 || nxt_cmp) && mid_cmp == Ordering::Equal {
-            return Some(mid);
-        } else if mid_cmp == Ordering::Greater {
-            r = mid - 1;
-        } else {
-            l = mid + 1;
+        match mid_cmp {
+            Ordering::Greater => r = mid - 1,
+            Ordering::Equal if (mid == n - 1 || nxt_cmp) => return Some(mid),
+            Ordering::Less | Ordering::Equal if mid == n - 1 => return None,
+            Ordering::Less | Ordering::Equal => l = mid + 1,
         }
     }
     None
@@ -910,5 +908,11 @@ mod tests {
 
         let arr = vec![1, 2, 2, 2, 2, 3, 4, 7, 8, 8];
         assert_eq!(Some(7..=7), range_binsearch(&arr, |x| x.cmp(&7)));
+
+        let arr: Vec<i32> = vec![];
+        assert_eq!(None, range_binsearch(&arr, |x| x.cmp(&1)));
+
+        let arr = vec![1, 1, 2, 2];
+        assert_eq!(None, range_binsearch(&arr, |x| x.cmp(&3)));
     }
 }
