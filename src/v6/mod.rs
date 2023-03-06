@@ -470,8 +470,8 @@ mod tests {
         let mut buf = Vec::new();
         let mut e = Encoder::new(&mut buf);
         msg.encode(&mut e)?;
-        println!("{:?}", buf);
-        println!("{:?}", input);
+        println!("{buf:?}");
+        println!("{input:?}");
         // no PAD bytes or hashmap with ipv6 so the lens will be exact
         assert_eq!(buf.len(), input.len());
         // decode again

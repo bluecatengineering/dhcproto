@@ -29,7 +29,7 @@ use trust_dns_proto::{
 // * "Docstring" is the documentation string that will be added to the variant in the OptionCode enum
 // * (T0,..TN) is the associated variables (if any). e.g. Ipv4Addr for "SubnetMask" or bool for "IpForwarding".
 //   can contain more than one type but needs to be enclosed in parenthesis even if it's just a single variable.
-macros::declare_codes!(
+dhcproto_macros::declare_codes!(
     {0,   Pad, "Padding"},
     {1,   SubnetMask, "Subnet Mask", (Ipv4Addr)},
     {2,   TimeOffset, "Time Offset", (i32)},
@@ -1186,10 +1186,10 @@ mod tests {
     #[test]
     fn test_opts() -> Result<()> {
         let (input, len) = binput();
-        println!("{:?}", input);
+        println!("{input:?}");
         let opts = DhcpOptions::decode(&mut Decoder::new(&input))?;
 
-        println!("{:?}", opts);
+        println!("{opts:?}");
         let mut output = Vec::new();
         opts.encode(&mut Encoder::new(&mut output))?;
         // not comparing len as we don't add PAD bytes

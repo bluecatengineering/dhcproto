@@ -1,0 +1,17 @@
+[package]
+edition = "2021"
+name = "dhcproto-macros"
+version = "0.1.0"
+description = """
+A macro library for generating option types for dhcproto
+"""
+categories = ["network-programming", "encoding","parser-implementations"]
+repository = "https://github.com/bluecatengineering/dhcproto"
+keywords = ["dhcp","dhcpv4","dhcpv6"]
+license = "MIT"
+
+[lib]
+proc-macro = true
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
