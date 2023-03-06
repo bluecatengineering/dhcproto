@@ -560,8 +560,8 @@ mod tests {
         let mut buf = Vec::new();
         let mut e = Encoder::new(&mut buf);
         msg.encode(&mut e)?;
-        println!("{:?}", buf);
-        println!("{:?}", input);
+        println!("{buf:?}");
+        println!("{input:?}");
         // decode again
         let res = Message::decode(&mut Decoder::new(&buf))?;
         // check Messages are equal after decoding/encoding
@@ -590,7 +590,7 @@ mod tests {
     fn decode_bootreq() -> Result<()> {
         let offer = bootreq();
         let msg = Message::decode(&mut Decoder::new(&offer))?;
-        println!("{:?}", msg);
+        println!("{msg:?}");
         // now encode
         let mut buf = Vec::new();
         let mut e = Encoder::new(&mut buf);
