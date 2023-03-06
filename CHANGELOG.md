@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.9.0]
+
 ### Added
 
 - `PartialOrd`/`Ord` impls for `v4::DhcpOption`/`v6::DhcpOption`/`v4::OptionCode`/`v6::OptionCode`
