@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- add 21/24/25/34 & 62..65 & 68..77
+
+### Changed
+
+- Picked more consistent name & casing for option types
+
 ## [0.9.0]
 
 ### Added

@@ -51,12 +51,11 @@ dhcproto_macros::declare_codes!(
     {18,  ExtensionsPath, "Extensions path", (String)},
     {19,  IpForwarding, "IP forwarding", (bool)},
     {20,  NonLocalSrcRouting, "Non-local source routing", (bool)},
-     // TODO: Policy filter is a varlen 8 bit ipv4 / 32-bit subnetmask
-     // need to think of a good way to represent this Vec<(Ipv4Addr, Ipv4Addr)>?
-     // can it be changed into Ipv4Net and a prefix mask field?
-     //{21,  // PolicyFilter, "Policy Filter", (Vec<Ipv4Net>)},
+    {21,  PolicyFilter, "Policy Filter", (Vec<(Ipv4Addr, Ipv4Addr)>)},
     {22,  MaxDatagramSize, "Max Datagram reassembly size", (u16)},
     {23,  DefaultIpTtl, "Ip TTL", (u8)},
+    {24,  PathMtuAgingTimeout, "Path MTU Aging Timeout", (u32)},
+    {25,  PathMtuPlateauTable, "Path MTU Plateau Table", (Vec<u16>)},
     {26,  InterfaceMtu, "Interface MTU", (u16)},
     {27,  AllSubnetsLocal, "All Subnets Local", (bool)},
     {28,  BroadcastAddr, "Broadcast address", (Ipv4Addr)},
@@ -65,15 +64,16 @@ dhcproto_macros::declare_codes!(
     {31,  PerformRouterDiscovery, "Perform router discovery", (bool)},
     {32,  RouterSolicitationAddr, "Router solicitation address", (Ipv4Addr)},
     {33,  StaticRoutingTable, "Static routing table", (Vec<(Ipv4Addr, Ipv4Addr)>)},
+    {34,  TrailerEncapsulated, "Trailer Encapsulated", (bool)},
     {35,  ArpCacheTimeout, "ARP timeout", (u32)},
     {36,  EthernetEncapsulation, "Ethernet encapsulation", (bool)},
     {37,  DefaultTcpTtl, "Default TCP TTL", (u8)},
     {38,  TcpKeepaliveInterval, "TCP keepalive interval", (u32)},
     {39,  TcpKeepaliveGarbage, "TCP keealive garbage", (bool)},
-    {40,  NISDomain, "Network information service domain", (String)},
-    {41,  NIS, "Network infomration servers", (Vec<Ipv4Addr>)},
-    {42,  NTPServers, "NTP servers", (Vec<Ipv4Addr>)},
-    {43,  VendorExtensions, "Vendor Extensions", (Vec<u8>)},
+    {40,  NisDomain, "Network information service domain", (String)},
+    {41,  NisServers, "NIS servers", (Vec<Ipv4Addr>)},
+    {42,  NtpServers, "NTP servers", (Vec<Ipv4Addr>)},
+    {43,  VendorExtensions, "Vendor Extensions - can contain encapsulated options", (Vec<u8>)}, // TODO: Hashmap<u8, UnknownOption>?
     {44,  NetBiosNameServers, "NetBIOS over TCP/IP name server", (Vec<Ipv4Addr>)},
     {45,  NetBiosDatagramDistributionServer, "NetBIOS over TCP/IP Datagram Distribution Server", (Vec<Ipv4Addr>)},
     {46,  NetBiosNodeType, "NetBIOS over TCP/IP Node Type", (NodeType)},
@@ -92,9 +92,23 @@ dhcproto_macros::declare_codes!(
     {59,  Rebinding, "Rebinding (T2) Time Value", (u32)},
     {60,  ClassIdentifier, "Class-identifier", (Vec<u8>)},
     {61,  ClientIdentifier, "Client Identifier", (Vec<u8>)},
-    {65,  NISServerAddr, "NIS-Server-Addr", (Vec<Ipv4Addr>)},
+    {62,  NwipDomainName, "Netware/IP Domain Name", (String)},
+    {63,  NwipInformation, "Netware/IP Information - <https://www.rfc-editor.org/rfc/rfc2242.html>", (Vec<u8>)}, // TODO: https://www.rfc-editor.org/rfc/rfc2242.html sub opts
+    {64,  NispServiceDomain, "NIS+ Domain Option", (String)},
+    {65,  NispServers, "NIS+ Server Addr", (Vec<Ipv4Addr>)},
     {66,  TFTPServerName, "TFTP Server Name - <https://www.rfc-editor.org/rfc/rfc2132.html>", (Vec<u8>)},
     {67,  BootfileName, "Bootfile Name - <https://www.rfc-editor.org/rfc/rfc2132.html>", (Vec<u8>)},
+    {68,  MobileIpHomeAgent, "Mobile IP Home Agent", (Vec<Ipv4Addr>)},
+    {69,  SmtpServer, "SMTP Server Option", (Vec<Ipv4Addr>)},
+    {70,  Pop3Server, "Pop3 Server Option", (Vec<Ipv4Addr>)},
+    {71,  NntpServer, "NNTP Server Option", (Vec<Ipv4Addr>)},
+    {72,  WwwServer, "WWW Server Option", (Vec<Ipv4Addr>)},
+    {73,  DefaultFingerServer, "Default Finger Option", (Vec<Ipv4Addr>)},
+    {74,  IrcServer, "IRC Server Option", (Vec<Ipv4Addr>)},
+    {75,  StreetTalkServer, "StreetTalk Server Option", (Vec<Ipv4Addr>)},
+    {76,  StreetTalkDirectoryAssistance, "StreetTalk Directory Insistance (STDA) Option", (Vec<Ipv4Addr>)},
+    // TODO: split user-class into individual classes [len | <class>, ...]
+    {77,  UserClass, "User Class Option - <https://www.rfc-editor.org/rfc/rfc3004.html>", (Vec<u8>)},
     {80,  RapidCommit, "Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>"},
     {81,  ClientFQDN, "FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>", (fqdn::ClientFQDN)},
     {82,  RelayAgentInformation, "Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>", (relay::RelayAgentInformation)},
@@ -108,13 +122,13 @@ dhcproto_macros::declare_codes!(
     {119, DomainSearch, "Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>", (Vec<Name>)},
     {121, ClasslessStaticRoute, "Classless Static Route - <https://www.rfc-editor.org/rfc/rfc3442>", (Vec<(Ipv4Net, Ipv4Addr)>)},
     {150, TFTPServerAddress, "TFTP Server Address - <https://www.rfc-editor.org/rfc/rfc5859.html>", (Ipv4Addr)},
-    {151, BulkLeaseQueryStatusCode, "status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>", (bulk_query::Code, String)},
-    {152, BulkLeaseQueryBaseTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>", (u32)},
-    {153, BulkLeasQueryStartTimeOfState, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.4>", (u32)},
-    {154, BulkLeaseQueryQueryStartTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.5>", (u32)},
-    {155, BulkLeaseQueryQueryEndTime, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.6>", (u32)},
-    {156, BulkLeaseQueryDhcpState, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.7>", (bulk_query::QueryState)},
-    {157, BulkLeaseQueryDataSource, "- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>", (bulk_query::DataSourceFlags)},
+    {151, BulkLeaseQueryStatusCode, "BLQ status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>", (bulk_query::Code, String)},
+    {152, BulkLeaseQueryBaseTime, "BLQ base time - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>", (u32)},
+    {153, BulkLeasQueryStartTimeOfState, "BLQ start time of state - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.4>", (u32)},
+    {154, BulkLeaseQueryQueryStartTime, "BLQ query start time - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.5>", (u32)},
+    {155, BulkLeaseQueryQueryEndTime, "BLQ query end time- <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.6>", (u32)},
+    {156, BulkLeaseQueryDhcpState, "BLQ DHCP state - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.7>", (bulk_query::QueryState)},
+    {157, BulkLeaseQueryDataSource, "BLQ data source - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>", (bulk_query::DataSourceFlags)},
     {255, End, "end-of-list marker"}
 );
 /// ex
@@ -490,8 +504,17 @@ fn decode_inner(
         OptionCode::ExtensionsPath => ExtensionsPath(decoder.read_string(len)?),
         OptionCode::IpForwarding => IpForwarding(decoder.read_bool()?),
         OptionCode::NonLocalSrcRouting => NonLocalSrcRouting(decoder.read_bool()?),
+        OptionCode::PolicyFilter => PolicyFilter(decoder.read_pair_ipv4s(len)?),
         OptionCode::MaxDatagramSize => MaxDatagramSize(decoder.read_u16()?),
         OptionCode::DefaultIpTtl => DefaultIpTtl(decoder.read_u8()?),
+        OptionCode::PathMtuAgingTimeout => PathMtuAgingTimeout(decoder.read_u32()?),
+        OptionCode::PathMtuPlateauTable => PathMtuPlateauTable({
+            decoder
+                .read_slice(len)?
+                .chunks_exact(2)
+                .map(|num| u16::from_be_bytes([num[0], num[1]]))
+                .collect()
+        }),
         OptionCode::InterfaceMtu => InterfaceMtu(decoder.read_u16()?),
         OptionCode::AllSubnetsLocal => AllSubnetsLocal(decoder.read_bool()?),
         OptionCode::BroadcastAddr => BroadcastAddr(decoder.read_ipv4(len)?),
@@ -500,17 +523,15 @@ fn decode_inner(
         OptionCode::PerformRouterDiscovery => PerformRouterDiscovery(decoder.read_bool()?),
         OptionCode::RouterSolicitationAddr => RouterSolicitationAddr(decoder.read_ipv4(len)?),
         OptionCode::StaticRoutingTable => StaticRoutingTable(decoder.read_pair_ipv4s(len)?),
+        OptionCode::TrailerEncapsulated => TrailerEncapsulated(decoder.read_bool()?),
         OptionCode::ArpCacheTimeout => ArpCacheTimeout(decoder.read_u32()?),
         OptionCode::EthernetEncapsulation => EthernetEncapsulation(decoder.read_bool()?),
         OptionCode::DefaultTcpTtl => DefaultIpTtl(decoder.read_u8()?),
         OptionCode::TcpKeepaliveInterval => TcpKeepaliveInterval(decoder.read_u32()?),
         OptionCode::TcpKeepaliveGarbage => TcpKeepaliveGarbage(decoder.read_bool()?),
-        OptionCode::NISDomain => NISDomain(decoder.read_string(len)?),
-        OptionCode::NISServerAddr => NISServerAddr(decoder.read_ipv4s(len)?),
-        OptionCode::TFTPServerName => TFTPServerName(decoder.read_slice(len)?.to_vec()),
-        OptionCode::BootfileName => BootfileName(decoder.read_slice(len)?.to_vec()),
-        OptionCode::NIS => NIS(decoder.read_ipv4s(len)?),
-        OptionCode::NTPServers => NTPServers(decoder.read_ipv4s(len)?),
+        OptionCode::NisDomain => NisDomain(decoder.read_string(len)?),
+        OptionCode::NisServers => NisServers(decoder.read_ipv4s(len)?),
+        OptionCode::NtpServers => NtpServers(decoder.read_ipv4s(len)?),
         OptionCode::VendorExtensions => VendorExtensions(decoder.read_slice(len)?.to_vec()),
         OptionCode::NetBiosNameServers => NetBiosNameServers(decoder.read_ipv4s(len)?),
         OptionCode::NetBiosDatagramDistributionServer => {
@@ -538,6 +559,25 @@ fn decode_inner(
         OptionCode::Rebinding => Rebinding(decoder.read_u32()?),
         OptionCode::ClassIdentifier => ClassIdentifier(decoder.read_slice(len)?.to_vec()),
         OptionCode::ClientIdentifier => ClientIdentifier(decoder.read_slice(len)?.to_vec()),
+        OptionCode::NwipDomainName => NwipDomainName(decoder.read_string(len)?),
+        OptionCode::NwipInformation => NwipInformation(decoder.read_slice(len)?.to_vec()),
+        OptionCode::NispServiceDomain => NispServiceDomain(decoder.read_string(len)?),
+        OptionCode::NispServers => NispServers(decoder.read_ipv4s(len)?),
+        OptionCode::TFTPServerName => TFTPServerName(decoder.read_slice(len)?.to_vec()),
+        OptionCode::BootfileName => BootfileName(decoder.read_slice(len)?.to_vec()),
+        OptionCode::MobileIpHomeAgent => MobileIpHomeAgent(decoder.read_ipv4s(len)?),
+        OptionCode::SmtpServer => SmtpServer(decoder.read_ipv4s(len)?),
+        OptionCode::Pop3Server => Pop3Server(decoder.read_ipv4s(len)?),
+        OptionCode::NntpServer => NntpServer(decoder.read_ipv4s(len)?),
+        OptionCode::WwwServer => WwwServer(decoder.read_ipv4s(len)?),
+        OptionCode::DefaultFingerServer => DefaultFingerServer(decoder.read_ipv4s(len)?),
+        OptionCode::IrcServer => IrcServer(decoder.read_ipv4s(len)?),
+        OptionCode::StreetTalkServer => StreetTalkServer(decoder.read_ipv4s(len)?),
+        OptionCode::StreetTalkDirectoryAssistance => {
+            StreetTalkDirectoryAssistance(decoder.read_ipv4s(len)?)
+        }
+        OptionCode::UserClass => UserClass(decoder.read_slice(len)?.to_vec()),
+
         OptionCode::RapidCommit => {
             debug_assert!(len == 0);
             RapidCommit
@@ -764,11 +804,11 @@ pub fn encode_long_opt_bytes(
 /// let mut buf = Vec::new();
 /// let mut e = Encoder::new(&mut buf);
 /// let opt = iter::repeat(Ipv4Addr::from([1,2,3,4])).take(80).collect::<Vec<_>>();
-/// let res = encode_long_opt_chunks(OptionCode::NIS, 4, &opt, |ip, e| e.write_u32((*ip).into()), &mut e);
+/// let res = encode_long_opt_chunks(OptionCode::NisServers, 4, &opt, |ip, e| e.write_u32((*ip).into()), &mut e);
 /// // [code, 252, 1,2,3,4,1,2,3,4 ..., code, 68, 1,2,3,4, ...]
-/// let mut x = vec![OptionCode::NIS.into(), 252];
+/// let mut x = vec![OptionCode::NisServers.into(), 252];
 /// x.extend(iter::repeat(Ipv4Addr::from([1,2,3,4])).map(|ip| u32::from(ip).to_be_bytes()).flatten().take(252));
-/// x.push(OptionCode::NIS.into());
+/// x.push(OptionCode::NisServers.into());
 /// x.push(68);
 /// x.extend(iter::repeat(Ipv4Addr::from([1,2,3,4])).map(|ip| u32::from(ip).to_be_bytes()).flatten().take(68));
 ///
@@ -842,22 +882,26 @@ impl Encodable for DhcpOption {
             | ResourceLocationServer(ips)
             | XFontServer(ips)
             | XDisplayManager(ips)
-            | NIS(ips)
-            | NISServerAddr(ips)
-            | NTPServers(ips)
+            | NisServers(ips)
+            | NtpServers(ips)
             | NetBiosNameServers(ips)
             | NetBiosDatagramDistributionServer(ips)
-            | AssociatedIp(ips) => {
-                // let bytes = ips.iter().flat_map(|a| u32::from(*a).to_be_bytes()).collect::<Vec<_>>();
+            | AssociatedIp(ips)
+            | NispServers(ips)
+            | MobileIpHomeAgent(ips)
+            | Pop3Server(ips)
+            | NntpServer(ips)
+            | WwwServer(ips)
+            | DefaultFingerServer(ips)
+            | StreetTalkServer(ips)
+            | StreetTalkDirectoryAssistance(ips)
+            | SmtpServer(ips)
+            | IrcServer(ips) => {
                 encode_long_opt_chunks(code, 4, ips, |ip, e| e.write_u32((*ip).into()), e)?;
-                // e.write_u8(code.into())?;
-                // e.write_u8(ips.len() as u8 * 4)?;
-                // for ip in ips {
-                //     e.write_u32((*ip).into())?;
-                // }
             }
-            Hostname(s) | MeritDumpFile(s) | DomainName(s) | ExtensionsPath(s) | NISDomain(s)
-            | RootPath(s) | NetBiosScope(s) | Message(s) => {
+            Hostname(s) | MeritDumpFile(s) | DomainName(s) | ExtensionsPath(s) | NisDomain(s)
+            | RootPath(s) | NetBiosScope(s) | Message(s) | NwipDomainName(s)
+            | NispServiceDomain(s) => {
                 encode_long_opt_bytes(code, s.as_bytes(), e)?;
             }
             BootFileSize(num) | MaxDatagramSize(num) | InterfaceMtu(num) | MaxMessageSize(num) => {
@@ -872,7 +916,8 @@ impl Encodable for DhcpOption {
             | MaskSupplier(b)
             | PerformRouterDiscovery(b)
             | EthernetEncapsulation(b)
-            | TcpKeepaliveGarbage(b) => {
+            | TcpKeepaliveGarbage(b)
+            | TrailerEncapsulated(b) => {
                 e.write_u8(code.into())?;
                 e.write_u8(1)?;
                 e.write_u8((*b).into())?
@@ -882,9 +927,7 @@ impl Encodable for DhcpOption {
                 e.write_u8(1)?;
                 e.write_u8(*byte)?
             }
-            StaticRoutingTable(pair_ips) => {
-                //     let bytes = pair_ips.iter().flat_map(|(a, b)| u32::from(*a).to_be_bytes().into_iter().chain(u32::from(*b).to_be_bytes())).collect::<Vec<_>>();
-                //     encode_chunk_bytes(code, &bytes, e)?;
+            StaticRoutingTable(pair_ips) | PolicyFilter(pair_ips) => {
                 encode_long_opt_chunks(
                     code,
                     8,
@@ -905,7 +948,8 @@ impl Encodable for DhcpOption {
             | BulkLeaseQueryBaseTime(num)
             | BulkLeasQueryStartTimeOfState(num)
             | BulkLeaseQueryQueryStartTime(num)
-            | BulkLeaseQueryQueryEndTime(num) => {
+            | BulkLeaseQueryQueryEndTime(num)
+            | PathMtuAgingTimeout(num) => {
                 e.write_u8(code.into())?;
                 e.write_u8(4)?;
                 e.write_u32(*num)?;
@@ -915,7 +959,9 @@ impl Encodable for DhcpOption {
             | ClientIdentifier(bytes)
             | ClientMachineIdentifier(bytes)
             | TFTPServerName(bytes)
-            | BootfileName(bytes) => {
+            | BootfileName(bytes)
+            | NwipInformation(bytes)
+            | UserClass(bytes) => {
                 encode_long_opt_bytes(code, bytes, e)?;
             }
             ParameterRequestList(codes) => {
@@ -1009,6 +1055,9 @@ impl Encodable for DhcpOption {
                 }
 
                 encode_long_opt_bytes(code, &buf, e)?;
+            }
+            PathMtuPlateauTable(nums) => {
+                encode_long_opt_chunks(code, 2, nums, |num, e| e.write_u16(*num), e)?;
             }
             // not yet implemented
             Unknown(opt) => {
@@ -1398,7 +1447,7 @@ mod tests {
     #[test]
     fn test_nis_server_addr() -> Result<()> {
         test_opt(
-            DhcpOption::NISServerAddr(vec![
+            DhcpOption::NispServers(vec![
                 Ipv4Addr::new(127, 0, 0, 1),
                 Ipv4Addr::new(127, 0, 0, 2),
             ]),
