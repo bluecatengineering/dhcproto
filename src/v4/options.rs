@@ -791,6 +791,22 @@ pub fn encode_long_opt_bytes(
     }
     Ok(())
 }
+
+/// Encodes a list of domain `Name`s but chunked into u8::MAX pieces,
+/// where each chunk is prepended by the length of the chunk and the code.
+pub fn encode_long_opt_domains(
+    code: OptionCode,
+    names: &[Name],
+    e: &mut Encoder<'_>,
+) -> EncodeResult<()> {
+    let mut buf = Vec::new();
+    let mut name_encoder = BinEncoder::new(&mut buf);
+    for name in names {
+        name.emit(&mut name_encoder)?;
+    }
+    encode_long_opt_bytes(code, &buf, e)?;
+    Ok(())
+}
 /// Splits `bytes` into chunks of up to u8::MAX / `factor` (255 is the max opt length),
 /// where each chunk is prepended by the length of the chunk and the code.
 ///
@@ -1017,14 +1033,7 @@ impl Encodable for DhcpOption {
                 e.write_u8(1)?;
                 e.write_u8((*src).into())?
             }
-            DomainSearch(names) => {
-                let mut buf = Vec::new();
-                let mut name_encoder = BinEncoder::new(&mut buf);
-                for name in names {
-                    name.emit(&mut name_encoder)?;
-                }
-                encode_long_opt_bytes(code, &buf, e)?;
-            }
+            DomainSearch(names) => encode_long_opt_domains(code, names, e)?,
             ClientFQDN(fqdn) => {
                 let fqdn::ClientFQDN {
                     flags,
