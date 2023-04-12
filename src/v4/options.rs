@@ -112,6 +112,8 @@ dhcproto_macros::declare_codes!(
     {80,  RapidCommit, "Rapid Commit - <https://www.rfc-editor.org/rfc/rfc4039.html>"},
     {81,  ClientFQDN, "FQDN - <https://datatracker.ietf.org/doc/html/rfc4702>", (fqdn::ClientFQDN)},
     {82,  RelayAgentInformation, "Relay Agent Information - <https://datatracker.ietf.org/doc/html/rfc3046>", (relay::RelayAgentInformation)},
+    {88,  BcmsControllerNames, "Broadcast Multicast Controller Names - <https://www.rfc-editor.org/rfc/rfc4280.html#section-4.1>", (Vec<Name>)},
+    {89,  BcmsControllerAddrs, "Broadcast Mutlicast Controller Address - <https://www.rfc-editor.org/rfc/rfc4280.html#section-4.3>", (Vec<Ipv4Addr>)},
     {91,  ClientLastTransactionTime, "client-last-transaction-time - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>", (u32)},
     {92,  AssociatedIp, "associated-ip - <https://www.rfc-editor.org/rfc/rfc4388.html#section-6.1>", (Vec<Ipv4Addr>)},
     {93,  ClientSystemArchitecture, "Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>", (Architecture)},
@@ -586,6 +588,8 @@ fn decode_inner(
             let mut dec = Decoder::new(decoder.read_slice(len)?);
             RelayAgentInformation(relay::RelayAgentInformation::decode(&mut dec)?)
         }
+        OptionCode::BcmsControllerNames => BcmsControllerNames(decoder.read_domains(len)?),
+        OptionCode::BcmsControllerAddrs => BcmsControllerAddrs(decoder.read_ipv4s(len)?),
         OptionCode::ClientLastTransactionTime => ClientLastTransactionTime(decoder.read_u32()?),
         OptionCode::AssociatedIp => AssociatedIp(decoder.read_ipv4s(len)?),
         OptionCode::ClientSystemArchitecture => {
@@ -601,15 +605,7 @@ fn decode_inner(
         }
         OptionCode::CaptivePortal => CaptivePortal(decoder.read_str(len)?.parse()?),
         OptionCode::SubnetSelection => SubnetSelection(decoder.read_ipv4(len)?),
-        OptionCode::DomainSearch => {
-            let mut name_decoder = BinDecoder::new(decoder.read_slice(len)?);
-            let mut names = Vec::new();
-            while let Ok(name) = Name::read(&mut name_decoder) {
-                names.push(name);
-            }
-
-            DomainSearch(names)
-        }
+        OptionCode::DomainSearch => DomainSearch(decoder.read_domains(len)?),
         OptionCode::TFTPServerAddress => TFTPServerAddress(decoder.read_ipv4(len)?),
         OptionCode::BulkLeaseQueryStatusCode => {
             let code = decoder.read_u8()?.into();
@@ -912,7 +908,8 @@ impl Encodable for DhcpOption {
             | StreetTalkServer(ips)
             | StreetTalkDirectoryAssistance(ips)
             | SmtpServer(ips)
-            | IrcServer(ips) => {
+            | IrcServer(ips)
+            | BcmsControllerAddrs(ips) => {
                 encode_long_opt_chunks(code, 4, ips, |ip, e| e.write_u32((*ip).into()), e)?;
             }
             Hostname(s) | MeritDumpFile(s) | DomainName(s) | ExtensionsPath(s) | NisDomain(s)
@@ -1033,7 +1030,9 @@ impl Encodable for DhcpOption {
                 e.write_u8(1)?;
                 e.write_u8((*src).into())?
             }
-            DomainSearch(names) => encode_long_opt_domains(code, names, e)?,
+            DomainSearch(names) | BcmsControllerNames(names) => {
+                encode_long_opt_domains(code, names, e)?
+            }
             ClientFQDN(fqdn) => {
                 let fqdn::ClientFQDN {
                     flags,

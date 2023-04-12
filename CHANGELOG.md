@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- add 21/24/25/34 & 62..65 & 68..77
+- add v4 options 21/24/25/34 & 62..65 & 68..77
+- add v4 opts 88 & 89. 88 uses same domain long opt encoding as 119
 
 ### Changed
 
