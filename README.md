@@ -91,6 +91,7 @@ DHCPv4:
 - <https://tools.ietf.org/html/rfc3396>
 - <https://tools.ietf.org/html/rfc3397>
 - <https://tools.ietf.org/html/rfc4039>
+- <https://tools.ietf.org/html/rfc4280>
 - <https://tools.ietf.org/html/rfc4388> (message types & opts)
 - <https://tools.ietf.org/html/rfc4578>
 - <https://tools.ietf.org/html/rfc4702>
