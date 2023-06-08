@@ -86,10 +86,12 @@ use serde::{Deserialize, Serialize};
 pub mod bulk_query;
 mod flags;
 pub mod fqdn;
+pub mod generic;
 mod htype;
 mod opcode;
 mod options;
 pub mod relay;
+pub mod vendor;
 
 // re-export submodules from proto::msg
 pub use self::{flags::*, htype::*, opcode::*, options::*};

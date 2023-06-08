@@ -1,7 +1,10 @@
 //!
-use std::{collections::HashMap, fmt, net::Ipv4Addr};
+use std::{fmt, net::Ipv4Addr};
 
-use crate::{Decodable, Encodable};
+use crate::{
+    v4::generic::{GenericOptions, Id, UnknownOption},
+    Decodable, Encodable,
+};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -22,71 +25,18 @@ use serde::{Deserialize, Serialize};
 /// ```
 ///
 /// [`DhcpOption::RelayAgentInformation`]: crate::v4::DhcpOption::RelayAgentInformation
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct RelayAgentInformation(HashMap<RelayCode, RelayInfo>);
+pub type RelayAgentInformation = GenericOptions<RelayCode, RelayInfo>;
 
-impl RelayAgentInformation {
-    /// Get the data for a particular [`RelayCode`]
-    ///
-    /// [`RelayCode`]: crate::v4::relay::RelayCode
-    pub fn get(&self, code: RelayCode) -> Option<&RelayInfo> {
-        self.0.get(&code)
-    }
-    /// Get the mutable data for a particular [`RelayCode`]
-    ///
-    /// [`RelayCode`]: crate::v4::relay::RelayCode
-    pub fn get_mut(&mut self, code: RelayCode) -> Option<&mut RelayInfo> {
-        self.0.get_mut(&code)
-    }
-    /// remove sub option
-    pub fn remove(&mut self, code: RelayCode) -> Option<RelayInfo> {
-        self.0.remove(&code)
-    }
-    /// insert a new [`RelayInfo`]
-    ///
-    /// [`RelayInfo`]: crate::v4::relay::RelayInfo
-    pub fn insert(&mut self, info: RelayInfo) -> Option<RelayInfo> {
-        self.0.insert((&info).into(), info)
-    }
-    /// iterate over entries
-    pub fn iter(&self) -> impl Iterator<Item = (&RelayCode, &RelayInfo)> {
-        self.0.iter()
-    }
-    /// iterate mutably over entries
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&RelayCode, &mut RelayInfo)> {
-        self.0.iter_mut()
-    }
-    /// clear all options
-    pub fn clear(&mut self) {
-        self.0.clear()
-    }
-    /// Returns `true` if there are no options
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-    /// Retans only the elements specified by the predicate
-    pub fn retain<F>(&mut self, pred: F)
-    where
-        F: FnMut(&RelayCode, &mut RelayInfo) -> bool,
-    {
-        self.0.retain(pred)
+impl Id<u8> for RelayInfo {
+    fn id(&self) -> u8 {
+        let code: RelayCode = self.into();
+        code.into()
     }
 }
 
-impl Decodable for RelayAgentInformation {
-    fn decode(d: &mut crate::Decoder<'_>) -> super::DecodeResult<Self> {
-        let mut opts = HashMap::new();
-        while let Ok(opt) = RelayInfo::decode(d) {
-            opts.insert(RelayCode::from(&opt), opt);
-        }
-        Ok(RelayAgentInformation(opts))
-    }
-}
-
-impl Encodable for RelayAgentInformation {
-    fn encode(&self, e: &mut crate::Encoder<'_>) -> super::EncodeResult<()> {
-        self.0.iter().try_for_each(|(_, info)| info.encode(e))
+impl Id<RelayCode> for RelayInfo {
+    fn id(&self) -> RelayCode {
+        self.into()
     }
 }
 
@@ -107,7 +57,7 @@ pub enum RelayInfo {
     RelayAgentFlags(RelayFlags),
     /// 11 - <https://datatracker.ietf.org/doc/html/rfc5107#section-4>
     ServerIdentifierOverride(Ipv4Addr),
-    Unknown(UnknownInfo),
+    Unknown(UnknownOption),
     // TODO: not tackling this at the moment
     // 7 - <https://datatracker.ietf.org/doc/html/rfc4014>
     // RadiusAttributes,
@@ -167,7 +117,7 @@ impl Decodable for RelayInfo {
             | RelayCode::VendorSpecificInformation) => {
                 let length = d.read_u8()?;
                 let bytes = d.read_slice(length as usize)?.to_vec();
-                Unknown(UnknownInfo {
+                Unknown(UnknownOption {
                     code: code.into(),
                     data: bytes,
                 })
@@ -176,7 +126,7 @@ impl Decodable for RelayInfo {
             RelayCode::Unknown(code) => {
                 let length = d.read_u8()?;
                 let bytes = d.read_slice(length as usize)?.to_vec();
-                Unknown(UnknownInfo { code, data: bytes })
+                Unknown(UnknownOption { code, data: bytes })
             }
         })
     }
@@ -258,35 +208,6 @@ impl From<u8> for RelayFlags {
 impl From<RelayFlags> for u8 {
     fn from(f: RelayFlags) -> Self {
         f.0
-    }
-}
-
-/// An as-of-yet unimplemented relay info
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct UnknownInfo {
-    code: u8,
-    data: Vec<u8>,
-}
-
-impl UnknownInfo {
-    pub fn new(code: RelayCode, data: Vec<u8>) -> Self {
-        Self {
-            code: code.into(),
-            data,
-        }
-    }
-    /// return the relay code
-    pub fn code(&self) -> RelayCode {
-        self.code.into()
-    }
-    /// return the data for this code
-    pub fn data(&self) -> &[u8] {
-        &self.data
-    }
-    /// take ownership and return the parts of this
-    pub fn into_parts(self) -> (RelayCode, Vec<u8>) {
-        (self.code.into(), self.data)
     }
 }
 
@@ -426,7 +347,10 @@ mod tests {
     #[test]
     fn test_unknown() -> Result<()> {
         test_opt(
-            RelayInfo::Unknown(UnknownInfo::new(RelayCode::Unknown(149), vec![1, 2, 3, 4])),
+            RelayInfo::Unknown(UnknownOption::new(
+                RelayCode::Unknown(149),
+                vec![1, 2, 3, 4],
+            )),
             vec![149, 4, 1, 2, 3, 4],
         )?;
 

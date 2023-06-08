@@ -1,13 +1,14 @@
-use std::{borrow::Cow, collections::HashMap, iter, net::Ipv4Addr};
+use std::{borrow::Cow, collections::HashMap, hash::Hash, iter, net::Ipv4Addr};
 
 use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
     error::{DecodeResult, EncodeResult},
     v4::bulk_query,
-    v4::{fqdn, relay},
+    v4::{fqdn, generic::GenericOptions, relay, vendor},
 };
 
+pub use crate::v4::generic::UnknownOption;
 use ipnet::Ipv4Net;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -123,6 +124,8 @@ dhcproto_macros::declare_codes!(
     {118, SubnetSelection, "Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>", (Ipv4Addr)},
     {119, DomainSearch, "Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>", (Vec<Name>)},
     {121, ClasslessStaticRoute, "Classless Static Route - <https://www.rfc-editor.org/rfc/rfc3442>", (Vec<(Ipv4Net, Ipv4Addr)>)},
+    {124, VendorClasses, "Vendor class - <https://datatracker.ietf.org/doc/html/rfc3925#section-3>", (vendor::VendorClasses)},
+    {125, VendorOptions, "Vendor options - <https://datatracker.ietf.org/doc/html/rfc3925#section-4>", (vendor::VendorOptions)},
     {150, TFTPServerAddress, "TFTP Server Address - <https://www.rfc-editor.org/rfc/rfc5859.html>", (Ipv4Addr)},
     {151, BulkLeaseQueryStatusCode, "BLQ status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>", (bulk_query::Code, String)},
     {152, BulkLeaseQueryBaseTime, "BLQ base time - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>", (u32)},
@@ -586,7 +589,9 @@ fn decode_inner(
         }
         OptionCode::RelayAgentInformation => {
             let mut dec = Decoder::new(decoder.read_slice(len)?);
-            RelayAgentInformation(relay::RelayAgentInformation::decode(&mut dec)?)
+            RelayAgentInformation(
+                GenericOptions::<relay::RelayCode, relay::RelayInfo>::decode(&mut dec)?,
+            )
         }
         OptionCode::BcmsControllerNames => BcmsControllerNames(decoder.read_domains(len)?),
         OptionCode::BcmsControllerAddrs => BcmsControllerAddrs(decoder.read_ipv4s(len)?),
@@ -606,6 +611,14 @@ fn decode_inner(
         OptionCode::CaptivePortal => CaptivePortal(decoder.read_str(len)?.parse()?),
         OptionCode::SubnetSelection => SubnetSelection(decoder.read_ipv4(len)?),
         OptionCode::DomainSearch => DomainSearch(decoder.read_domains(len)?),
+        OptionCode::VendorClasses => {
+            let mut dec = Decoder::new(decoder.read_slice(len)?);
+            VendorClasses(vendor::VendorClasses::decode(&mut dec)?)
+        }
+        OptionCode::VendorOptions => {
+            let mut dec = Decoder::new(decoder.read_slice(len)?);
+            VendorOptions(vendor::VendorOptions::decode(&mut dec)?)
+        }
         OptionCode::TFTPServerAddress => TFTPServerAddress(decoder.read_ipv4(len)?),
         OptionCode::BulkLeaseQueryStatusCode => {
             let code = decoder.read_u8()?.into();
@@ -997,6 +1010,21 @@ impl Encodable for DhcpOption {
                 // data encoded to intermediate buf
                 encode_long_opt_bytes(code, &buf, e)?;
             }
+            VendorClasses(classes) => {
+                let mut buf = Vec::new();
+                let mut opt_enc = Encoder::new(&mut buf);
+                classes.encode(&mut opt_enc)?;
+                // data encoded to intermediate buf
+                encode_long_opt_bytes(code, &buf, e)?;
+            }
+            VendorOptions(vendor_opts) => {
+                let mut buf = Vec::new();
+                let mut opt_enc = Encoder::new(&mut buf);
+                vendor_opts.encode(&mut opt_enc)?;
+                // data encoded to intermediate buf
+                encode_long_opt_bytes(code, &buf, e)?;
+            }
+
             ClientSystemArchitecture(arch) => {
                 e.write_u8(code.into())?;
                 e.write_u8(2)?;
@@ -1072,54 +1100,6 @@ impl Encodable for DhcpOption {
                 encode_long_opt_bytes(code, &opt.data, e)?;
             }
         };
-        Ok(())
-    }
-}
-
-/// An as-of-yet unimplemented option type
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct UnknownOption {
-    code: u8,
-    data: Vec<u8>,
-}
-
-impl UnknownOption {
-    pub fn new(code: OptionCode, data: Vec<u8>) -> Self {
-        Self {
-            code: code.into(),
-            data,
-        }
-    }
-    /// return the option code
-    pub fn code(&self) -> OptionCode {
-        self.code.into()
-    }
-    /// return the data for this option
-    pub fn data(&self) -> &[u8] {
-        &self.data
-    }
-    /// consume into parts
-    pub fn into_parts(self) -> (OptionCode, Vec<u8>) {
-        (self.code.into(), self.data)
-    }
-}
-
-impl Decodable for UnknownOption {
-    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
-        let code = decoder.read_u8()?;
-        let length = decoder.read_u8()?;
-        let bytes = decoder.read_slice(length as usize)?.to_vec();
-        Ok(UnknownOption { code, data: bytes })
-    }
-}
-
-impl Encodable for UnknownOption {
-    fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
-        // TODO: account for >255 len
-        e.write_u8(self.code)?;
-        e.write_u8(self.data.len() as u8)?;
-        e.write_slice(&self.data)?;
         Ok(())
     }
 }
