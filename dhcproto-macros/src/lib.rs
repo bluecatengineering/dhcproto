@@ -1,4 +1,5 @@
-use proc_macro::{Group, Ident, TokenStream, TokenTree};
+use proc_macro::{Group, Ident, TokenTree};
+
 struct Entry {
     code: u8,
     id: Ident,
@@ -6,7 +7,7 @@ struct Entry {
     data_type: Option<Group>,
 }
 
-fn parse_input(input: TokenStream) -> Vec<Entry> {
+fn parse_input(input: proc_macro::TokenStream) -> Vec<Entry> {
     let mut entries = Vec::new();
     for x in input.into_iter() {
         if let TokenTree::Group(group) = x {
@@ -173,7 +174,7 @@ fn generate_dhcpoption_code<'a>(entries: &'a [Entry]) -> impl Iterator<Item = St
 }
 
 #[proc_macro]
-pub fn declare_codes(input: TokenStream) -> TokenStream {
+pub fn declare_codes(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let entries = parse_input(input);
     let enum_code = generate_optioncode_code(&entries);
     let dhcpoption_code = generate_dhcpoption_code(&entries);
