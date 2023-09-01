@@ -184,29 +184,29 @@ impl Decodable for RelayInfo {
 
 impl Encodable for RelayInfo {
     fn encode(&self, e: &mut crate::Encoder<'_>) -> super::EncodeResult<()> {
-        use RelayInfo::*;
+        use RelayInfo as R;
         let code: RelayCode = self.into();
         e.write_u8(code.into())?;
         match self {
-            AgentCircuitId(id) | AgentRemoteId(id) | SubscriberId(id) => {
+            R::AgentCircuitId(id) | R::AgentRemoteId(id) | R::SubscriberId(id) => {
                 // length of bytes stored in Vec
                 e.write_u8(id.len() as u8)?;
                 e.write_slice(id)?
             }
-            DocsisDeviceClass(n) => {
+            R::DocsisDeviceClass(n) => {
                 e.write_u8(4)?;
                 e.write_u32(*n)?
             }
-            LinkSelection(addr) | ServerIdentifierOverride(addr) => {
+            R::LinkSelection(addr) | R::ServerIdentifierOverride(addr) => {
                 e.write_u8(4)?;
                 e.write_u32((*addr).into())?
             }
-            RelayAgentFlags(flags) => {
+            R::RelayAgentFlags(flags) => {
                 e.write_u8(1)?;
                 e.write_u8((*flags).into())?
             }
             // not yet implemented
-            Unknown(opt) => {
+            R::Unknown(opt) => {
                 // length of bytes stored in Vec
                 e.write_u8(opt.data.len() as u8)?;
                 e.write_slice(&opt.data)?
@@ -332,37 +332,37 @@ impl From<u8> for RelayCode {
 }
 impl From<RelayCode> for u8 {
     fn from(code: RelayCode) -> Self {
-        use RelayCode::*;
+        use RelayCode as R;
         match code {
-            AgentCircuitId => 1,
-            AgentRemoteId => 2,
-            DocsisDeviceClass => 4,
-            LinkSelection => 5,
-            SubscriberId => 6,
-            RadiusAttributes => 7,
-            Authentication => 8,
-            VendorSpecificInformation => 9,
-            RelayAgentFlags => 10,
-            ServerIdentifierOverride => 11,
-            VirtualSubnet => 151,
-            VirtualSubnetControl => 152,
-            Unknown(n) => n,
+            R::AgentCircuitId => 1,
+            R::AgentRemoteId => 2,
+            R::DocsisDeviceClass => 4,
+            R::LinkSelection => 5,
+            R::SubscriberId => 6,
+            R::RadiusAttributes => 7,
+            R::Authentication => 8,
+            R::VendorSpecificInformation => 9,
+            R::RelayAgentFlags => 10,
+            R::ServerIdentifierOverride => 11,
+            R::VirtualSubnet => 151,
+            R::VirtualSubnetControl => 152,
+            R::Unknown(n) => n,
         }
     }
 }
 
 impl From<&RelayInfo> for RelayCode {
     fn from(info: &RelayInfo) -> Self {
-        use RelayInfo::*;
+        use RelayInfo as R;
         match info {
-            AgentCircuitId(_) => RelayCode::AgentCircuitId,
-            AgentRemoteId(_) => RelayCode::AgentRemoteId,
-            DocsisDeviceClass(_) => RelayCode::DocsisDeviceClass,
-            LinkSelection(_) => RelayCode::LinkSelection,
-            SubscriberId(_) => RelayCode::SubscriberId,
-            RelayAgentFlags(_) => RelayCode::RelayAgentFlags,
-            ServerIdentifierOverride(_) => RelayCode::ServerIdentifierOverride,
-            Unknown(unknown) => RelayCode::Unknown(unknown.code),
+            R::AgentCircuitId(_) => RelayCode::AgentCircuitId,
+            R::AgentRemoteId(_) => RelayCode::AgentRemoteId,
+            R::DocsisDeviceClass(_) => RelayCode::DocsisDeviceClass,
+            R::LinkSelection(_) => RelayCode::LinkSelection,
+            R::SubscriberId(_) => RelayCode::SubscriberId,
+            R::RelayAgentFlags(_) => RelayCode::RelayAgentFlags,
+            R::ServerIdentifierOverride(_) => RelayCode::ServerIdentifierOverride,
+            R::Unknown(unknown) => RelayCode::Unknown(unknown.code),
         }
     }
 }

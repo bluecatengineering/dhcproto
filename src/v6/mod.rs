@@ -307,35 +307,35 @@ impl From<u8> for MessageType {
 
 impl From<MessageType> for u8 {
     fn from(m: MessageType) -> Self {
-        use MessageType::*;
+        use MessageType as M;
         match m {
             // RFC 3315
-            Solicit => 1,
-            Advertise => 2,
-            Request => 3,
-            Confirm => 4,
-            Renew => 5,
-            Rebind => 6,
-            Reply => 7,
-            Release => 8,
-            Decline => 9,
-            Reconfigure => 10,
-            InformationRequest => 11,
-            RelayForw => 12,
-            RelayRepl => 13,
+            M::Solicit => 1,
+            M::Advertise => 2,
+            M::Request => 3,
+            M::Confirm => 4,
+            M::Renew => 5,
+            M::Rebind => 6,
+            M::Reply => 7,
+            M::Release => 8,
+            M::Decline => 9,
+            M::Reconfigure => 10,
+            M::InformationRequest => 11,
+            M::RelayForw => 12,
+            M::RelayRepl => 13,
             // RFC 5007
-            LeaseQuery => 14,
-            LeaseQueryReply => 15,
+            M::LeaseQuery => 14,
+            M::LeaseQueryReply => 15,
             // RFC 5460
-            LeaseQueryDone => 16,
-            LeaseQueryData => 17,
+            M::LeaseQueryDone => 16,
+            M::LeaseQueryData => 17,
             // RFC 6977
-            ReconfigureRequest => 18,
-            ReconfigureReply => 19,
+            M::ReconfigureRequest => 18,
+            M::ReconfigureReply => 19,
             // RFC 7341
-            DHCPv4Query => 20,
-            DHCPv4Response => 21,
-            Unknown(n) => n,
+            M::DHCPv4Query => 20,
+            M::DHCPv4Response => 21,
+            M::Unknown(n) => n,
         }
     }
 }

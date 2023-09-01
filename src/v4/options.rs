@@ -418,19 +418,19 @@ impl From<u16> for Architecture {
 
 impl From<Architecture> for u16 {
     fn from(n: Architecture) -> Self {
-        use Architecture::*;
+        use Architecture as A;
         match n {
-            Intelx86PC => 0,
-            NECPC98 => 1,
-            Itanium => 2,
-            DECAlpha => 3,
-            Arcx86 => 4,
-            IntelLeanClient => 5,
-            IA32 => 6,
-            BC => 7,
-            Xscale => 8,
-            X86_64 => 9,
-            Unknown(n) => n,
+            A::Intelx86PC => 0,
+            A::NECPC98 => 1,
+            A::Itanium => 2,
+            A::DECAlpha => 3,
+            A::Arcx86 => 4,
+            A::IntelLeanClient => 5,
+            A::IA32 => 6,
+            A::BC => 7,
+            A::Xscale => 8,
+            A::X86_64 => 9,
+            A::Unknown(n) => n,
         }
     }
 }
@@ -466,13 +466,13 @@ impl From<u8> for NodeType {
 
 impl From<NodeType> for u8 {
     fn from(n: NodeType) -> Self {
-        use NodeType::*;
+        use NodeType as N;
         match n {
-            B => 1,
-            P => 2,
-            M => 4,
-            H => 8,
-            Unknown(n) => n,
+            N::B => 1,
+            N::P => 2,
+            N::M => 4,
+            N::H => 8,
+            N::Unknown(n) => n,
         }
     }
 }
@@ -708,7 +708,7 @@ impl Decodable for DhcpOption {
             }
         }
 
-        use DhcpOption::*;
+        use DhcpOption as O;
         // read the code first, determines the variant
         // pad|end have no length, so we can't read len up here
         let mut last: Option<Opt<'_>> = None;
@@ -719,7 +719,7 @@ impl Decodable for DhcpOption {
                         Some(prev) => prev.as_option(),
                         None => {
                             decoder.read_u8()?;
-                            Ok(End)
+                            Ok(O::End)
                         }
                     };
                 }
@@ -728,7 +728,7 @@ impl Decodable for DhcpOption {
                         Some(prev) => prev.as_option(),
                         None => {
                             decoder.read_u8()?;
-                            Ok(Pad)
+                            Ok(O::Pad)
                         }
                     };
                 }
@@ -851,7 +851,7 @@ where
 
 impl Encodable for DhcpOption {
     fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
-        use DhcpOption::*;
+        use DhcpOption as O;
 
         let code: OptionCode = self.into();
         // pad has no length, so we can't read len up here.
@@ -859,88 +859,98 @@ impl Encodable for DhcpOption {
         // so we get exhaustiveness checking, so we'll parse
         // code in each match arm
         match self {
-            Pad | End => {
+            O::Pad | O::End => {
                 e.write_u8(code.into())?;
             }
-            RapidCommit => {
+            O::RapidCommit => {
                 e.write_u8(code.into())?;
                 e.write_u8(0)?;
             }
-            SubnetMask(addr)
-            | SwapServer(addr)
-            | BroadcastAddr(addr)
-            | RouterSolicitationAddr(addr)
-            | RequestedIpAddress(addr)
-            | ServerIdentifier(addr)
-            | SubnetSelection(addr)
-            | TFTPServerAddress(addr) => {
+            O::SubnetMask(addr)
+            | O::SwapServer(addr)
+            | O::BroadcastAddr(addr)
+            | O::RouterSolicitationAddr(addr)
+            | O::RequestedIpAddress(addr)
+            | O::ServerIdentifier(addr)
+            | O::SubnetSelection(addr)
+            | O::TFTPServerAddress(addr) => {
                 e.write_u8(code.into())?;
                 e.write_u8(4)?;
                 e.write_u32((*addr).into())?
             }
-            TimeOffset(offset) => {
+            O::TimeOffset(offset) => {
                 e.write_u8(code.into())?;
                 e.write_u8(4)?;
                 e.write_i32(*offset)?
             }
-            TimeServer(ips)
-            | NameServer(ips)
-            | Router(ips)
-            | DomainNameServer(ips)
-            | LogServer(ips)
-            | QuoteServer(ips)
-            | LprServer(ips)
-            | ImpressServer(ips)
-            | ResourceLocationServer(ips)
-            | XFontServer(ips)
-            | XDisplayManager(ips)
-            | NisServers(ips)
-            | NtpServers(ips)
-            | NetBiosNameServers(ips)
-            | NetBiosDatagramDistributionServer(ips)
-            | AssociatedIp(ips)
-            | NispServers(ips)
-            | MobileIpHomeAgent(ips)
-            | Pop3Server(ips)
-            | NntpServer(ips)
-            | WwwServer(ips)
-            | DefaultFingerServer(ips)
-            | StreetTalkServer(ips)
-            | StreetTalkDirectoryAssistance(ips)
-            | SmtpServer(ips)
-            | IrcServer(ips)
-            | BcmsControllerAddrs(ips) => {
+            O::TimeServer(ips)
+            | O::NameServer(ips)
+            | O::Router(ips)
+            | O::DomainNameServer(ips)
+            | O::LogServer(ips)
+            | O::QuoteServer(ips)
+            | O::LprServer(ips)
+            | O::ImpressServer(ips)
+            | O::ResourceLocationServer(ips)
+            | O::XFontServer(ips)
+            | O::XDisplayManager(ips)
+            | O::NisServers(ips)
+            | O::NtpServers(ips)
+            | O::NetBiosNameServers(ips)
+            | O::NetBiosDatagramDistributionServer(ips)
+            | O::AssociatedIp(ips)
+            | O::NispServers(ips)
+            | O::MobileIpHomeAgent(ips)
+            | O::Pop3Server(ips)
+            | O::NntpServer(ips)
+            | O::WwwServer(ips)
+            | O::DefaultFingerServer(ips)
+            | O::StreetTalkServer(ips)
+            | O::StreetTalkDirectoryAssistance(ips)
+            | O::SmtpServer(ips)
+            | O::IrcServer(ips)
+            | O::BcmsControllerAddrs(ips) => {
                 encode_long_opt_chunks(code, 4, ips, |ip, e| e.write_u32((*ip).into()), e)?;
             }
-            Hostname(s) | MeritDumpFile(s) | DomainName(s) | ExtensionsPath(s) | NisDomain(s)
-            | RootPath(s) | NetBiosScope(s) | Message(s) | NwipDomainName(s)
-            | NispServiceDomain(s) => {
+            O::Hostname(s)
+            | O::MeritDumpFile(s)
+            | O::DomainName(s)
+            | O::ExtensionsPath(s)
+            | O::NisDomain(s)
+            | O::RootPath(s)
+            | O::NetBiosScope(s)
+            | O::Message(s)
+            | O::NwipDomainName(s)
+            | O::NispServiceDomain(s) => {
                 encode_long_opt_bytes(code, s.as_bytes(), e)?;
             }
-            BootFileSize(num) | MaxDatagramSize(num) | InterfaceMtu(num) | MaxMessageSize(num) => {
+            O::BootFileSize(num)
+            | O::MaxDatagramSize(num)
+            | O::InterfaceMtu(num)
+            | O::MaxMessageSize(num) => {
                 e.write_u8(code.into())?;
                 e.write_u8(2)?;
                 e.write_u16(*num)?
             }
-            IpForwarding(b)
-            | NonLocalSrcRouting(b)
-            | AllSubnetsLocal(b)
-            | PerformMaskDiscovery(b)
-            | MaskSupplier(b)
-            | PerformRouterDiscovery(b)
-            | EthernetEncapsulation(b)
-            | TcpKeepaliveGarbage(b)
-            | TrailerEncapsulated(b) => {
+            O::IpForwarding(b)
+            | O::NonLocalSrcRouting(b)
+            | O::AllSubnetsLocal(b)
+            | O::PerformMaskDiscovery(b)
+            | O::MaskSupplier(b)
+            | O::PerformRouterDiscovery(b)
+            | O::EthernetEncapsulation(b)
+            | O::TcpKeepaliveGarbage(b)
+            | O::TrailerEncapsulated(b) => {
                 e.write_u8(code.into())?;
                 e.write_u8(1)?;
                 e.write_u8((*b).into())?
             }
-            DefaultIpTtl(byte) | DefaultTcpTtl(byte) | OptionOverload(byte) => {
+            O::DefaultIpTtl(byte) | O::DefaultTcpTtl(byte) | O::OptionOverload(byte) => {
                 e.write_u8(code.into())?;
                 e.write_u8(1)?;
                 e.write_u8(*byte)?
             }
-            StaticRoutingTable(pair_ips) | PolicyFilter(pair_ips) => {
+            O::StaticRoutingTable(pair_ips) | O::PolicyFilter(pair_ips) => {
                 encode_long_opt_chunks(
                     code,
                     8,
@@ -952,88 +962,88 @@ impl Encodable for DhcpOption {
                     e,
                 )?;
             }
-            ArpCacheTimeout(num)
-            | TcpKeepaliveInterval(num)
-            | AddressLeaseTime(num)
-            | Renewal(num)
-            | Rebinding(num)
-            | ClientLastTransactionTime(num)
-            | BulkLeaseQueryBaseTime(num)
-            | BulkLeasQueryStartTimeOfState(num)
-            | BulkLeaseQueryQueryStartTime(num)
-            | BulkLeaseQueryQueryEndTime(num)
-            | PathMtuAgingTimeout(num) => {
+            O::ArpCacheTimeout(num)
+            | O::TcpKeepaliveInterval(num)
+            | O::AddressLeaseTime(num)
+            | O::Renewal(num)
+            | O::Rebinding(num)
+            | O::ClientLastTransactionTime(num)
+            | O::BulkLeaseQueryBaseTime(num)
+            | O::BulkLeasQueryStartTimeOfState(num)
+            | O::BulkLeaseQueryQueryStartTime(num)
+            | O::BulkLeaseQueryQueryEndTime(num)
+            | O::PathMtuAgingTimeout(num) => {
                 e.write_u8(code.into())?;
                 e.write_u8(4)?;
                 e.write_u32(*num)?;
             }
-            VendorExtensions(bytes)
-            | ClassIdentifier(bytes)
-            | ClientIdentifier(bytes)
-            | ClientMachineIdentifier(bytes)
-            | TFTPServerName(bytes)
-            | BootfileName(bytes)
-            | NwipInformation(bytes)
-            | UserClass(bytes) => {
+            O::VendorExtensions(bytes)
+            | O::ClassIdentifier(bytes)
+            | O::ClientIdentifier(bytes)
+            | O::ClientMachineIdentifier(bytes)
+            | O::TFTPServerName(bytes)
+            | O::BootfileName(bytes)
+            | O::NwipInformation(bytes)
+            | O::UserClass(bytes) => {
                 encode_long_opt_bytes(code, bytes, e)?;
             }
-            ParameterRequestList(codes) => {
+            O::ParameterRequestList(codes) => {
                 encode_long_opt_chunks(code, 1, codes, |code, e| e.write_u8((*code).into()), e)?;
             }
-            NetBiosNodeType(ntype) => {
+            O::NetBiosNodeType(ntype) => {
                 e.write_u8(code.into())?;
                 e.write_u8(1)?;
                 e.write_u8((*ntype).into())?;
             }
-            MessageType(mtype) => {
+            O::MessageType(mtype) => {
                 e.write_u8(code.into())?;
                 e.write_u8(1)?;
                 e.write_u8((*mtype).into())?;
             }
-            RelayAgentInformation(relay) => {
+            O::RelayAgentInformation(relay) => {
                 let mut buf = Vec::new();
                 let mut opt_enc = Encoder::new(&mut buf);
                 relay.encode(&mut opt_enc)?;
                 // data encoded to intermediate buf
                 encode_long_opt_bytes(code, &buf, e)?;
             }
-            ClientSystemArchitecture(arch) => {
+            O::ClientSystemArchitecture(arch) => {
                 e.write_u8(code.into())?;
                 e.write_u8(2)?;
                 e.write_u16((*arch).into())?;
             }
-            ClientNetworkInterface(ty, major, minor) => {
+            O::ClientNetworkInterface(ty, major, minor) => {
                 e.write_u8(code.into())?;
                 e.write_u8(3)?;
                 e.write_u8(*ty)?;
                 e.write_u8(*major)?;
                 e.write_u8(*minor)?;
             }
-            CaptivePortal(url) => {
+            O::CaptivePortal(url) => {
                 let url = url.to_string();
                 encode_long_opt_bytes(code, url.as_bytes(), e)?;
             }
-            BulkLeaseQueryStatusCode(status_code, msg) => {
+            O::BulkLeaseQueryStatusCode(status_code, msg) => {
                 e.write_u8(code.into())?;
                 let msg = msg.as_bytes();
                 e.write_u8(msg.len() as u8 + 1)?;
                 e.write_u8((*status_code).into())?;
                 e.write_slice(msg)?
             }
-            BulkLeaseQueryDhcpState(state) => {
+            O::BulkLeaseQueryDhcpState(state) => {
                 e.write_u8(code.into())?;
                 e.write_u8(1)?;
                 e.write_u8((*state).into())?
             }
-            BulkLeaseQueryDataSource(src) => {
+            O::BulkLeaseQueryDataSource(src) => {
                 e.write_u8(code.into())?;
                 e.write_u8(1)?;
                 e.write_u8((*src).into())?
             }
-            DomainSearch(names) | BcmsControllerNames(names) => {
+            O::DomainSearch(names) | O::BcmsControllerNames(names) => {
                 encode_long_opt_domains(code, names, e)?
             }
-            ClientFQDN(fqdn) => {
+            O::ClientFQDN(fqdn) => {
                 let fqdn::ClientFQDN {
                     flags,
                     r1,
@@ -1052,7 +1062,7 @@ impl Encodable for DhcpOption {
                 }
                 encode_long_opt_bytes(code, &buf, e)?;
             }
-            ClasslessStaticRoute(routes) => {
+            O::ClasslessStaticRoute(routes) => {
                 let mut buf = Vec::new();
                 let mut route_enc = Encoder::new(&mut buf);
                 for (dest, gw) in routes {
@@ -1064,11 +1074,11 @@ impl Encodable for DhcpOption {
 
                 encode_long_opt_bytes(code, &buf, e)?;
             }
-            PathMtuPlateauTable(nums) => {
+            O::PathMtuPlateauTable(nums) => {
                 encode_long_opt_chunks(code, 2, nums, |num, e| e.write_u16(*num), e)?;
             }
             // not yet implemented
-            Unknown(opt) => {
+            O::Unknown(opt) => {
                 encode_long_opt_bytes(code, &opt.data, e)?;
             }
         };

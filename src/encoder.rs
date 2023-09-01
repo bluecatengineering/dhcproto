@@ -3,10 +3,10 @@ use crate::error::{EncodeError, EncodeResult};
 
 /// A trait for types which are deserializable to DHCP binary formats
 pub trait Encodable {
-    /// Read the type from the stream
+    /// encode type to buffer in Encoder
     fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()>;
 
-    /// encode this type into a new `Vec`
+    /// encode this type into its binary form in a new `Vec`
     fn to_vec(&self) -> EncodeResult<Vec<u8>> {
         let mut buffer = Vec::with_capacity(512);
         let mut encoder = Encoder::new(&mut buffer);
@@ -14,6 +14,7 @@ pub trait Encodable {
         Ok(buffer)
     }
 }
+
 /// Encoder type, holds a mut ref to a buffer
 /// that it will write data to and an offset
 /// of the next position to write
