@@ -100,6 +100,7 @@ pub use crate::{
 };
 
 pub const MAGIC: [u8; 4] = [99, 130, 83, 99];
+pub const MIN_PACKET_SIZE: usize = 300;
 
 /// default dhcpv4 server port
 pub const SERVER_PORT: u16 = 67;

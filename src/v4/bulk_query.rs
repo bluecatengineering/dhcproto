@@ -82,17 +82,17 @@ impl From<u8> for QueryState {
 
 impl From<QueryState> for u8 {
     fn from(state: QueryState) -> Self {
-        use QueryState::*;
+        use QueryState as Q;
         match state {
-            Available => 1,
-            Active => 2,
-            Expired => 3,
-            Release => 4,
-            Abandoned => 5,
-            Reset => 6,
-            Remote => 7,
-            Transitioning => 8,
-            Unknown(code) => code,
+            Q::Available => 1,
+            Q::Active => 2,
+            Q::Expired => 3,
+            Q::Release => 4,
+            Q::Abandoned => 5,
+            Q::Reset => 6,
+            Q::Remote => 7,
+            Q::Transitioning => 8,
+            Q::Unknown(code) => code,
         }
     }
 }
@@ -124,14 +124,14 @@ impl From<u8> for Code {
 
 impl From<Code> for u8 {
     fn from(code: Code) -> Self {
-        use Code::*;
+        use Code as C;
         match code {
-            Success => 0,
-            UnspecFail => 1,
-            QueryTerminated => 2,
-            MalformedQuery => 3,
-            NotAllowed => 4,
-            Unknown(code) => code,
+            C::Success => 0,
+            C::UnspecFail => 1,
+            C::QueryTerminated => 2,
+            C::MalformedQuery => 3,
+            C::NotAllowed => 4,
+            C::Unknown(code) => code,
         }
     }
 }

@@ -143,7 +143,7 @@ fn generate_dhcpoption_code<'a>(entries: &'a [Entry]) -> impl Iterator<Item = St
         "
         impl From<&DhcpOption> for OptionCode {
             fn from(opt: &DhcpOption) -> Self {
-                use DhcpOption::*;
+                use DhcpOption as O;
                 match opt {
         "
         .to_owned(),
@@ -164,10 +164,10 @@ fn generate_dhcpoption_code<'a>(entries: &'a [Entry]) -> impl Iterator<Item = St
         } else {
             "".to_owned()
         };
-        format!("{id}{var_field} => OptionCode::{id},")
+        format!("O::{id}{var_field} => OptionCode::{id},")
     }))
     .chain(std::iter::once(
-        "Unknown(n) => OptionCode::Unknown(n.code)}}}".to_owned(),
+        "O::Unknown(n) => OptionCode::Unknown(n.code)}}}".to_owned(),
     ));
 
     impl_dhcp_option.chain(impl_optioncode_from_dhcpoption_ref)
