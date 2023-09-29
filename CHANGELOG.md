@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.10.0]
+
+### Fixed
+
+- dhcpv6: Fix OPTION_STATUS_CODE parsing. After a status code option, all following options will be corrupted
+
 ### Added
 
 - add v4 options 21/24/25/34 & 62..65 & 68..77
@@ -15,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Picked more consistent name & casing for option types
+- remove Domain type and just re-export trust-dns Name
 
 ## [0.9.0]
 

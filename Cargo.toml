@@ -1,14 +1,17 @@
 [package]
 name = "dhcproto"
-version = "0.10.0-alpha"
-authors = ["Ian Laidlaw <ilaidlaw@bluecatnetworks.com>", "Evan Cameron <cameron.evan@gmail.com>"]
+version = "0.10.0"
+authors = [
+	"Ian Laidlaw <ilaidlaw@bluecatnetworks.com>",
+	"Evan Cameron <cameron.evan@gmail.com>",
+]
 edition = "2021"
 description = """
 A DHCP parser and encoder for DHCPv4/DHCPv6. `dhcproto` aims to be a functionally complete DHCP implementation.
 """
-categories = ["network-programming", "encoding","parser-implementations"]
+categories = ["network-programming", "encoding", "parser-implementations"]
 repository = "https://github.com/bluecatengineering/dhcproto"
-keywords = ["dhcp","dhcpv4","dhcpv6"]
+keywords = ["dhcp", "dhcpv4", "dhcpv6"]
 license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -24,7 +27,12 @@ ipnet = "2.5"
 
 [features]
 default = []
-serde = ["dep:serde", "url/serde", "ipnet/serde", "trust-dns-proto/serde-config"]
+serde = [
+	"dep:serde",
+	"url/serde",
+	"ipnet/serde",
+	"trust-dns-proto/serde-config",
+]
 
 [dev-dependencies]
 criterion = "0.4.0"
