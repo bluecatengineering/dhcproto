@@ -569,7 +569,7 @@ impl Decodable for DhcpOption {
             OptionCode::ServerUnicast => DhcpOption::ServerUnicast(decoder.read::<16>()?.into()),
             OptionCode::StatusCode => DhcpOption::StatusCode(StatusCode {
                 status: decoder.read_u16()?.into(),
-                msg: decoder.read_string(len - 1)?,
+                msg: decoder.read_string(len - std::mem::size_of::<u16>())?,
             }),
             OptionCode::RapidCommit => DhcpOption::RapidCommit,
             OptionCode::UserClass => {
@@ -914,5 +914,82 @@ mod tests {
 
         let arr = vec![1, 1, 2, 2];
         assert_eq!(None, range_binsearch(&arr, |x| x.cmp(&3)));
+    }
+
+    #[test]
+    fn test_dhcpv6_opts_parsing() {
+        #[rustfmt::skip]
+        let raw: Vec<u8> = vec![
+            0x00, 0x01, // OPTION_CLIENTID(01)
+            0x00, 0x06, // length 6
+            0x1e, 0xed, 0xad, 0xd5, 0xb5, 0x10, // client duid
+            0x00, 0x02, // OPTION_SERVERID(02)
+            0x00, 0x0e, // length 14
+            0x00, 0x01, 0x00, 0x01, 0x2c, 0xa9, 0x3f, 0x79,
+            0x16, 0x42, 0xe2, 0x17, 0x84, 0x1a, // server duid
+            0x00, 0x03, // OPTION_IA_NA(03)
+            0x00, 0x28, // length 40 (include OPTION_IAADDR)
+            0x00, 0x00, 0x00, 0x00, // IAID
+            0x00, 0x00, 0x00, 0x3c, // T1 60
+            0x00, 0x00, 0x00, 0x69, // T2 105
+            0x00, 0x05, // OPTION_IAADDR(05)
+            0x00, 0x18, // length 24
+            0x20, 0x01, 0x0d, 0xb8, 0x00, 0x0a, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x84, // IPv6 address
+            0x00, 0x00, 0x00, 0x78, // preferred lifetime 120 seconds
+            0x00, 0x00, 0x00, 0x78, // valid life time 120 seconds
+            0x00, 0x07, // OPTION_PREFERENCE(07)
+            0x00, 0x01, // length 1
+            0x00, // preference 0
+            0x00, 0x0d, // OPTION_STATUS_CODE(13)
+            0x00, 0x09, // length 9
+            0x00, 0x00, // status code 0
+            0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, // string `success`
+            0x00, 0x17, // OPTION_DNS_SERVERS(23)
+            0x00, 0x10, // length 16
+            0x20, 0x01, 0x0d, 0xb8, 0x00, 0x0a, 0x00, 0x00,
+            0x14, 0x42, 0xe2, 0xff, 0xfe, 0x17, 0x84, 0x1a, // IPv6 address
+        ];
+
+        let mut expected_opts = DhcpOptions::new();
+        expected_opts.insert(DhcpOption::ClientId(vec![
+            0x1e, 0xed, 0xad, 0xd5, 0xb5, 0x10,
+        ]));
+        expected_opts.insert(DhcpOption::ServerId(vec![
+            0x00, 0x01, 0x00, 0x01, 0x2c, 0xa9, 0x3f, 0x79, 0x16, 0x42, 0xe2, 0x17, 0x84, 0x1a,
+        ]));
+        expected_opts.insert(DhcpOption::IANA(IANA {
+            id: 0,
+            t1: 60,
+            t2: 105,
+            opts: DhcpOptions(vec![DhcpOption::IAAddr(IAAddr {
+                addr: Ipv6Addr::from([
+                    0x20, 0x01, 0x0d, 0xb8, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x02, 0x84,
+                ]),
+                preferred_life: 120,
+                valid_life: 120,
+                opts: DhcpOptions(Vec::new()),
+            })]),
+        }));
+        expected_opts.insert(DhcpOption::Preference(0));
+        expected_opts.insert(DhcpOption::StatusCode(StatusCode {
+            status: 0.into(),
+            msg: "success".into(),
+        }));
+        expected_opts.insert(DhcpOption::DomainNameServers(vec![Ipv6Addr::from([
+            0x20, 0x01, 0x0d, 0xb8, 0x00, 0x0a, 0x00, 0x00, 0x14, 0x42, 0xe2, 0xff, 0xfe, 0x17,
+            0x84, 0x1a,
+        ])]));
+
+        let opts = DhcpOptions::decode(&mut Decoder::new(&raw)).unwrap();
+
+        let mut buffer = Vec::new();
+        expected_opts
+            .encode(&mut Encoder::new(&mut buffer))
+            .unwrap();
+
+        assert_eq!(opts, expected_opts);
+        assert_eq!(buffer.as_slice(), raw);
     }
 }
