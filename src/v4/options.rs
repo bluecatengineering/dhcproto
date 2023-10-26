@@ -119,7 +119,9 @@ dhcproto_macros::declare_codes!(
     {93,  ClientSystemArchitecture, "Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>", (Architecture)},
     {94,  ClientNetworkInterface, "Client Network Interface - <https://www.rfc-editor.org/rfc/rfc4578.html>", (u8, u8, u8)},
     {97,  ClientMachineIdentifier, "Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>", (Vec<u8>)},
+    {106, Ipv6OnlyPreferred, "IPv6-Only Preferred - <https://datatracker.ietf.org/doc/html/rfc8925>", (u32)},
     {114, CaptivePortal, "Captive Portal - <https://datatracker.ietf.org/doc/html/rfc8910>", (url::Url)},
+    {116, DisableSLAAC, "Disable Stateless Autoconfig for Ipv4 - <https://datatracker.ietf.org/doc/html/rfc2563>", (AutoConfig)},
     {118, SubnetSelection, "Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>", (Ipv4Addr)},
     {119, DomainSearch, "Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>", (Vec<Name>)},
     {121, ClasslessStaticRoute, "Classless Static Route - <https://www.rfc-editor.org/rfc/rfc3442>", (Vec<(Ipv4Net, Ipv4Addr)>)},
@@ -477,6 +479,32 @@ impl From<NodeType> for u8 {
     }
 }
 
+/// AutoConfigure option values
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u8)]
+pub enum AutoConfig {
+    /// Do not autoconfig
+    DoNotAutoConfigure = 0,
+    /// autoconfig
+    AutoConfigure = 1,
+}
+
+impl TryFrom<u8> for AutoConfig {
+    type Error = crate::error::DecodeError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(AutoConfig::DoNotAutoConfigure),
+            1 => Ok(AutoConfig::AutoConfigure),
+            _ => Err(super::DecodeError::IoError(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "invalid number in disable SLAAC autoconfig",
+            ))),
+        }
+    }
+}
+
 #[inline]
 fn decode_inner(
     code: OptionCode,
@@ -603,7 +631,9 @@ fn decode_inner(
         OptionCode::ClientMachineIdentifier => {
             ClientMachineIdentifier(decoder.read_slice(len)?.to_vec())
         }
+        OptionCode::Ipv6OnlyPreferred => Ipv6OnlyPreferred(decoder.read_u32()?),
         OptionCode::CaptivePortal => CaptivePortal(decoder.read_str(len)?.parse()?),
+        OptionCode::DisableSLAAC => DisableSLAAC(decoder.read_u8()?.try_into()?),
         OptionCode::SubnetSelection => SubnetSelection(decoder.read_ipv4(len)?),
         OptionCode::DomainSearch => DomainSearch(decoder.read_domains(len)?),
         OptionCode::TFTPServerAddress => TFTPServerAddress(decoder.read_ipv4(len)?),
@@ -972,7 +1002,8 @@ impl Encodable for DhcpOption {
             | O::BulkLeasQueryStartTimeOfState(num)
             | O::BulkLeaseQueryQueryStartTime(num)
             | O::BulkLeaseQueryQueryEndTime(num)
-            | O::PathMtuAgingTimeout(num) => {
+            | O::PathMtuAgingTimeout(num)
+            | O::Ipv6OnlyPreferred(num) => {
                 e.write_u8(code.into())?;
                 e.write_u8(4)?;
                 e.write_u32(*num)?;
@@ -1076,6 +1107,11 @@ impl Encodable for DhcpOption {
             }
             O::PathMtuPlateauTable(nums) => {
                 encode_long_opt_chunks(code, 2, nums, |num, e| e.write_u16(*num), e)?;
+            }
+            O::DisableSLAAC(val) => {
+                e.write_u8(code.into())?;
+                e.write_u8(1)?;
+                e.write_u8(*val as u8)?;
             }
             // not yet implemented
             O::Unknown(opt) => {
