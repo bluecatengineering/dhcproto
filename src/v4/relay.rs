@@ -134,7 +134,7 @@ impl Decodable for RelayInfo {
             RelayCode::AgentRemoteId => {
                 let len = d.read_u8()? as usize;
                 let data = d.read_slice(len)?.to_vec();
-                AgentCircuitId(data)
+                AgentRemoteId(data)
             }
             RelayCode::DocsisDeviceClass => {
                 let _ = d.read_u8()?;
@@ -410,6 +410,15 @@ mod tests {
         test_opt(
             RelayInfo::AgentCircuitId(vec![0, 1, 2, 3, 4]),
             vec![1, 5, 0, 1, 2, 3, 4],
+        )?;
+
+        Ok(())
+    }
+    #[test]
+    fn test_remote() -> Result<()> {
+        test_opt(
+            RelayInfo::AgentRemoteId(vec![0, 1, 2, 3, 4]),
+            vec![2, 5, 0, 1, 2, 3, 4],
         )?;
 
         Ok(())
