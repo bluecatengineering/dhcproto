@@ -1,3 +1,4 @@
+/// In DHCPv6, the Hardware Types are expanded from u8 to u16, referring to https://www.iana.org/assignments/arp-parameters/arp-parameters.xhtml for implementation.
 use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
@@ -83,12 +84,17 @@ pub enum HType {
     HFI,
     /// 38 Unified BUS(UB),
     UB,
+    /// 256 HW_EXP2
+    HWExp2,
+    /// 257 AEthernet
+    AEthernet,
+    /// 65535 Reserved
+    Reserved,
     /// Unknown or not yet implemented htype
-    Unknown(u8),
+    Unknown(u16),
 }
-
-impl From<u8> for HType {
-    fn from(n: u8) -> Self {
+impl From<u16> for HType {
+    fn from(n: u16) -> Self {
         use HType::*;
         match n {
             1 => Eth,
@@ -127,12 +133,15 @@ impl From<u8> for HType {
             36 => HWExp1,
             37 => HFI,
             38 => UB,
+            256 => HWExp2,
+            257 => AEthernet,
+            65535 => Reserved,
             n => Unknown(n),
         }
     }
 }
 
-impl From<HType> for u8 {
+impl From<HType> for u16 {
     fn from(n: HType) -> Self {
         use HType as H;
         match n {
@@ -151,7 +160,7 @@ impl From<HType> for u8 {
             H::Ultralink => 13,
             H::SMDS => 14,
             H::FrameRelay => 15,
-            H::ATM => 19, // !!! 16,19,21 are all possible. 19 is chosen according to RFC2225
+            H::ATM => 16, // !!! 16,19,21 are all possible. 19 is chosen according to RFC2225
             H::HDLC => 17,
             H::FibreChannel => 18,
             H::SerialLine => 20,
@@ -172,6 +181,9 @@ impl From<HType> for u8 {
             H::HWExp1 => 36,
             H::HFI => 37,
             H::UB => 38,
+            H::HWExp2 => 256,
+            H::AEthernet => 257,
+            H::Reserved => 65535,
             H::Unknown(n) => n,
         }
     }
@@ -179,12 +191,12 @@ impl From<HType> for u8 {
 
 impl Decodable for HType {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
-        Ok(decoder.read_u8()?.into())
+        Ok(decoder.read_u16()?.into())
     }
 }
 
 impl Encodable for HType {
     fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
-        e.write_u8((*self).into())
+        e.write_u16((*self).into())
     }
 }

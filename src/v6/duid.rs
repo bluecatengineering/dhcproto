@@ -3,7 +3,8 @@ use std::net::Ipv6Addr;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{v4::HType, Encoder};
+use crate::v6::HType;
+use crate::Encoder;
 
 /// Duid helper type
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -17,7 +18,7 @@ impl Duid {
         let mut buf = Vec::new();
         let mut e = Encoder::new(&mut buf);
         e.write_u16(1).unwrap(); // duid type
-        e.write_u16(u8::from(htype) as u16).unwrap();
+        e.write_u16(u16::from(htype)).unwrap();
         e.write_u32(time).unwrap();
         e.write_u128(addr.into()).unwrap();
         Self(buf)
@@ -36,7 +37,7 @@ impl Duid {
         let mut buf = Vec::new();
         let mut e = Encoder::new(&mut buf);
         e.write_u16(3).unwrap(); // duid type
-        e.write_u16(u8::from(htype) as u16).unwrap();
+        e.write_u16(u16::from(htype)).unwrap();
         e.write_u128(addr.into()).unwrap();
         Self(buf)
     }
