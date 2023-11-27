@@ -41,8 +41,6 @@ pub enum HType {
     SMDS,
     /// 15 FrameRelay
     FrameRelay,
-    /// 16,19,21 ATM
-    ATM,
     /// 17 HDLC
     HDLC,
     /// 18 FibreChannel
@@ -53,36 +51,20 @@ pub enum HType {
     MilStd188220,
     /// 23 Metricom
     Metricom,
-    /// 24 IEEE1394.1995
-    IEEE13941995,
     /// 25 MAPOS
     MAPOS,
     /// 26 Twinaxial
     Twinaxial,
-    /// 27 EUI64
-    EUI64,
-    /// 28 HIPARP
-    HIPARP,
-    /// 29 IP and ARP over ISO 7816-3
-    IPandARPoverISO78163,
     /// 30 ARPSec
     ARPSec,
     /// 31 IPsec tunnel
     IPsecTunnel,
     /// 32 Infiniband
     Infiniband,
-    /// 33 TIA-102 Project 25 Common Air Interface (CAI)
-    CAI,
     /// 34 WeigandInt
     WiegandInt,
     /// 35 PureIP
     PureIP,
-    /// 36 HW_EXP1
-    HWExp1,
-    /// 37 HFI
-    HFI,
-    /// 38 Unified BUS(UB),
-    UB,
     /// Unknown or not yet implemented htype
     Unknown(u8),
 }
@@ -106,27 +88,18 @@ impl From<u8> for HType {
             13 => Ultralink,
             14 => SMDS,
             15 => FrameRelay,
-            16 | 19 | 21 => ATM,
             17 => HDLC,
             18 => FibreChannel,
             20 => SerialLine,
             22 => MilStd188220,
             23 => Metricom,
-            24 => IEEE13941995,
             25 => MAPOS,
             26 => Twinaxial,
-            27 => EUI64,
-            28 => HIPARP,
-            29 => IPandARPoverISO78163,
             30 => ARPSec,
             31 => IPsecTunnel,
             32 => Infiniband,
-            33 => CAI,
             34 => WiegandInt,
             35 => PureIP,
-            36 => HWExp1,
-            37 => HFI,
-            38 => UB,
             n => Unknown(n),
         }
     }
@@ -151,27 +124,18 @@ impl From<HType> for u8 {
             H::Ultralink => 13,
             H::SMDS => 14,
             H::FrameRelay => 15,
-            H::ATM => 19, // !!! 16,19,21 are all possible. 19 is chosen according to RFC2225
             H::HDLC => 17,
             H::FibreChannel => 18,
             H::SerialLine => 20,
             H::MilStd188220 => 22,
             H::Metricom => 23,
-            H::IEEE13941995 => 24,
             H::MAPOS => 25,
             H::Twinaxial => 26,
-            H::EUI64 => 27,
-            H::HIPARP => 28,
-            H::IPandARPoverISO78163 => 29,
             H::ARPSec => 30,
             H::IPsecTunnel => 31,
             H::Infiniband => 32,
-            H::CAI => 33,
             H::WiegandInt => 34,
             H::PureIP => 35,
-            H::HWExp1 => 36,
-            H::HFI => 37,
-            H::UB => 38,
             H::Unknown(n) => n,
         }
     }

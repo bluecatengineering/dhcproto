@@ -42,8 +42,6 @@ pub enum HType {
     SMDS,
     /// 15 FrameRelay
     FrameRelay,
-    /// 16,19,21 ATM
-    ATM,
     /// 17 HDLC
     HDLC,
     /// 18 FibreChannel
@@ -112,7 +110,6 @@ impl From<u16> for HType {
             13 => Ultralink,
             14 => SMDS,
             15 => FrameRelay,
-            16 | 19 | 21 => ATM,
             17 => HDLC,
             18 => FibreChannel,
             20 => SerialLine,
@@ -160,7 +157,6 @@ impl From<HType> for u16 {
             H::Ultralink => 13,
             H::SMDS => 14,
             H::FrameRelay => 15,
-            H::ATM => 16, // !!! 16,19,21 are all possible. 19 is chosen according to RFC2225
             H::HDLC => 17,
             H::FibreChannel => 18,
             H::SerialLine => 20,
