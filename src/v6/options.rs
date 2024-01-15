@@ -150,6 +150,8 @@ pub enum DhcpOption {
     /// 26 - <https://datatracker.ietf.org/doc/html/rfc3633#section-10>
     IAPrefix(IAPrefix),
     InformationRefreshTime(u32),
+    /// 56 - <https://datatracker.ietf.org/doc/html/rfc5908>
+    NtpServer(Vec<NtpSuboption>),
     // SolMaxRt(u32),
     // InfMaxRt(u32),
     // LqQuery(_),
@@ -486,6 +488,66 @@ impl Decodable for IAAddr {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NtpSuboption {
+    ServerAddress(Ipv6Addr),
+    MulticastAddress(Ipv6Addr),
+    FQDN(Name),
+}
+
+impl Decodable for NtpSuboption {
+    fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
+        let code = decoder.read_u16()?;
+        match code {
+            1 | 2 => {
+                let len = decoder.read_u16()?;
+                if len != 16 {
+                    return Err(super::DecodeError::NotEnoughBytes);
+                }
+                let addr: Ipv6Addr = decoder.read::<16>()?.into();
+                let option = if addr.is_multicast() {
+                    NtpSuboption::MulticastAddress(addr)
+                } else {
+                    NtpSuboption::ServerAddress(addr)
+                };
+                Ok(option)
+            }
+            3 => {
+                let len = decoder.read_u16()? as _;
+                let mut name_decoder = BinDecoder::new(decoder.read_slice(len)?);
+                Ok(NtpSuboption::FQDN(Name::read(&mut name_decoder)?))
+            }
+            _ => Err(super::DecodeError::IoError(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "invalid ntp suboption code",
+            ))),
+        }
+    }
+}
+
+impl Encodable for NtpSuboption {
+    fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
+        match self {
+            NtpSuboption::ServerAddress(addr) | NtpSuboption::MulticastAddress(addr) => {
+                let code = if addr.is_multicast() { 2 } else { 1 };
+                e.write_u16(code)?;
+                e.write_u16(16)?;
+                e.write::<16>(addr.octets())?;
+            }
+            NtpSuboption::FQDN(name) => {
+                let mut buf = Vec::new();
+                let mut name_encoder = BinEncoder::new(&mut buf);
+                name.emit(&mut name_encoder)?;
+                e.write_u16(3)?;
+                e.write_u16(buf.len() as _)?;
+                e.write_slice(&buf)?;
+            }
+        }
+        Ok(())
+    }
+}
+
 /// fallback for options not yet implemented
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -615,6 +677,15 @@ impl Decodable for DhcpOption {
                 }
 
                 DhcpOption::DomainSearchList(names)
+            }
+            OptionCode::NtpServer => {
+                let mut dec = Decoder::new(decoder.read_slice(len)?);
+                let mut suboptions = Vec::new();
+                while !dec.buffer().is_empty() {
+                    suboptions.push(NtpSuboption::decode(&mut dec)?);
+                }
+
+                DhcpOption::NtpServer(suboptions)
             }
             // not yet implemented
             OptionCode::Unknown(code) => DhcpOption::Unknown(UnknownOption {
@@ -803,6 +874,15 @@ impl Encodable for DhcpOption {
                 e.write_u16(4)?;
                 e.write_u32(*time)?;
             }
+            DhcpOption::NtpServer(suboptions) => {
+                let mut buf = Vec::new();
+                let mut subopt_enc = Encoder::new(&mut buf);
+                for suboption in suboptions {
+                    suboption.encode(&mut subopt_enc)?;
+                }
+                e.write_u16(buf.len() as _)?;
+                e.write_slice(&buf)?;
+            }
             DhcpOption::Unknown(UnknownOption { data, .. }) => {
                 e.write_u16(data.len() as u16)?;
                 e.write_slice(data)?;
@@ -888,6 +968,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
     #[test]
     fn test_range_binsearch() {
@@ -949,6 +1031,16 @@ mod tests {
             0x00, 0x10, // length 16
             0x20, 0x01, 0x0d, 0xb8, 0x00, 0x0a, 0x00, 0x00,
             0x14, 0x42, 0xe2, 0xff, 0xfe, 0x17, 0x84, 0x1a, // IPv6 address
+            0x00, 0x38, // OPTION_NTP_SERVER
+            0x00, 0x2b, // length 43
+            0x00, 0x01, // NTP_SUBOPTION_SRV_ADDR
+            0x00, 0x10, // suboption-len 16
+            0x20, 0x01, 0x0d, 0xb8, 0x00, 0x0a, 0x00, 0x00,
+            0x14, 0x42, 0xe2, 0xff, 0xfe, 0x17, 0x84, 0x1a, // IPv6 address
+            0x00, 0x03, // NTP_SUBOPTION_SRV_FQDN
+            0x00, 0x13, // suboption-len 19
+            0x01 ,0x33, 0x02, 0x64, 0x65, 0x04, 0x70, 0x6f, 0x6f, 0x6c,
+            0x03, 0x6e, 0x74, 0x70, 0x03, 0x6f, 0x72, 0x67, 0x00 // 3.de.pool.ntp.org.
         ];
 
         let mut expected_opts = DhcpOptions::new();
@@ -981,6 +1073,13 @@ mod tests {
             0x20, 0x01, 0x0d, 0xb8, 0x00, 0x0a, 0x00, 0x00, 0x14, 0x42, 0xe2, 0xff, 0xfe, 0x17,
             0x84, 0x1a,
         ])]));
+        expected_opts.insert(DhcpOption::NtpServer(vec![
+            NtpSuboption::ServerAddress(Ipv6Addr::from([
+                0x20, 0x01, 0x0d, 0xb8, 0x00, 0x0a, 0x00, 0x00, 0x14, 0x42, 0xe2, 0xff, 0xfe, 0x17,
+                0x84, 0x1a,
+            ])),
+            NtpSuboption::FQDN(Name::from_str("3.de.pool.ntp.org.").unwrap()),
+        ]));
 
         let opts = DhcpOptions::decode(&mut Decoder::new(&raw)).unwrap();
 

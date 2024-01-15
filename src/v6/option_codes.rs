@@ -470,6 +470,7 @@ impl From<&DhcpOption> for OptionCode {
             O::IAPD(_) => OptionCode::IAPD,
             O::IAPrefix(_) => OptionCode::IAPrefix,
             O::InformationRefreshTime(_) => OptionCode::InformationRefreshTime,
+            O::NtpServer(_) => OptionCode::NtpServer,
             // SolMaxRt(_) => OptionCode::SolMaxRt,
             // InfMaxRt(_) => OptionCode::InfMaxRt,
             // LqQuery(_) => OptionCode::LqQuery,
