@@ -77,6 +77,7 @@ DHCPv6:
 - <https://datatracker.ietf.org/doc/html/rfc3646>
 - <https://datatracker.ietf.org/doc/html/rfc3633>
 - <https://datatracker.ietf.org/doc/html/rfc5007> (message types only)
+- <https://datatracker.ietf.org/doc/html/rfc5908>
 - <https://datatracker.ietf.org/doc/html/rfc5460> (message types/status codes only, no opt 53)
 - <https://datatracker.ietf.org/doc/html/rfc6977> (message types only)
 - <https://datatracker.ietf.org/doc/html/rfc7341> (message types only)
