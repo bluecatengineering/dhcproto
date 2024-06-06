@@ -1,4 +1,4 @@
-//!
+//! # relay
 use std::{collections::HashMap, fmt, net::Ipv4Addr};
 
 use crate::{Decodable, Encodable};
