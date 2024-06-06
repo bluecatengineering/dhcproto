@@ -17,7 +17,10 @@ pub trait Encodable {
 
 /// Encoder type, holds a mut ref to a buffer
 /// that it will write data to and an offset
-/// of the next position to write
+/// of the next position to write.
+/// 
+/// This will start writing from the beginning of the buffer, *not* from the end.
+/// The buffer will be grown as needed.
 #[derive(Debug)]
 pub struct Encoder<'a> {
     buffer: &'a mut Vec<u8>,
@@ -33,6 +36,16 @@ impl<'a> Encoder<'a> {
     /// Get a reference to the underlying buffer
     pub fn buffer(&self) -> &[u8] {
         self.buffer
+    }
+
+    /// Returns the slice of the underlying buffer that has been filled.
+    pub fn buffer_filled(&self) -> &[u8] {
+        &self.buffer[..self.offset]
+    }
+
+    /// Returns the number of bytes that have been written to the buffer.
+    pub fn len_filled(&self) -> usize {
+        self.offset
     }
 
     /// write bytes to buffer
