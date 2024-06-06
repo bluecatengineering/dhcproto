@@ -940,7 +940,7 @@ where
         let mid = (l + r) >> 1;
         // SAFETY: we know it is within the length
         let mid_cmp = f(unsafe { arr.get_unchecked(mid) });
-        let nxt_cmp = if mid < n {
+        let nxt_cmp = if mid < n && mid != n - 1 {
             f(unsafe { arr.get_unchecked(mid + 1) }) == Ordering::Greater
         } else {
             false
@@ -990,6 +990,12 @@ mod tests {
 
         let arr = vec![1, 2, 2, 2, 2, 3, 4, 7, 8, 8];
         assert_eq!(Some(7..=7), range_binsearch(&arr, |x| x.cmp(&7)));
+
+        let arr = vec![1, 2, 2, 2, 2, 3, 4, 7, 8, 9];
+        assert_eq!(Some(9..=9), range_binsearch(&arr, |x| x.cmp(&9)));
+
+        let arr = vec![1, 2, 2, 2, 2, 3, 4, 7, 9, 8];
+        assert_eq!(Some(0..=0), range_binsearch(&arr, |x| x.cmp(&1)));
 
         let arr: Vec<i32> = vec![];
         assert_eq!(None, range_binsearch(&arr, |x| x.cmp(&1)));
