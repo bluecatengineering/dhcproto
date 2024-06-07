@@ -18,7 +18,7 @@ pub trait Encodable {
 /// Encoder type, holds a mut ref to a buffer
 /// that it will write data to and an offset
 /// of the next position to write.
-/// 
+///
 /// This will start writing from the beginning of the buffer, *not* from the end.
 /// The buffer will be grown as needed.
 #[derive(Debug)]

@@ -7,21 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.12.0]
+
 ### Added
 
 - htype for v6
+- v6 `NTP_SERVER`
+- `Encoder::buffer_filled` and `Encoder::len_filled`
 
 ### Fixed
 
 - v6 DUID type writing full 2-bytes from htype
+- fix v6 possiblity to overrun options array on `get`
 
 ## [0.11.0]
 
 ### Fixed
+
 - AgentRemoteId was returning the wrong variant on decode
 
 ### Added
-- RFC 2563/8925 
+
+- RFC 2563/8925
 
 ## [0.10.0]
 
