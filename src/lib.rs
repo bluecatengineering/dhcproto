@@ -92,5 +92,5 @@ pub mod error;
 pub mod v4;
 pub mod v6;
 
-pub use trust_dns_proto::error::ProtoError as NameError;
-pub use trust_dns_proto::rr::Name;
+pub use hickory_proto::error::ProtoError as NameError;
+pub use hickory_proto::rr::Name;
