@@ -8,13 +8,13 @@ use crate::{
     v4::{fqdn, relay},
 };
 
-use ipnet::Ipv4Net;
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-use trust_dns_proto::{
+use hickory_proto::{
     rr::Name,
     serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder, EncodeMode},
 };
+use ipnet::Ipv4Net;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 // declares DHCP Option codes.
 // generates:

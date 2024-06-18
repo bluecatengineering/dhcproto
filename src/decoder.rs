@@ -1,5 +1,5 @@
 //! Decodable trait & Decoder
-use trust_dns_proto::{
+use hickory_proto::{
     rr::Name,
     serialize::binary::{BinDecodable, BinDecoder},
 };

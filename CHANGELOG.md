@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- updated trust-dns-proto to hickory-proto
+
 ## [0.12.0]
 
 ### Added

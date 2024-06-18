@@ -1,8 +1,8 @@
 use std::fmt;
 
+use hickory_proto::rr::Name;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use trust_dns_proto::rr::Name;
 
 /// A client FQDN
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
