@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap, iter, net::Ipv4Addr};
+use std::{borrow::Cow, collections::BTreeMap, iter, net::Ipv4Addr};
 
 use crate::{
     decoder::{Decodable, Decoder},
@@ -155,7 +155,7 @@ dhcproto_macros::declare_codes!(
 /// ```
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct DhcpOptions(HashMap<OptionCode, DhcpOption>);
+pub struct DhcpOptions(BTreeMap<OptionCode, DhcpOption>);
 
 impl DhcpOptions {
     /// Create new [`DhcpOptions`]
@@ -276,7 +276,7 @@ impl DhcpOptions {
 
 impl IntoIterator for DhcpOptions {
     type Item = (OptionCode, DhcpOption);
-    type IntoIter = std::collections::hash_map::IntoIter<OptionCode, DhcpOption>;
+    type IntoIter = std::collections::btree_map::IntoIter<OptionCode, DhcpOption>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -288,21 +288,21 @@ impl FromIterator<DhcpOption> for DhcpOptions {
         DhcpOptions(
             iter.into_iter()
                 .map(|opt| ((&opt).into(), opt))
-                .collect::<HashMap<OptionCode, DhcpOption>>(),
+                .collect::<BTreeMap<OptionCode, DhcpOption>>(),
         )
     }
 }
 
 impl FromIterator<(OptionCode, DhcpOption)> for DhcpOptions {
     fn from_iter<T: IntoIterator<Item = (OptionCode, DhcpOption)>>(iter: T) -> Self {
-        DhcpOptions(iter.into_iter().collect::<HashMap<_, _>>())
+        DhcpOptions(iter.into_iter().collect::<BTreeMap<_, _>>())
     }
 }
 
 impl Decodable for DhcpOptions {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         // represented as a vector in the actual message
-        let mut opts = HashMap::new();
+        let mut opts = BTreeMap::new();
         // should we error the whole parser if we fail to parse an
         // option or just stop parsing options? -- here we will just stop
         while let Ok(opt) = DhcpOption::decode(decoder) {
