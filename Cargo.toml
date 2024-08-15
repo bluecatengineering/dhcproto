@@ -24,6 +24,7 @@ trust-dns-proto = { version = "0.22.0", default-features = false }
 url = "2.2.2"
 dhcproto-macros = { path = "./dhcproto-macros", version = "0.1.0" }
 ipnet = "2.5"
+indexmap = "2.4"
 
 [features]
 default = []
