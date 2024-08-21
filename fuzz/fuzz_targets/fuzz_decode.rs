@@ -1,7 +1,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use dhcproto::v4::{Message, Encoder, Decoder, Decodable, Encodable};
+use dhcproto::v4::{Message, Decoder, Decodable};
 
 fuzz_target!(|data: &[u8]| {
     let msg = Message::decode(&mut Decoder::new(data));
