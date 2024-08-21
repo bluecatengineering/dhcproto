@@ -63,7 +63,7 @@ jobs:
       - name: Install cargo-fuzz
         run: cargo install cargo-fuzz
       - name: Fuzz
-        run: cargo fuzz run fuzz_decode -- -max_len=1024 -max_total_time=60 
+        run: cargo fuzz run fuzz_decode -- -max_total_time=60 
 
   fmt:
     name: Rustfmt
