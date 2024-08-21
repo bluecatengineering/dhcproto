@@ -1,4 +1,5 @@
 #![no_main]
+#[warn(unused_variables)]
 
 use libfuzzer_sys::fuzz_target;
 use dhcproto::v4::{Message, Decoder, Decodable};
