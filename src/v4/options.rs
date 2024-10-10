@@ -180,7 +180,7 @@ impl DhcpOptions {
     }
     /// remove option
     pub fn remove(&mut self, code: OptionCode) -> Option<DhcpOption> {
-        self.0.remove(&code)
+        self.0.shift_remove(&code)
     }
     /// insert a new [`DhcpOption`]
     ///
