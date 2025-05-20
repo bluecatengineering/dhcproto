@@ -688,7 +688,7 @@ fn decode_inner(
                 }
 
                 // Significant bytes to hold the prefix
-                let sig_bytes = (prefix_len as usize + 7) / 8;
+                let sig_bytes = (prefix_len as usize).div_ceil(8);
 
                 let mut dest = [0u8; 4];
                 dest[0..sig_bytes].clone_from_slice(route_dec.read_slice(sig_bytes)?);
@@ -1097,7 +1097,7 @@ impl Encodable for DhcpOption {
                 let mut buf = Vec::new();
                 let mut route_enc = Encoder::new(&mut buf);
                 for (dest, gw) in routes {
-                    let byte_len = (dest.prefix_len() + 7) / 8;
+                    let byte_len = dest.prefix_len().div_ceil(8);
                     route_enc.write_u8(dest.prefix_len())?;
                     route_enc.write_slice(&dest.addr().octets()[0..byte_len as usize])?;
                     route_enc.write(gw.octets())?;
