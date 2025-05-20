@@ -1436,7 +1436,7 @@ mod tests {
             DhcpOption::BulkLeaseQueryStatusCode(bulk_query::Code::Success, msg.clone()),
             vec![
                 151,
-                (msg.as_bytes().len() + 1) as u8,
+                (msg.len() + 1) as u8,
                 0,
                 b'm',
                 b'e',

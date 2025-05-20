@@ -5,7 +5,7 @@ authors = [
 	"Ian Laidlaw <ilaidlaw@bluecatnetworks.com>",
 	"Evan Cameron <cameron.evan@gmail.com>",
 ]
-edition = "2021"
+edition = "2024"
 description = """
 A DHCP parser and encoder for DHCPv4/DHCPv6. `dhcproto` aims to be a functionally complete DHCP implementation.
 """
@@ -16,18 +16,18 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-thiserror = "1.0"
-rand = "0.8"
+thiserror = "2.0.12"
+rand = "0.9"
 serde = { version = "1.0", features = ["derive"], optional = true }
 hex = "0.4.3"
-hickory-proto = { version = "0.24.1", default-features = false }
-url = "2.2.2"
+hickory-proto = { version = "0.25.2", default-features = false }
+url = "2.5.4"
 dhcproto-macros = { path = "./dhcproto-macros", version = "0.1.0" }
 ipnet = "2.5"
 
 [features]
 default = []
-serde = ["dep:serde", "url/serde", "ipnet/serde", "hickory-proto/serde-config"]
+serde = ["dep:serde", "url/serde", "ipnet/serde", "hickory-proto/serde"]
 
 [dev-dependencies]
 criterion = "0.4.0"
