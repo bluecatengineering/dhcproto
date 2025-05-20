@@ -39,7 +39,7 @@ pub enum DecodeError {
 
     /// domain parse error
     #[error("domain parse error {0}")]
-    DomainParseError(#[from] hickory_proto::error::ProtoError),
+    DomainParseError(#[from] hickory_proto::ProtoError),
 
     /// Unknown decode error
     #[error("unknown error")]
@@ -68,7 +68,7 @@ pub enum EncodeError {
 
     /// DNS encoding error from hickory-dns
     #[error("domain encoding error {0}")]
-    DomainEncodeError(#[from] hickory_proto::error::ProtoError),
+    DomainEncodeError(#[from] hickory_proto::ProtoError),
 }
 
 /// Convenience type for encode errors
