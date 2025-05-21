@@ -1,4 +1,4 @@
-use crate::v6::{options::DhcpOption, UnknownOption};
+use crate::v6::{UnknownOption, options::DhcpOption};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
