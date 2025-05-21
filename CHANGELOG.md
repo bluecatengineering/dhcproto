@@ -12,12 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - updated all dependencies to newest version
 - update edition to 2024 and toolchain to 1.85.0
 
-## [0.13.0]
-
-### Changed
-
-- updated trust-dns-proto to hickory-proto
-
 ## [0.12.0]
 
 ### Added
