@@ -3,8 +3,8 @@ use std::net::Ipv6Addr;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::v6::HType;
 use crate::Encoder;
+use crate::v6::HType;
 
 /// Duid helper type
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
