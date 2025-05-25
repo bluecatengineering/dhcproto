@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap, iter, net::Ipv4Addr};
+use std::{borrow::Cow, collections::BTreeMap, iter, net::Ipv4Addr};
 
 use crate::{
     decoder::{Decodable, Decoder},
@@ -135,6 +135,10 @@ dhcproto_macros::declare_codes!(
     {157, BulkLeaseQueryDataSource, "BLQ data source - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.8>", (bulk_query::DataSourceFlags)},
     {255, End, "end-of-list marker"}
 );
+
+/// Holds DHCP options. Options are stored internally in a BTreeMap, so will be stored in
+/// increasing order according to the opcode. Encoding options to bytes (with [`to_vec()`]) are guaranteed to
+/// be in the same order for the same set of options
 /// ex
 /// ```rust
 /// use dhcproto::v4;
@@ -153,9 +157,10 @@ dhcproto_macros::declare_codes!(
 ///          v4::OptionCode::DomainName,
 ///       ]));
 /// ```
+/// [`to_vec()`]: crate::encoder::Encoder
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct DhcpOptions(HashMap<OptionCode, DhcpOption>);
+pub struct DhcpOptions(BTreeMap<OptionCode, DhcpOption>);
 
 impl DhcpOptions {
     /// Create new [`DhcpOptions`]
@@ -189,6 +194,9 @@ impl DhcpOptions {
     /// ```
     /// [`DhcpOption`]: crate::v4::DhcpOption
     pub fn insert(&mut self, opt: DhcpOption) -> Option<DhcpOption> {
+        if opt == DhcpOption::End || opt == DhcpOption::Pad {
+            return None;
+        }
         self.0.insert((&opt).into(), opt)
     }
     /// iterate over entries
@@ -276,10 +284,19 @@ impl DhcpOptions {
 
 impl IntoIterator for DhcpOptions {
     type Item = (OptionCode, DhcpOption);
-    type IntoIter = std::collections::hash_map::IntoIter<OptionCode, DhcpOption>;
+    type IntoIter = std::collections::btree_map::IntoIter<OptionCode, DhcpOption>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a DhcpOptions {
+    type Item = (&'a OptionCode, &'a DhcpOption);
+    type IntoIter = std::collections::btree_map::Iter<'a, OptionCode, DhcpOption>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
     }
 }
 
@@ -288,21 +305,21 @@ impl FromIterator<DhcpOption> for DhcpOptions {
         DhcpOptions(
             iter.into_iter()
                 .map(|opt| ((&opt).into(), opt))
-                .collect::<HashMap<OptionCode, DhcpOption>>(),
+                .collect::<BTreeMap<OptionCode, DhcpOption>>(),
         )
     }
 }
 
 impl FromIterator<(OptionCode, DhcpOption)> for DhcpOptions {
     fn from_iter<T: IntoIterator<Item = (OptionCode, DhcpOption)>>(iter: T) -> Self {
-        DhcpOptions(iter.into_iter().collect::<HashMap<_, _>>())
+        DhcpOptions(iter.into_iter().collect::<BTreeMap<_, _>>())
     }
 }
 
 impl Decodable for DhcpOptions {
     fn decode(decoder: &mut Decoder<'_>) -> DecodeResult<Self> {
         // represented as a vector in the actual message
-        let mut opts = HashMap::new();
+        let mut opts = BTreeMap::new();
         // should we error the whole parser if we fail to parse an
         // option or just stop parsing options? -- here we will just stop
         while let Ok(opt) = DhcpOption::decode(decoder) {
@@ -1574,5 +1591,26 @@ mod tests {
             ],
             8,
         )
+    }
+
+    fn create_opts() -> Vec<u8> {
+        let mut opts = DhcpOptions::new();
+        opts.insert(DhcpOption::MessageType(MessageType::Discover));
+        opts.insert(DhcpOption::RapidCommit);
+        opts.insert(DhcpOption::ParameterRequestList(vec![
+            OptionCode::SubnetMask,
+            OptionCode::Router,
+            OptionCode::DomainNameServer,
+            OptionCode::TFTPServerName,
+            OptionCode::BootfileName,
+        ]));
+
+        opts.to_vec().unwrap()
+    }
+
+    #[test]
+    fn test_opt_order() {
+        // assert that options are in the same order once put into bytes
+        assert_eq!(create_opts(), create_opts(),);
     }
 }

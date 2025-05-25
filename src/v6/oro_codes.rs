@@ -1,5 +1,5 @@
 //! Valid Option Codes for ORO
-//! https://datatracker.ietf.org/doc/html/rfc8415#section-24
+//! <https://datatracker.ietf.org/doc/html/rfc8415#section-24>
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
