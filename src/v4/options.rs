@@ -139,6 +139,13 @@ dhcproto_macros::declare_codes!(
 /// Holds DHCP options. Options are stored internally in a BTreeMap, so will be stored in
 /// increasing order according to the opcode. Encoding options to bytes (with [`to_vec()`]) are guaranteed to
 /// be in the same order for the same set of options
+///
+/// `DhcpOptions` supports long-opt encoding. If the option you insert has data bigger than 255,
+/// it will be split into multiple max 255 len opts with the same opt code according to RFC3396.
+///
+/// Dhcp options end with the `End` (op code 255) option. This option is automatically inserted
+/// by the library when encoded to bytes so you don't need to worry about it.
+///
 /// ex
 /// ```rust
 /// use dhcproto::v4;
