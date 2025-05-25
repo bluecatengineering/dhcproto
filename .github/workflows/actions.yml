@@ -55,6 +55,29 @@ jobs:
           command: test
           args: --all-features
 
+  doc:
+    name: Rust doc Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --all-features
+
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
