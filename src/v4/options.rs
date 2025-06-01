@@ -287,6 +287,19 @@ impl DhcpOptions {
     pub fn len(&self) -> usize {
         self.0.len()
     }
+    /// Returns true if the option code exists in the map
+    ///
+    /// ```
+    /// # use dhcproto::v4::{MessageType, DhcpOption, DhcpOptions, OptionCode};
+    /// let mut opts = DhcpOptions::new();
+    /// opts.insert(DhcpOption::MessageType(MessageType::Discover));
+    ///
+    /// assert!(opts.contains(OptionCode::MessageType));
+    /// assert!(!opts.contains(OptionCode::SubnetMask));
+    /// ```
+    pub fn contains(&self, code: OptionCode) -> bool {
+        self.0.contains_key(&code)
+    }
 }
 
 impl IntoIterator for DhcpOptions {
@@ -348,26 +361,19 @@ impl Decodable for DhcpOptions {
 impl Encodable for DhcpOptions {
     fn encode(&self, e: &mut Encoder<'_>) -> EncodeResult<()> {
         if self.0.is_empty() {
-            Ok(())
-        } else {
-            // encode all opts adding the `End` afterwards
-            // sum all bytes written
-            match self.get(OptionCode::RelayAgentInformation) {
-                // agent info must be placed last before `End`
-                Some(agent_info) => self
-                    .0
-                    .iter()
-                    .filter(|opt| *opt.0 != OptionCode::RelayAgentInformation)
-                    .chain(iter::once((&OptionCode::RelayAgentInformation, agent_info)))
-                    .chain(iter::once((&OptionCode::End, &DhcpOption::End)))
-                    .try_for_each(|(_, opt)| opt.encode(e)),
-                None => self
-                    .0
-                    .iter()
-                    .chain(iter::once((&OptionCode::End, &DhcpOption::End)))
-                    .try_for_each(|(_, opt)| opt.encode(e)),
-            }
+            return Ok(());
         }
+
+        // encode all opts adding the `End` afterwards
+        self.0
+            .iter()
+            .filter(|(code, _)| **code != OptionCode::RelayAgentInformation)
+            .chain(
+                self.get(OptionCode::RelayAgentInformation)
+                    .map(|opt| (&OptionCode::RelayAgentInformation, opt)),
+            )
+            .chain(iter::once((&OptionCode::End, &DhcpOption::End)))
+            .try_for_each(|(_, opt)| opt.encode(e))
     }
 }
 

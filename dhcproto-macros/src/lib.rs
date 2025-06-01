@@ -1,186 +1,261 @@
-use proc_macro::{Group, Ident, TokenTree};
+use proc_macro::TokenStream;
+use quote::quote;
+use syn::{
+    Ident, LitInt, LitStr, Token, Type,
+    parse::{Parse, ParseStream, Result},
+    parse_macro_input,
+};
 
+// parses a single entry in the format:
+// {code, id, "description", (Type1, Type2, ...)}
 struct Entry {
     code: u8,
     id: Ident,
     description: String,
-    data_type: Option<Group>,
+    data_types: Option<Vec<Type>>,
 }
 
-fn parse_input(input: proc_macro::TokenStream) -> Vec<Entry> {
-    let mut entries = Vec::new();
-    for x in input.into_iter() {
-        if let TokenTree::Group(group) = x {
-            let mut tokens = group.stream().into_iter().filter_map(|x| {
-                if let TokenTree::Punct(_) = x {
-                    None
-                } else {
-                    Some(x)
+impl Parse for Entry {
+    // {code, id, "description", (Type1, Type2, ...)}
+    fn parse(input: ParseStream) -> Result<Self> {
+        let content;
+        syn::braced!(content in input);
+
+        let code: LitInt = content.parse()?;
+        content.parse::<Token![,]>()?;
+
+        let id: Ident = content.parse()?;
+        content.parse::<Token![,]>()?;
+
+        let description: LitStr = content.parse()?;
+
+        let data_types = if content.peek(Token![,]) && content.peek2(syn::token::Paren) {
+            content.parse::<Token![,]>()?;
+            let types_content;
+            syn::parenthesized!(types_content in content);
+
+            let mut types = Vec::new();
+            if !types_content.is_empty() {
+                types.push(types_content.parse()?);
+                while types_content.peek(Token![,]) {
+                    types_content.parse::<Token![,]>()?;
+                    if !types_content.is_empty() {
+                        types.push(types_content.parse()?);
+                    }
                 }
-            });
-            let code = if let Some(TokenTree::Literal(lit)) = tokens.next() {
-                lit.to_string().parse::<u8>().unwrap()
-            } else {
-                panic!("expected code");
-            };
-            let id = if let Some(TokenTree::Ident(id)) = tokens.next() {
-                id
-            } else {
-                panic!("expected id");
-            };
-            let description = if let Some(TokenTree::Literal(description)) = tokens.next() {
-                description.to_string()
-            } else {
-                panic!("expected description");
-            };
-
-            let data_type = match tokens.next() {
-                Some(TokenTree::Group(x)) => Some(x),
-                None => None,
-                e => panic!("expected nothing or id not {e:?}"),
-            };
-            entries.push(Entry {
-                code,
-                id,
-                description,
-                data_type,
-            })
-        }
-    }
-    entries
-}
-
-fn generate_optioncode_code<'a>(entries: &'a [Entry]) -> impl Iterator<Item = String> + 'a {
-    let enum_impl = std::iter::once(
-        "
-        /// DHCP Options
-        #[cfg_attr(feature = \"serde\", derive(Serialize, Deserialize))]
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        pub enum OptionCode {"
-            .to_owned(),
-    )
-    .chain(entries.iter().map(|e| {
-        let description = &e.description[1..&e.description.len() - 1];
-        let id = &e.id;
-        let code = e.code;
-        format!("/// {code} - {description}\n{id},")
-    }))
-    .chain(std::iter::once(
-        "
-    /// Unknown code
-    Unknown(u8),
-    }
-    "
-        .to_owned(),
-    ));
-
-    let impl_option_from_u8 = std::iter::once(
-        "
-        impl std::convert::From<u8> for OptionCode {
-        fn from(x : u8) -> Self{
-            match x {
-        "
-        .to_owned(),
-    )
-    .chain(entries.iter().map(|e| {
-        let id = &e.id;
-        let code = e.code;
-        format!("{code} => Self::{id},")
-    }))
-    .chain(std::iter::once("_ => Self::Unknown(x)}}}".to_owned()));
-
-    let impl_u8_from_option = std::iter::once(
-        "
-        impl std::convert::From<OptionCode> for u8 {
-        fn from(x : OptionCode) -> Self{
-            match x {
-        "
-        .to_owned(),
-    )
-    .chain(entries.iter().map(|e| {
-        let id = &e.id;
-        let code = e.code;
-        format!("OptionCode::{id} => {code},")
-    }))
-    .chain(std::iter::once(
-        "OptionCode::Unknown(code) => code }}}".to_owned(),
-    ));
-
-    enum_impl
-        .chain(impl_option_from_u8)
-        .chain(impl_u8_from_option)
-}
-
-fn generate_dhcpoption_code<'a>(entries: &'a [Entry]) -> impl Iterator<Item = String> + 'a {
-    let impl_dhcp_option = std::iter::once(
-        "
-        /// DHCP Options
-        #[cfg_attr(feature = \"serde\", derive(Serialize, Deserialize))]
-        #[derive(Debug, Clone, PartialEq, Eq)]
-        pub enum DhcpOption {"
-            .to_owned(),
-    )
-    .chain(entries.iter().map(|e| {
-        let description = &e.description[1..&e.description.len() - 1];
-        let id = &e.id;
-        let code = e.code;
-        if let Some(data_description) = &e.data_type {
-            format!("/// {code} - {description}\n{id}{data_description},")
+            }
+            Some(types)
         } else {
-            format!("/// {code} - {description}\n{id},")
-        }
-    }))
-    .chain(std::iter::once(
-        "
-        /// Unknown option
-        Unknown(UnknownOption),
-    }
-    "
-        .to_owned(),
-    ));
+            None
+        };
 
-    let impl_optioncode_from_dhcpoption_ref = std::iter::once(
-        "
+        Ok(Entry {
+            code: code.base10_parse()?,
+            id,
+            description: description.value(),
+            data_types,
+        })
+    }
+}
+
+struct DeclareCodesInput {
+    entries: Vec<Entry>,
+}
+
+impl Parse for DeclareCodesInput {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let mut entries = Vec::new();
+
+        while !input.is_empty() {
+            entries.push(input.parse()?);
+
+            if input.peek(Token![,]) {
+                input.parse::<Token![,]>()?;
+            }
+        }
+
+        Ok(DeclareCodesInput { entries })
+    }
+}
+
+fn generate_option_code_enum(entries: &[Entry]) -> proc_macro2::TokenStream {
+    let variants = entries.iter().map(|e| {
+        let id = &e.id;
+        let code = e.code;
+        let description = &e.description;
+        let doc = format!("{code} - {description}");
+
+        quote! {
+            #[doc = #doc]
+            #id,
+        }
+    });
+
+    quote! {
+        /// DHCP Options
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        pub enum OptionCode {
+            #(#variants)*
+            /// Unknown code
+            Unknown(u8),
+        }
+    }
+}
+
+fn generate_option_code_from_u8(entries: &[Entry]) -> proc_macro2::TokenStream {
+    let match_arms = entries.iter().map(|e| {
+        let id = &e.id;
+        let code = e.code;
+        quote! { #code => Self::#id, }
+    });
+
+    quote! {
+        impl std::convert::From<u8> for OptionCode {
+            fn from(x: u8) -> Self {
+                match x {
+                    #(#match_arms)*
+                    _ => Self::Unknown(x),
+                }
+            }
+        }
+    }
+}
+
+fn generate_u8_from_option_code(entries: &[Entry]) -> proc_macro2::TokenStream {
+    let match_arms = entries.iter().map(|e| {
+        let id = &e.id;
+        let code = e.code;
+        quote! { OptionCode::#id => #code, }
+    });
+
+    quote! {
+        impl std::convert::From<OptionCode> for u8 {
+            fn from(x: OptionCode) -> Self {
+                match x {
+                    #(#match_arms)*
+                    OptionCode::Unknown(code) => code,
+                }
+            }
+        }
+    }
+}
+
+fn generate_dhcp_option_enum(entries: &[Entry]) -> proc_macro2::TokenStream {
+    let variants = entries.iter().map(|e| {
+        let id = &e.id;
+        let code = e.code;
+        let description = &e.description;
+        let doc = format!("{code} - {description}");
+
+        match &e.data_types {
+            Some(types) => {
+                quote! {
+                    #[doc = #doc]
+                    #id(#(#types),*),
+                }
+            }
+            None => {
+                quote! {
+                    #[doc = #doc]
+                    #id,
+                }
+            }
+        }
+    });
+
+    quote! {
+        /// DHCP Options
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+        #[derive(Debug, Clone, PartialEq, Eq)]
+        pub enum DhcpOption {
+            #(#variants)*
+            /// Unknown option
+            Unknown(UnknownOption),
+        }
+    }
+}
+
+fn generate_option_code_from_dhcp_option(entries: &[Entry]) -> proc_macro2::TokenStream {
+    let match_arms = entries.iter().map(|e| {
+        let id = &e.id;
+
+        match &e.data_types {
+            Some(types) => {
+                let wildcards = types.iter().map(|_| quote! { _ });
+                quote! { DhcpOption::#id(#(#wildcards),*) => OptionCode::#id, }
+            }
+            None => quote! { DhcpOption::#id => OptionCode::#id, },
+        }
+    });
+
+    quote! {
         impl From<&DhcpOption> for OptionCode {
             fn from(opt: &DhcpOption) -> Self {
                 use DhcpOption as O;
                 match opt {
-        "
-        .to_owned(),
-    )
-    .chain(entries.iter().map(|e| {
-        let id = &e.id;
-        let var_field = if let Some(data_description) = &e.data_type {
-            std::iter::once("(_")
-                .chain(data_description.stream().into_iter().filter_map(|e| {
-                    if let TokenTree::Punct(p) = e {
-                        (p.as_char() == ',').then_some(",_")
-                    } else {
-                        None
-                    }
-                }))
-                .chain(std::iter::once(")"))
-                .collect()
-        } else {
-            "".to_owned()
-        };
-        format!("O::{id}{var_field} => OptionCode::{id},")
-    }))
-    .chain(std::iter::once(
-        "O::Unknown(n) => OptionCode::Unknown(n.code)}}}".to_owned(),
-    ));
-
-    impl_dhcp_option.chain(impl_optioncode_from_dhcpoption_ref)
+                    #(#match_arms)*
+                    O::Unknown(n) => OptionCode::Unknown(n.code),
+                }
+            }
+        }
+    }
 }
 
 #[proc_macro]
-pub fn declare_codes(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let entries = parse_input(input);
-    let enum_code = generate_optioncode_code(&entries);
-    let dhcpoption_code = generate_dhcpoption_code(&entries);
-    enum_code
-        .chain(dhcpoption_code)
-        .collect::<String>()
-        .parse()
-        .unwrap()
+pub fn declare_codes(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeclareCodesInput);
+    let entries = &input.entries;
+
+    let option_code_enum = generate_option_code_enum(entries);
+    let option_code_from_u8 = generate_option_code_from_u8(entries);
+    let u8_from_option_code = generate_u8_from_option_code(entries);
+    let dhcp_option_enum = generate_dhcp_option_enum(entries);
+    let option_code_from_dhcp_option = generate_option_code_from_dhcp_option(entries);
+
+    let expanded = quote! {
+        #option_code_enum
+        #option_code_from_u8
+        #u8_from_option_code
+        #dhcp_option_enum
+        #option_code_from_dhcp_option
+    };
+
+    TokenStream::from(expanded)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quote::quote;
+    use syn::parse_quote;
+
+    #[test]
+    fn test_macro_expansion() {
+        let input: DeclareCodesInput = parse_quote! {
+            {1, SubnetMask, "Subnet Mask", (Ipv4Addr)},
+            {53, MessageType, "Message Type", (MessageType)},
+        };
+
+        let opt_code = generate_option_code_enum(&input.entries);
+
+        // Check that it contains expected variants
+        let expected = quote! {
+            /// DHCP Options
+            #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            pub enum OptionCode {
+                #[doc = "1 - Subnet Mask"]
+                SubnetMask,
+                #[doc = "53 - Message Type"]
+                MessageType,
+                /// Unknown code
+                Unknown(u8),
+            }
+        };
+        println!("Generated OptionCode enum: {}", opt_code);
+
+        // Compare token streams (this is approximate)
+        assert_eq!(opt_code.to_string(), expected.to_string());
+    }
 }
