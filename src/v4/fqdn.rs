@@ -92,9 +92,9 @@ impl FqdnFlags {
     pub fn set_n(mut self, bit: bool) -> Self {
         if bit {
             self.0 |= 0x08; // 1000
-            self.set_s(false);
+            self = self.set_s(false);
         } else {
-            self.0 &= 0x07; // 0111
+            self.0 &= 0xf7; // 0111
         }
         self
     }
@@ -111,7 +111,7 @@ impl FqdnFlags {
         if bit {
             self.0 |= 0x04; // 0100
         } else {
-            self.0 &= 0x0b; // 1011
+            self.0 &= 0xfb; // 1011
         }
         self
     }
@@ -128,7 +128,7 @@ impl FqdnFlags {
         if bit {
             self.0 |= 0x02; // 0010
         } else {
-            self.0 &= 0x0d; // 1101
+            self.0 &= 0xfd; // 1101
         }
         self
     }
@@ -145,7 +145,7 @@ impl FqdnFlags {
         if bit {
             self.0 |= 0x01; // 0001
         } else {
-            self.0 &= 0x0e; // 1110
+            self.0 &= 0xfe; // 1110
         }
         self
     }
@@ -174,11 +174,15 @@ mod tests {
     fn test_fqdn_flags() {
         let mut flag = FqdnFlags::default();
         assert_eq!(flag.0, 0);
+        flag.set_s_mut(true);
+        // passing true clears the s bit
         flag.set_n_mut(true);
         assert!(flag.n());
+        assert!(!flag.s());
         assert_eq!(flag.0, 0x08);
         flag.set_n_mut(false);
         assert!(!flag.n());
+        assert!(!flag.s());
         assert_eq!(flag.0, 0x00);
 
         let flag = FqdnFlags::new(0x40).set_s(true);
@@ -187,8 +191,14 @@ mod tests {
         assert!(!flag.n());
         assert!(!flag.o());
         assert_eq!(flag.0, 0x41);
-        let flag = flag.set_e(true);
+        let mut flag = flag.set_e(true);
         assert!(flag.e() && flag.s());
+        flag.set_e_mut(false);
+        assert_eq!(flag.0, 0x41);
+
+        flag.set_s_mut(false);
+        assert_eq!(flag.0, 0x40);
+        assert!(!flag.s());
 
         let flag = FqdnFlags::default().set_e(true);
         assert!(flag.e());
