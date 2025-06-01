@@ -204,7 +204,6 @@ impl DhcpOptions {
         if opt == DhcpOption::End || opt == DhcpOption::Pad {
             return None;
         }
-
         self.0.insert((&opt).into(), opt)
     }
     /// iterate over entries
