@@ -33,6 +33,11 @@ serde = ["dep:serde", "url/serde", "ipnet/serde", "hickory-proto/serde"]
 criterion = "0.4.0"
 serde_json = "1.0"
 
+# examples dependencies
+anyhow = "1.0"
+pnet = { version = "0.35"}
+tokio = { version = "1.46.1", features = ["full"] }
+
 [[bench]]
 name = "decode"
 harness = false
