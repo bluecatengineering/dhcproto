@@ -28,6 +28,7 @@ ipnet = "2.5"
 [features]
 default = []
 serde = ["dep:serde", "url/serde", "ipnet/serde", "hickory-proto/serde"]
+std = ["hickory-proto/std"]
 
 [dev-dependencies]
 criterion = "0.4.0"
