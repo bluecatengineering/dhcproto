@@ -289,12 +289,13 @@ impl Message {
     /// Set the message's chaddr. `chaddr` can only up to 16 bytes in length
     pub fn set_chaddr(&mut self, chaddr: &[u8]) -> &mut Self {
         let mut new_chaddr = [0; 16];
+        self.hlen = chaddr.len() as u8;
         if chaddr.len() >= 16 {
             new_chaddr.copy_from_slice(&chaddr[..16]);
+            self.hlen = 16
         } else {
             new_chaddr[..chaddr.len()].copy_from_slice(chaddr);
         }
-        self.hlen = chaddr.len() as u8;
         self.chaddr = new_chaddr;
         self
     }
@@ -611,6 +612,11 @@ mod tests {
         );
         msg.set_chaddr(&[0, 1, 2, 3, 4, 5]);
         assert_eq!(msg.chaddr().len(), 6);
+
+        msg.set_chaddr(&[
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        ]);
+        assert_eq!(msg.chaddr().len(), 16);
         Ok(())
     }
 
