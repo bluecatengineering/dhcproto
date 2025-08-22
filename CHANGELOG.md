@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix ClientFQDN flags where set_n did not invert bit 's' properly
 - use `syn` to generate options macros
 
+### Fixed
+
+- fixed bug where hlen was > 16 from `set_chaddr`
+
 ## [0.13.0]
 
 ### Changed
