@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - switched to BTreeMap for v4 options
 - use `syn` to generate options macros
+- switch to no_std+alloc
 
 ### Fixed
 

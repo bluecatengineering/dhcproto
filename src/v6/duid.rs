@@ -1,4 +1,5 @@
-use std::net::Ipv6Addr;
+use alloc::vec::Vec;
+use core::net::Ipv6Addr;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

@@ -111,7 +111,7 @@ fn generate_option_code_from_u8(entries: &[Entry]) -> proc_macro2::TokenStream {
     });
 
     quote! {
-        impl std::convert::From<u8> for OptionCode {
+        impl core::convert::From<u8> for OptionCode {
             fn from(x: u8) -> Self {
                 match x {
                     #(#match_arms)*
@@ -130,7 +130,7 @@ fn generate_u8_from_option_code(entries: &[Entry]) -> proc_macro2::TokenStream {
     });
 
     quote! {
-        impl std::convert::From<OptionCode> for u8 {
+        impl core::convert::From<OptionCode> for u8 {
             fn from(x: OptionCode) -> Self {
                 match x {
                     #(#match_arms)*

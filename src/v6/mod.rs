@@ -61,7 +61,7 @@ mod oro_codes;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use std::{convert::TryInto, fmt, net::Ipv6Addr};
+use core::{convert::TryInto, fmt, net::Ipv6Addr};
 
 // re-export submodules from v6
 pub use self::htype::*;
