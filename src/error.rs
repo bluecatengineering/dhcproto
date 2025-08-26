@@ -1,6 +1,6 @@
 //! Error types for Encoding/Decoding
-use std::io;
 
+use alloc::boxed::Box;
 use thiserror::Error;
 
 /// Convenience type for decode errors
@@ -19,15 +19,15 @@ pub enum DecodeError {
 
     /// error converting from slice
     #[error("error converting from slice {0}")]
-    SliceError(#[from] std::array::TryFromSliceError),
+    SliceError(#[from] core::array::TryFromSliceError),
 
     /// error finding nul in string
     #[error("error getting null terminated string {0}")]
-    NulError(#[from] std::ffi::FromBytesWithNulError),
+    NulError(#[from] core::ffi::FromBytesWithNulError),
 
     /// error converting to utf-8
     #[error("error converting to UTF-8 {0}")]
-    Utf8Error(#[from] std::str::Utf8Error),
+    Utf8Error(#[from] core::str::Utf8Error),
 
     /// io error
     #[error("io error {0}")]
@@ -43,7 +43,7 @@ pub enum DecodeError {
 
     /// Unknown decode error
     #[error("unknown error")]
-    Unknown(Box<dyn std::error::Error + Send + Sync + 'static>),
+    Unknown(Box<dyn core::error::Error + Send + Sync + 'static>),
 }
 
 /// Returned from types that encode

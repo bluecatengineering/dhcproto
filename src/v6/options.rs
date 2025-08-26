@@ -5,7 +5,8 @@ use hickory_proto::{
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use std::{cmp::Ordering, net::Ipv6Addr, ops::RangeInclusive};
+use alloc::{string::String, vec::Vec};
+use core::{cmp::Ordering, net::Ipv6Addr, ops::RangeInclusive};
 
 use crate::v6::option_codes::OptionCode;
 use crate::{
@@ -83,7 +84,7 @@ impl DhcpOptions {
 impl IntoIterator for DhcpOptions {
     type Item = DhcpOption;
 
-    type IntoIter = std::vec::IntoIter<Self::Item>;
+    type IntoIter = alloc::vec::IntoIter<Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -166,13 +167,13 @@ pub enum DhcpOption {
 }
 
 impl PartialOrd for DhcpOption {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for DhcpOption {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         OptionCode::from(self).cmp(&OptionCode::from(other))
     }
 }
@@ -631,7 +632,7 @@ impl Decodable for DhcpOption {
             OptionCode::ServerUnicast => DhcpOption::ServerUnicast(decoder.read::<16>()?.into()),
             OptionCode::StatusCode => DhcpOption::StatusCode(StatusCode {
                 status: decoder.read_u16()?.into(),
-                msg: decoder.read_string(len - std::mem::size_of::<u16>())?,
+                msg: decoder.read_string(len - core::mem::size_of::<u16>())?,
             }),
             OptionCode::RapidCommit => DhcpOption::RapidCommit,
             OptionCode::UserClass => {
@@ -968,7 +969,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    use alloc::vec;
+    use core::str::FromStr;
 
     use super::*;
     #[test]

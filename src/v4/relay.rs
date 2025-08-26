@@ -1,5 +1,6 @@
 //! # relay
-use std::{collections::HashMap, fmt, net::Ipv4Addr};
+use alloc::{collections::BTreeMap, vec::Vec};
+use core::{fmt, net::Ipv4Addr};
 
 use crate::{Decodable, Encodable};
 
@@ -24,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// [`DhcpOption::RelayAgentInformation`]: crate::v4::DhcpOption::RelayAgentInformation
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct RelayAgentInformation(HashMap<RelayCode, RelayInfo>);
+pub struct RelayAgentInformation(BTreeMap<RelayCode, RelayInfo>);
 
 impl RelayAgentInformation {
     /// Get the data for a particular [`RelayCode`]
@@ -76,7 +77,7 @@ impl RelayAgentInformation {
 
 impl Decodable for RelayAgentInformation {
     fn decode(d: &mut crate::Decoder<'_>) -> super::DecodeResult<Self> {
-        let mut opts = HashMap::new();
+        let mut opts = BTreeMap::new();
         while let Ok(opt) = RelayInfo::decode(d) {
             opts.insert(RelayCode::from(&opt), opt);
         }
@@ -308,6 +309,18 @@ pub enum RelayCode {
     VirtualSubnetControl,
     /// unknown/unimplemented message type
     Unknown(u8),
+}
+
+impl PartialOrd for RelayCode {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for RelayCode {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        u8::from(*self).cmp(&u8::from(*other))
+    }
 }
 
 impl From<u8> for RelayCode {

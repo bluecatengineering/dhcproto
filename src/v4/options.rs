@@ -1,4 +1,10 @@
-use std::{borrow::Cow, collections::BTreeMap, iter, net::Ipv4Addr};
+use alloc::{
+    borrow::Cow,
+    collections::BTreeMap,
+    string::{String, ToString},
+    vec::Vec,
+};
+use core::{iter, net::Ipv4Addr};
 
 use crate::{
     decoder::{Decodable, Decoder},
@@ -304,7 +310,7 @@ impl DhcpOptions {
 
 impl IntoIterator for DhcpOptions {
     type Item = (OptionCode, DhcpOption);
-    type IntoIter = std::collections::btree_map::IntoIter<OptionCode, DhcpOption>;
+    type IntoIter = alloc::collections::btree_map::IntoIter<OptionCode, DhcpOption>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -313,7 +319,7 @@ impl IntoIterator for DhcpOptions {
 
 impl<'a> IntoIterator for &'a DhcpOptions {
     type Item = (&'a OptionCode, &'a DhcpOption);
-    type IntoIter = std::collections::btree_map::Iter<'a, OptionCode, DhcpOption>;
+    type IntoIter = alloc::collections::btree_map::Iter<'a, OptionCode, DhcpOption>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.iter()
@@ -378,25 +384,25 @@ impl Encodable for DhcpOptions {
 }
 
 impl PartialOrd for OptionCode {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for OptionCode {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         u8::from(*self).cmp(&u8::from(*other))
     }
 }
 
 impl PartialOrd for DhcpOption {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for DhcpOption {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         OptionCode::from(self).cmp(&OptionCode::from(other))
     }
 }
@@ -1111,7 +1117,7 @@ impl Encodable for DhcpOption {
                     r2,
                     domain,
                 } = fqdn;
-                let mut buf = vec![(*flags).into(), *r1, *r2];
+                let mut buf = alloc::vec![(*flags).into(), *r1, *r2];
                 if flags.e() {
                     // emits in canonical format
                     // start encoding at byte 3 because we had some preamble

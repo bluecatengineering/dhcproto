@@ -78,8 +78,9 @@
 //! # Ok(()) }
 //! ```
 //!
-use std::{fmt, net::Ipv4Addr, str::Utf8Error};
+use core::{fmt, net::Ipv4Addr, str::Utf8Error};
 
+use alloc::{string::String, vec::Vec};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -401,7 +402,7 @@ impl Message {
     }
     /// Get a reference to the message's fname, UTF-8 encoded
     pub fn fname_str(&self) -> Option<Result<&str, Utf8Error>> {
-        self.fname().map(std::str::from_utf8)
+        self.fname().map(core::str::from_utf8)
     }
     /// Set the message's fname using a UTF-8 string
     /// # Panic
@@ -430,7 +431,7 @@ impl Message {
     }
     /// Get a reference to the message's sname as a UTF-8 encoded string.
     pub fn sname_str(&self) -> Option<Result<&str, Utf8Error>> {
-        self.sname().map(std::str::from_utf8)
+        self.sname().map(core::str::from_utf8)
     }
     /// Set the message's sname. No particular encoding is enforced.
     /// # Panic
@@ -534,7 +535,7 @@ impl fmt::Display for Message {
                             None
                         }
                         .into_iter()
-                        .chain(std::iter::once(c))
+                        .chain(core::iter::once(c))
                     })
                     .collect::<String>(),
             )
@@ -549,9 +550,11 @@ impl fmt::Display for Message {
 #[cfg(test)]
 mod tests {
 
+    use alloc::boxed::Box;
+
     use super::*;
 
-    type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+    type Result<T> = core::result::Result<T, Box<dyn core::error::Error>>;
 
     fn decode_ipv4(input: Vec<u8>, expected: MessageType) -> Result<()> {
         // decode

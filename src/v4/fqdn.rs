@@ -1,4 +1,4 @@
-use std::fmt;
+use core::fmt;
 
 use hickory_proto::rr::Name;
 #[cfg(feature = "serde")]

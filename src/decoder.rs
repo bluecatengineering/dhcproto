@@ -6,10 +6,11 @@ use hickory_proto::{
 
 use crate::error::{DecodeError, DecodeResult};
 
-use std::{
+use alloc::{borrow::ToOwned, ffi::CString, string::String, vec::Vec};
+use core::{
     array::TryFromSliceError,
     convert::TryInto,
-    ffi::{CStr, CString},
+    ffi::CStr,
     mem,
     net::{Ipv4Addr, Ipv6Addr},
     str,

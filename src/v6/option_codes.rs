@@ -431,13 +431,13 @@ impl From<u16> for OptionCode {
 }
 
 impl PartialOrd for OptionCode {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for OptionCode {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         u16::from(*self).cmp(&u16::from(*other))
     }
 }
