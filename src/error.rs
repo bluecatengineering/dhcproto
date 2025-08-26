@@ -29,9 +29,9 @@ pub enum DecodeError {
     #[error("error converting to UTF-8 {0}")]
     Utf8Error(#[from] core::str::Utf8Error),
 
-    /// io error
-    #[error("io error {0}")]
-    IoError(#[from] io::Error),
+    /// invalid data error
+    #[error("invalid data error {0} msg {1}")]
+    InvalidData(u32, &'static str),
 
     /// url parse error
     #[error("url parse error")]
@@ -62,10 +62,9 @@ pub enum EncodeError {
         len: usize,
     },
 
-    /// io error
-    #[error("io error {0}")]
-    IoError(#[from] io::Error),
-
+    // /// io error
+    // #[error("io error {0}")]
+    // IoError(#[from] io::Error),
     /// DNS encoding error from hickory-dns
     #[error("domain encoding error {0}")]
     DomainEncodeError(#[from] hickory_proto::ProtoError),

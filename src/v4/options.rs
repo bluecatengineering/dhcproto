@@ -533,10 +533,10 @@ impl TryFrom<u8> for AutoConfig {
         match value {
             0 => Ok(AutoConfig::DoNotAutoConfigure),
             1 => Ok(AutoConfig::AutoConfigure),
-            _ => Err(super::DecodeError::IoError(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
+            n => Err(super::DecodeError::InvalidData(
+                n as u32,
                 "invalid number in disable SLAAC autoconfig",
-            ))),
+            )),
         }
     }
 }

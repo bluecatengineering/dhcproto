@@ -519,10 +519,10 @@ impl Decodable for NtpSuboption {
                 let mut name_decoder = BinDecoder::new(decoder.read_slice(len)?);
                 Ok(NtpSuboption::FQDN(Name::read(&mut name_decoder)?))
             }
-            _ => Err(super::DecodeError::IoError(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
+            code => Err(super::DecodeError::InvalidData(
+                code as u32,
                 "invalid ntp suboption code",
-            ))),
+            )),
         }
     }
 }
