@@ -1,4 +1,7 @@
 //! Encodable trait & Encoder
+
+use alloc::vec::Vec;
+
 use crate::error::{EncodeError, EncodeResult};
 
 /// A trait for types which are deserializable to DHCP binary formats
@@ -173,24 +176,24 @@ mod tests {
 
     #[test]
     fn basic_encode() -> EncodeResult<()> {
-        let mut buf = vec![0, 1, 2, 3, 4, 5];
+        let mut buf = alloc::vec![0, 1, 2, 3, 4, 5];
         let mut enc = Encoder::new(&mut buf);
         enc.offset = 4;
         // write already reserved space
         enc.write_slice(&[5, 6])?;
-        assert_eq!(enc.buffer, &mut vec![0, 1, 2, 3, 5, 6]);
+        assert_eq!(enc.buffer, &mut alloc::vec![0, 1, 2, 3, 5, 6]);
         assert_eq!(enc.offset, 6);
         // reserve extra space
         enc.write_slice(&[7, 8])?;
-        assert_eq!(enc.buffer, &mut vec![0, 1, 2, 3, 5, 6, 7, 8]);
+        assert_eq!(enc.buffer, &mut alloc::vec![0, 1, 2, 3, 5, 6, 7, 8]);
         assert_eq!(enc.offset, 8);
 
         // start w/ empty buf
-        let mut buf = vec![];
+        let mut buf = alloc::vec![];
         let mut enc = Encoder::new(&mut buf);
         // reserve space & write
         enc.write_slice(&[0, 1, 2, 3])?;
-        assert_eq!(enc.buffer, &mut vec![0, 1, 2, 3]);
+        assert_eq!(enc.buffer, &mut alloc::vec![0, 1, 2, 3]);
         assert_eq!(enc.offset, 4);
         Ok(())
     }

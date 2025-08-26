@@ -1,3 +1,4 @@
+#![cfg_attr(not(test), no_std)]
 #![warn(
     missing_debug_implementations,
     // missing_docs, // some variants still missing docs
@@ -82,6 +83,8 @@
 //! #        ]
 //! #    }
 //! ```
+
+extern crate alloc;
 
 pub use decoder::{Decodable, Decoder};
 pub use encoder::{Encodable, Encoder};
