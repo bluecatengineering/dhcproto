@@ -1,10 +1,10 @@
 use alloc::borrow::Cow;
 use core::{fmt::Debug, net::Ipv4Addr};
-use hickory_proto::serialize::binary::DecodeError;
 
-use crate::v4::OptionCode;
-
-use super::{Flags, HType, Opcode};
+use crate::{
+    error::DecodeError,
+    v4::{Flags, HType, Opcode, OptionCode},
+};
 
 /// A lazily decoded DHCPv4 message.
 /// It holds a reference to the original byte buffer and provides
@@ -19,7 +19,7 @@ impl<'a> Message<'a> {
     /// This is a zero-copy operation and does not perform any allocations.
     pub fn new(buffer: &'a [u8]) -> Result<Self, DecodeError> {
         if buffer.len() < 240 {
-            return Err(DecodeError::InsufficientBytes);
+            return Err(DecodeError::NotEnoughBytes);
         }
         Ok(Self { buffer })
     }
