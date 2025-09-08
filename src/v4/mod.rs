@@ -90,6 +90,8 @@ pub mod fqdn;
 mod htype;
 mod opcode;
 mod options;
+
+pub mod borrowed;
 pub mod relay;
 
 // re-export submodules from proto::msg
