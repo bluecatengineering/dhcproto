@@ -542,7 +542,7 @@ impl TryFrom<u8> for AutoConfig {
 }
 
 #[inline]
-fn decode_inner(
+pub(crate) fn decode_inner(
     code: OptionCode,
     len: usize,
     decoder: &mut Decoder<'_>,

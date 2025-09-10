@@ -2,8 +2,9 @@ use alloc::borrow::Cow;
 use core::{fmt::Debug, net::Ipv4Addr};
 
 use crate::{
+    Decodable, Decoder,
     error::DecodeError,
-    v4::{Flags, HType, Opcode, OptionCode},
+    v4::{DecodeResult, Flags, HType, Opcode, OptionCode},
 };
 
 /// A lazily decoded DHCPv4 message.
@@ -107,6 +108,10 @@ impl<'a> Message<'a> {
     }
 
     pub fn fname(&self) -> &'a [u8] {
+        debug_assert!(
+            self.buffer.get(108..236).is_some(),
+            "not enough bytes for fname"
+        );
         let file_bytes = &self.buffer[108..236];
         let end = file_bytes
             .iter()
@@ -118,7 +123,7 @@ impl<'a> Message<'a> {
     /// Returns a `DhcpOptions` iterator that lazily parses DHCP options.
     pub fn opts(&self) -> DhcpOptionIterator<'a> {
         // Magic cookie check
-        if self.buffer[236..240] != [99, 130, 83, 99] {
+        if self.buffer[236..240] != crate::v4::MAGIC {
             return DhcpOptionIterator::empty();
         }
         DhcpOptionIterator::new(&self.buffer[240..])
@@ -134,8 +139,32 @@ pub struct DhcpOptionIterator<'a> {
 /// Represents a single DHCP option, which may be concatenated from multiple parts.
 #[derive(Debug)]
 pub struct DhcpOption<'a> {
-    pub code: OptionCode,
-    pub data: Cow<'a, [u8]>,
+    code: OptionCode,
+    data: Cow<'a, [u8]>,
+}
+
+impl<'a> DhcpOption<'a> {
+    /// option code
+    pub fn code(&self) -> OptionCode {
+        self.code
+    }
+
+    /// data len
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    /// option data
+    pub fn data(&self) -> &[u8] {
+        self.data.as_ref()
+    }
+
+    /// Consumes the raw option and attempts to parse it into owned `DhcpOption`.
+    /// This method will do allocations
+    pub fn into_option(self) -> DecodeResult<crate::v4::options::DhcpOption> {
+        let mut decoder = Decoder::new(&self.data);
+        crate::v4::decode_inner(self.code(), self.len(), &mut decoder)
+    }
 }
 
 impl<'a> DhcpOptionIterator<'a> {
@@ -152,24 +181,17 @@ impl<'a> DhcpOptionIterator<'a> {
 }
 
 /// Parses a single raw option from the buffer without advancing the iterator.
-fn parse_opt<'a>(buffer: &'a [u8]) -> Option<(OptionCode, &'a [u8], &'a [u8])> {
+fn parse_opt(buffer: &[u8]) -> Option<(OptionCode, &[u8], &[u8])> {
     if buffer.is_empty() {
         return None;
     }
-
-    let code = OptionCode::from(buffer[0]);
+    let code = OptionCode::from(*buffer.first()?);
     match code {
-        OptionCode::Pad | OptionCode::End => Some((code, &[], &buffer[1..])),
+        OptionCode::Pad | OptionCode::End => Some((code, &[], buffer.get(1..)?)),
         _ => {
-            if buffer.len() < 2 {
-                return None; // Malformed
-            }
-            let len = buffer[1] as usize;
-            if buffer.len() < 2 + len {
-                return None; // Malformed
-            }
-            let data = &buffer[2..2 + len];
-            let remaining = &buffer[2 + len..];
+            let len = *buffer.get(1)? as usize;
+            let data = buffer.get(2..2 + len)?;
+            let remaining = buffer.get(2 + len..)?;
             Some((code, data, remaining))
         }
     }
@@ -201,14 +223,12 @@ impl<'a> Iterator for DhcpOptionIterator<'a> {
                     // Look ahead to see if subsequent options have the same code
                     while let Some((next_code, next_data, next_remaining)) = parse_opt(remaining) {
                         if next_code == code {
-                            // The next option is a continuation.
-                            // We must now allocate to concatenate the data.
+                            // concat data
                             data.to_mut().extend_from_slice(next_data);
-
-                            // Advance the main buffer and the lookahead buffer past this segment
+                            // Advance to remaining
                             remaining = next_remaining;
                         } else {
-                            // Different option found, stop concatenating
+                            // different code found
                             break;
                         }
                     }
