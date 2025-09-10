@@ -2,7 +2,7 @@ use alloc::borrow::Cow;
 use core::{fmt::Debug, net::Ipv4Addr};
 
 use crate::{
-    Decodable, Decoder,
+    Decoder,
     error::DecodeError,
     v4::{DecodeResult, Flags, HType, Opcode, OptionCode},
 };
@@ -143,7 +143,7 @@ pub struct DhcpOption<'a> {
     data: Cow<'a, [u8]>,
 }
 
-impl<'a> DhcpOption<'a> {
+impl DhcpOption<'_> {
     /// option code
     pub fn code(&self) -> OptionCode {
         self.code
@@ -170,15 +170,6 @@ impl<'a> DhcpOption<'a> {
         let mut decoder = Decoder::new(&self.data);
         crate::v4::decode_inner(self.code(), self.len(), &mut decoder)
     }
-    fn decode(dec: &mut Decoder<'a>) -> DecodeResult<Self> {
-        // TODO: necessary to call u8::from_be_bytes?
-        let [code, len] = dec.peek::<2>()?;
-        let data = Cow::from(dec.read_slice(len as usize + 2)?);
-        Ok(DhcpOption {
-            code: OptionCode::from(code),
-            data,
-        })
-    }
 }
 
 impl<'a> DhcpOptionIterator<'a> {
@@ -191,23 +182,6 @@ impl<'a> DhcpOptionIterator<'a> {
     fn empty() -> DhcpOptionIterator<'a> {
         Self {
             decoder: Decoder::new(&[]),
-        }
-    }
-}
-
-/// Parses a single raw option from the buffer without advancing the iterator.
-fn parse_opt(buffer: &[u8]) -> Option<(OptionCode, &[u8], &[u8])> {
-    if buffer.is_empty() {
-        return None;
-    }
-    let code = OptionCode::from(*buffer.first()?);
-    match code {
-        OptionCode::Pad | OptionCode::End => Some((code, &[], buffer.get(1..)?)),
-        _ => {
-            let len = *buffer.get(1)? as usize;
-            let data = buffer.get(2..2 + len)?;
-            let remaining = buffer.get(2 + len..)?;
-            Some((code, data, remaining))
         }
     }
 }
