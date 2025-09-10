@@ -133,7 +133,7 @@ impl<'a> Message<'a> {
 /// An iterator over DHCP options. Handles long-form encoding
 #[derive(Debug)]
 pub struct DhcpOptionIterator<'a> {
-    buffer: &'a [u8],
+    decoder: Decoder<'a>,
 }
 
 /// Represents a single DHCP option, which may be concatenated from multiple parts.
@@ -154,6 +154,11 @@ impl<'a> DhcpOption<'a> {
         self.data.len()
     }
 
+    /// is empty
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// option data
     pub fn data(&self) -> &[u8] {
         self.data.as_ref()
@@ -165,18 +170,28 @@ impl<'a> DhcpOption<'a> {
         let mut decoder = Decoder::new(&self.data);
         crate::v4::decode_inner(self.code(), self.len(), &mut decoder)
     }
+    fn decode(dec: &mut Decoder<'a>) -> DecodeResult<Self> {
+        // TODO: necessary to call u8::from_be_bytes?
+        let [code, len] = dec.peek::<2>()?;
+        let data = Cow::from(dec.read_slice(len as usize + 2)?);
+        Ok(DhcpOption {
+            code: OptionCode::from(code),
+            data,
+        })
+    }
 }
 
 impl<'a> DhcpOptionIterator<'a> {
     pub fn new(buffer: &'a [u8]) -> Self {
-        Self { buffer }
+        Self {
+            decoder: Decoder::new(buffer),
+        }
     }
 
     fn empty() -> DhcpOptionIterator<'a> {
-        Self { buffer: &[] }
-    }
-    pub fn peek_opt(&self) -> Option<(OptionCode, &'a [u8], &'a [u8])> {
-        parse_opt(self.buffer)
+        Self {
+            decoder: Decoder::new(&[]),
+        }
     }
 }
 
@@ -202,40 +217,43 @@ impl<'a> Iterator for DhcpOptionIterator<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            // Peek at the next raw option from our current position
-            let (code, data, mut remaining) = self.peek_opt()?;
+            let code = self.decoder.read_u8().ok()?;
 
             match code {
-                // skip Pad
-                OptionCode::Pad => {
-                    self.buffer = remaining;
-                    continue;
-                }
-                // end
-                OptionCode::End => {
-                    self.buffer = remaining;
-                    return None;
-                }
+                0 => continue,      // Pad
+                255 => return None, // End
                 _ => {
-                    // This is our first segment. Start with its data as a borrowed slice.
-                    let mut data: Cow<'a, [u8]> = Cow::Borrowed(data);
+                    let len = self.decoder.read_u8().ok()?;
+                    let data = self.decoder.read_slice(len as usize).ok()?;
 
-                    // Look ahead to see if subsequent options have the same code
-                    while let Some((next_code, next_data, next_remaining)) = parse_opt(remaining) {
+                    let mut buf = Cow::Borrowed(data);
+
+                    let mut lookahead = self.decoder;
+                    let mut bytes_consumed = 0;
+
+                    while let Ok(next_code) = lookahead.peek_u8() {
                         if next_code == code {
-                            // concat data
-                            data.to_mut().extend_from_slice(next_data);
-                            // Advance to remaining
-                            remaining = next_remaining;
+                            // Advance past the code we just peeked
+                            lookahead.read_u8().ok()?;
+
+                            let next_len = lookahead.read_u8().ok()?;
+                            let next_data = lookahead.read_slice(next_len as usize).ok()?;
+
+                            buf.to_mut().extend_from_slice(next_data);
+                            bytes_consumed += 1 + 1 + next_len as usize;
                         } else {
-                            // different code found
                             break;
                         }
                     }
 
-                    self.buffer = remaining;
+                    if bytes_consumed > 0 {
+                        self.decoder.read_slice(bytes_consumed).unwrap();
+                    }
 
-                    return Some(DhcpOption { code, data });
+                    return Some(DhcpOption {
+                        code: OptionCode::from(code),
+                        data: buf,
+                    });
                 }
             }
         }

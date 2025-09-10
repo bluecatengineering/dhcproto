@@ -29,7 +29,7 @@ pub trait Decodable: Sized {
 }
 
 /// Decoder type. Wraps a buffer which only contains bytes that have not been read yet
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Decoder<'a> {
     buffer: &'a [u8],
 }
