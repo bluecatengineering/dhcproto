@@ -178,6 +178,39 @@ impl Ord for DhcpOption {
     }
 }
 
+impl DhcpOption {
+    pub fn code(&self) -> OptionCode {
+        match self {
+            Self::ClientId(_) => OptionCode::ClientId,
+            Self::ServerId(_) => OptionCode::ServerId,
+            Self::IANA(_) => OptionCode::IANA,
+            Self::IATA(_) => OptionCode::IATA,
+            Self::IAAddr(_) => OptionCode::IAAddr,
+            Self::ORO(_) => OptionCode::ORO,
+            Self::Preference(_) => OptionCode::Preference,
+            Self::ElapsedTime(_) => OptionCode::ElapsedTime,
+            Self::RelayMsg(_) => OptionCode::RelayMsg,
+            Self::Authentication(_) => OptionCode::Authentication,
+            Self::ServerUnicast(_) => OptionCode::ServerUnicast,
+            Self::StatusCode(_) => OptionCode::StatusCode,
+            Self::RapidCommit => OptionCode::RapidCommit,
+            Self::UserClass(_) => OptionCode::UserClass,
+            Self::VendorClass(_) => OptionCode::VendorClass,
+            Self::VendorOpts(_) => OptionCode::VendorOpts,
+            Self::InterfaceId(_) => OptionCode::InterfaceId,
+            Self::ReconfMsg(_) => OptionCode::ReconfMsg,
+            Self::ReconfAccept => OptionCode::ReconfAccept,
+            Self::DomainNameServers(_) => OptionCode::DomainNameServers,
+            Self::DomainSearchList(_) => OptionCode::DomainSearchList,
+            Self::IAPD(_) => OptionCode::IAPD,
+            Self::IAPrefix(_) => OptionCode::IAPrefix,
+            Self::InformationRefreshTime(_) => OptionCode::InformationRefreshTime,
+            Self::NtpServer(_) => OptionCode::NtpServer,
+            Self::Unknown(u) => u.code(),
+        }
+    }
+}
+
 /// wrapper around interface id
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InterfaceId {
