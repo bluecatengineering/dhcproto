@@ -1,6 +1,6 @@
 [package]
 name = "dhcproto"
-version = "0.14.0"
+version = "0.15.0-alpha"
 authors = [
 	"Ian Laidlaw <ilaidlaw@bluecatnetworks.com>",
 	"Evan Cameron <cameron.evan@gmail.com>",
@@ -20,13 +20,12 @@ thiserror = "2.0.12"
 rand = "0.9"
 serde = { version = "1.0", features = ["derive"], optional = true }
 hickory-proto = { version = "0.25.2", default-features = false }
-url = "2.5.4"
 dhcproto-macros = { path = "./dhcproto-macros", version = "0.1.0" }
 ipnet = "2.5"
 
 [features]
 default = []
-serde = ["dep:serde", "url/serde", "ipnet/serde", "hickory-proto/serde"]
+serde = ["dep:serde", "ipnet/serde", "hickory-proto/serde"]
 
 [dev-dependencies]
 criterion = "0.4.0"
