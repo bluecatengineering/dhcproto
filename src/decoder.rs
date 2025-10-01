@@ -161,7 +161,7 @@ impl<'a> Decoder<'a> {
     /// Read a list of ipv4 addrs
     pub fn read_ipv4s(&mut self, length: usize) -> DecodeResult<Vec<Ipv4Addr>> {
         // must be multiple of 4
-        if length % 4 != 0 {
+        if !length.is_multiple_of(4) {
             return Err(DecodeError::NotEnoughBytes);
         }
         let ips = self.read_slice(length)?;
@@ -174,7 +174,7 @@ impl<'a> Decoder<'a> {
     /// Read a list of ipv6 addrs
     pub fn read_ipv6s(&mut self, length: usize) -> DecodeResult<Vec<Ipv6Addr>> {
         // must be multiple of 16
-        if length % 16 != 0 {
+        if !length.is_multiple_of(16) {
             return Err(DecodeError::NotEnoughBytes);
         }
         let ips = self.read_slice(length)?;
@@ -188,7 +188,7 @@ impl<'a> Decoder<'a> {
     /// Read a list of ipv4 pairs
     pub fn read_pair_ipv4s(&mut self, length: usize) -> DecodeResult<Vec<(Ipv4Addr, Ipv4Addr)>> {
         // must be multiple of 8
-        if length % 8 != 0 {
+        if !length.is_multiple_of(8) {
             return Err(DecodeError::NotEnoughBytes);
         }
         let ips = self.read_slice(length)?;
