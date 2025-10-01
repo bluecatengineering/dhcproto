@@ -1446,7 +1446,7 @@ mod tests {
     #[test]
     fn test_captive_portal() -> Result<()> {
         let mut res = vec![114];
-        let url = "https://foobar.com/".as_bytes(); // note the ending slash
+        let url = "https://foobar.com".as_bytes(); // note the ending slash
         res.push(url.len() as u8);
         res.extend(url);
 
