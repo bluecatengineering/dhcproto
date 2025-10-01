@@ -33,10 +33,6 @@ pub enum DecodeError {
     #[error("invalid data error {0} msg {1}")]
     InvalidData(u32, &'static str),
 
-    /// url parse error
-    #[error("url parse error")]
-    UrlParseError(#[from] url::ParseError),
-
     /// domain parse error
     #[error("domain parse error {0}")]
     DomainParseError(#[from] hickory_proto::ProtoError),

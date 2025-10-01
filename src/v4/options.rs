@@ -126,7 +126,7 @@ dhcproto_macros::declare_codes!(
     {94,  ClientNetworkInterface, "Client Network Interface - <https://www.rfc-editor.org/rfc/rfc4578.html>", (u8, u8, u8)},
     {97,  ClientMachineIdentifier, "Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>", (Vec<u8>)},
     {106, Ipv6OnlyPreferred, "IPv6-Only Preferred - <https://datatracker.ietf.org/doc/html/rfc8925>", (u32)},
-    {114, CaptivePortal, "Captive Portal - <https://datatracker.ietf.org/doc/html/rfc8910>", (url::Url)},
+    {114, CaptivePortal, "Captive Portal - <https://datatracker.ietf.org/doc/html/rfc8910>", (String)},
     {116, DisableSLAAC, "Disable Stateless Autoconfig for Ipv4 - <https://datatracker.ietf.org/doc/html/rfc2563>", (AutoConfig)},
     {118, SubnetSelection, "Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>", (Ipv4Addr)},
     {119, DomainSearch, "Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>", (Vec<Name>)},
@@ -668,7 +668,7 @@ pub(crate) fn decode_inner(
             ClientMachineIdentifier(decoder.read_slice(len)?.to_vec())
         }
         OptionCode::Ipv6OnlyPreferred => Ipv6OnlyPreferred(decoder.read_u32()?),
-        OptionCode::CaptivePortal => CaptivePortal(decoder.read_str(len)?.parse()?),
+        OptionCode::CaptivePortal => CaptivePortal(decoder.read_str(len)?.to_string()),
         OptionCode::DisableSLAAC => DisableSLAAC(decoder.read_u8()?.try_into()?),
         OptionCode::SubnetSelection => SubnetSelection(decoder.read_ipv4(len)?),
         OptionCode::DomainSearch => DomainSearch(decoder.read_domains(len)?),
@@ -1364,9 +1364,8 @@ mod tests {
     #[test]
     fn test_ips_long() -> Result<()> {
         let ip = "192.168.0.1".parse::<Ipv4Addr>().unwrap();
-        let list = std::iter::repeat(ip).take(64).collect();
-        let mut bytes = std::iter::repeat(ip)
-            .take(63)
+        let list = std::iter::repeat_n(ip, 64).collect();
+        let mut bytes = std::iter::repeat_n(ip, 63)
             .flat_map(|ip| u32::from(ip).to_be_bytes())
             .collect::<VecDeque<u8>>();
         bytes.push_front(252);
