@@ -1,6 +1,6 @@
 [package]
 name = "dhcproto"
-version = "0.14.0"
+version = "0.15.0-alpha"
 authors = [
 	"Ian Laidlaw <ilaidlaw@bluecatnetworks.com>",
 	"Evan Cameron <cameron.evan@gmail.com>",
