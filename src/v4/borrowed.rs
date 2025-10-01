@@ -25,80 +25,82 @@ impl<'a> Message<'a> {
         Ok(Self { buffer })
     }
 
-    // Accessor methods for fixed-size fields. These would read directly from the buffer.
-
+    /// opcode
     pub fn opcode(&self) -> Opcode {
         self.buffer[0].into()
     }
 
+    /// hardware type
     pub fn htype(&self) -> HType {
         self.buffer[1].into()
     }
 
+    /// hardware len
     pub fn hlen(&self) -> u8 {
         self.buffer[2]
     }
 
+    /// hops
     pub fn hops(&self) -> u8 {
         self.buffer[3]
     }
 
+    /// transaction id
     pub fn xid(&self) -> u32 {
-        u32::from_be_bytes(self.buffer[4..8].try_into().unwrap())
+        u32::from_be_bytes(self.buffer[4..=7].try_into().unwrap())
     }
 
+    /// seconds elapsed since client began address acquisition or renewal
     pub fn secs(&self) -> u16 {
-        u16::from_be_bytes(self.buffer[8..10].try_into().unwrap())
+        u16::from_be_bytes(self.buffer[8..=9].try_into().unwrap())
     }
 
     pub fn flags(&self) -> Flags {
-        u16::from_be_bytes(self.buffer[10..12].try_into().unwrap()).into()
+        u16::from_be_bytes(self.buffer[10..=11].try_into().unwrap()).into()
     }
 
+    /// client addr (siaddr)
     pub fn ciaddr(&self) -> Ipv4Addr {
-        Ipv4Addr::new(
-            self.buffer[12],
-            self.buffer[13],
-            self.buffer[14],
-            self.buffer[15],
-        )
+        TryInto::<[u8; 4]>::try_into(&self.buffer[12..=15])
+            .unwrap()
+            .into()
     }
 
+    /// your addr (siaddr)
     pub fn yiaddr(&self) -> Ipv4Addr {
-        Ipv4Addr::new(
-            self.buffer[16],
-            self.buffer[17],
-            self.buffer[18],
-            self.buffer[19],
-        )
+        TryInto::<[u8; 4]>::try_into(&self.buffer[16..=19])
+            .unwrap()
+            .into()
     }
 
+    /// server addr (siaddr)
     pub fn siaddr(&self) -> Ipv4Addr {
-        Ipv4Addr::new(
-            self.buffer[20],
-            self.buffer[21],
-            self.buffer[22],
-            self.buffer[23],
-        )
+        TryInto::<[u8; 4]>::try_into(&self.buffer[20..=23])
+            .unwrap()
+            .into()
     }
 
+    /// gateway addr (giaddr)
     pub fn giaddr(&self) -> Ipv4Addr {
-        Ipv4Addr::new(
-            self.buffer[24],
-            self.buffer[25],
-            self.buffer[26],
-            self.buffer[27],
-        )
+        TryInto::<[u8; 4]>::try_into(&self.buffer[24..=27])
+            .unwrap()
+            .into()
     }
 
+    /// chaddr
     pub fn chaddr(&self) -> &'a [u8] {
         &self.buffer[28..28 + self.hlen() as usize]
     }
 
-    // For variable-length fields, we can return slices.
-    // The sname and file fields are null-terminated strings.
+    // For variable-length fields, we can return slices
+    // The sname and file fields are null-terminated strings
 
+    /// server name
     pub fn sname(&self) -> &'a [u8] {
+        debug_assert!(
+            self.buffer.get(44..108).is_some(),
+            "not enough bytes for sname"
+        );
         let sname_bytes = &self.buffer[44..108];
         let end = sname_bytes
             .iter()
@@ -107,6 +109,7 @@ impl<'a> Message<'a> {
         &sname_bytes[..end]
     }
 
+    /// file name
     pub fn fname(&self) -> &'a [u8] {
         debug_assert!(
             self.buffer.get(108..236).is_some(),
@@ -179,7 +182,7 @@ impl<'a> DhcpOptionIterator<'a> {
         }
     }
 
-    fn empty() -> DhcpOptionIterator<'a> {
+    pub fn empty() -> DhcpOptionIterator<'a> {
         Self {
             decoder: Decoder::new(&[]),
         }
@@ -238,6 +241,77 @@ impl<'a> Iterator for DhcpOptionIterator<'a> {
 mod tests {
 
     use super::*;
+    fn bootreq() -> Vec<u8> {
+        vec![
+            1u8, // op
+            2,   // htype
+            3,   // hlen
+            4,   // ops
+            5, 6, 7, 8, // xid
+            9, 10, // secs
+            11, 12, // flags
+            13, 14, 15, 16, // ciaddr
+            17, 18, 19, 20, // yiaddr
+            21, 22, 23, 24, // siaddr
+            25, 26, 27, 28, // giaddr
+            29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, // chaddr
+            45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
+            67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+            89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
+            0, // sname: "-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijk",
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+            109, 0, 0, 0, 0, 0, 0, 0,
+            0, // file: "mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}m",
+            99, 130, 83, 99, // magic cookie
+        ]
+    }
+
+    #[test]
+    fn test_bootreq() {
+        let buf = bootreq();
+        let msg = Message::new(&buf).unwrap();
+        assert_eq!(msg.opcode(), Opcode::BootRequest);
+        assert_eq!(msg.htype(), HType::ExperimentalEth);
+        assert_eq!(msg.hlen(), 3);
+        assert_eq!(msg.hops(), 4);
+        assert_eq!(msg.xid(), 0x05060708);
+        assert_eq!(msg.secs(), 0x090A);
+        assert_eq!(u16::from(msg.flags()), 0x0B0C);
+        assert_eq!(msg.ciaddr(), Ipv4Addr::new(13, 14, 15, 16));
+        assert_eq!(msg.yiaddr(), Ipv4Addr::new(17, 18, 19, 20));
+        assert_eq!(msg.siaddr(), Ipv4Addr::new(21, 22, 23, 24));
+        assert_eq!(msg.giaddr(), Ipv4Addr::new(25, 26, 27, 28));
+        assert_eq!(msg.chaddr(), &[29, 30, 31]);
+        assert_eq!(
+            msg.sname(),
+            &[
+                45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65,
+                66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86,
+                87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105,
+                106, 107
+            ]
+        );
+        assert_eq!(
+            msg.fname(),
+            &[
+                109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124,
+                125, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123,
+                124, 125, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
+                123, 124, 125, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
+                122, 123, 124, 125, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120,
+                121, 122, 123, 124, 125, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+                120, 121, 122, 123, 124, 125, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118,
+                119, 120, 121, 122, 123, 124, 125, 109
+            ]
+        );
+        assert!(msg.opts().next().is_none());
+    }
 
     #[test]
     fn test_empty() {

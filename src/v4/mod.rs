@@ -527,7 +527,7 @@ impl fmt::Display for Message {
             .field("giaddr", &self.giaddr())
             .field(
                 "chaddr",
-                &hex::encode(self.chaddr())
+                &bytes_to_hex(self.chaddr())
                     .chars()
                     .enumerate()
                     .flat_map(|(i, c)| {
@@ -547,6 +547,14 @@ impl fmt::Display for Message {
             )
             .finish()
     }
+}
+
+fn bytes_to_hex(bytes: &[u8]) -> String {
+    let mut ret = String::with_capacity(bytes.len() * 2);
+    for b in bytes {
+        ret.push_str(&alloc::format!("{:02x}", b));
+    }
+    ret
 }
 
 #[cfg(test)]
@@ -574,6 +582,13 @@ mod tests {
         // check Messages are equal after decoding/encoding
         assert_eq!(msg, res);
         Ok(())
+    }
+
+    #[test]
+    fn test_hex() {
+        let data: &[u8] = &[0xDE, 0xAD, 0xBE, 0xEF];
+        let hex = bytes_to_hex(data);
+        assert_eq!(&hex, "deadbeef");
     }
     #[test]
     fn decode_offer() -> Result<()> {
