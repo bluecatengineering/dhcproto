@@ -190,7 +190,7 @@ fn generate_option_code_from_dhcp_option(entries: &[Entry]) -> proc_macro2::Toke
     });
 
     quote! {
-        impl From<&DhcpOption> for OptionCode {
+        impl core::convert::From<&DhcpOption> for OptionCode {
             fn from(opt: &DhcpOption) -> Self {
                 use DhcpOption as O;
                 match opt {
