@@ -125,6 +125,8 @@ dhcproto_macros::declare_codes!(
     {93,  ClientSystemArchitecture, "Client System Architecture - <https://www.rfc-editor.org/rfc/rfc4578.html>", (Architecture)},
     {94,  ClientNetworkInterface, "Client Network Interface - <https://www.rfc-editor.org/rfc/rfc4578.html>", (u8, u8, u8)},
     {97,  ClientMachineIdentifier, "Client Machine Identifier - <https://www.rfc-editor.org/rfc/rfc4578.html>", (Vec<u8>)},
+    {100, TimezonePosixString, "TZ-Posix String - <https://datatracker.ietf.org/doc/html/rfc4833>", (String)},
+    {101, TimezoneDatabaseString, "TZ-Database String - <https://datatracker.ietf.org/doc/html/rfc4833>", (String)},
     {106, Ipv6OnlyPreferred, "IPv6-Only Preferred - <https://datatracker.ietf.org/doc/html/rfc8925>", (u32)},
     {114, CaptivePortal, "Captive Portal - <https://datatracker.ietf.org/doc/html/rfc8910>", (String)},
     {116, DisableSLAAC, "Disable Stateless Autoconfig for Ipv4 - <https://datatracker.ietf.org/doc/html/rfc2563>", (AutoConfig)},
@@ -667,6 +669,12 @@ pub(crate) fn decode_inner(
         OptionCode::ClientMachineIdentifier => {
             ClientMachineIdentifier(decoder.read_slice(len)?.to_vec())
         }
+        OptionCode::TimezonePosixString => {
+            TimezonePosixString(decoder.read_string(len)?)
+        },
+        OptionCode::TimezoneDatabaseString => {
+            TimezoneDatabaseString(decoder.read_string(len)?)
+        },
         OptionCode::Ipv6OnlyPreferred => Ipv6OnlyPreferred(decoder.read_u32()?),
         OptionCode::CaptivePortal => CaptivePortal(decoder.read_str(len)?.to_string()),
         OptionCode::DisableSLAAC => DisableSLAAC(decoder.read_u8()?.try_into()?),
@@ -987,7 +995,9 @@ impl Encodable for DhcpOption {
             | O::NetBiosScope(s)
             | O::Message(s)
             | O::NwipDomainName(s)
-            | O::NispServiceDomain(s) => {
+            | O::NispServiceDomain(s)
+            | O::TimezonePosixString(s)
+            | O::TimezoneDatabaseString(s) => {
                 encode_long_opt_bytes(code, s.as_bytes(), e)?;
             }
             O::BootFileSize(num)
