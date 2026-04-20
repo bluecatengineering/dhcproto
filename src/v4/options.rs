@@ -669,12 +669,8 @@ pub(crate) fn decode_inner(
         OptionCode::ClientMachineIdentifier => {
             ClientMachineIdentifier(decoder.read_slice(len)?.to_vec())
         }
-        OptionCode::TimezonePosixString => {
-            TimezonePosixString(decoder.read_string(len)?)
-        },
-        OptionCode::TimezoneDatabaseString => {
-            TimezoneDatabaseString(decoder.read_string(len)?)
-        },
+        OptionCode::TimezonePosixString => TimezonePosixString(decoder.read_string(len)?),
+        OptionCode::TimezoneDatabaseString => TimezoneDatabaseString(decoder.read_string(len)?),
         OptionCode::Ipv6OnlyPreferred => Ipv6OnlyPreferred(decoder.read_u32()?),
         OptionCode::CaptivePortal => CaptivePortal(decoder.read_str(len)?.to_string()),
         OptionCode::DisableSLAAC => DisableSLAAC(decoder.read_u8()?.try_into()?),
