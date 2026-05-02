@@ -16,7 +16,7 @@ use crate::{
 
 use hickory_proto::{
     rr::Name,
-    serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder, EncodeMode},
+    serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder},
 };
 use ipnet::Ipv4Net;
 #[cfg(feature = "serde")]
@@ -1127,8 +1127,9 @@ impl Encodable for DhcpOption {
                 if flags.e() {
                     // emits in canonical format
                     // start encoding at byte 3 because we had some preamble
-                    let mut name_encoder = BinEncoder::with_offset(&mut buf, 3, EncodeMode::Normal);
-                    domain.emit_as_canonical(&mut name_encoder, true)?;
+                    let mut name_encoder = BinEncoder::with_offset(&mut buf, 3);
+                    name_encoder.set_canonical_form(true);
+                    domain.emit(&mut name_encoder)?;
                 } else {
                     // TODO: not sure if this is correct
                     buf.extend(domain.to_ascii().as_bytes());

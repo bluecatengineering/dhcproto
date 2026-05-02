@@ -37,6 +37,10 @@ pub enum DecodeError {
     #[error("domain parse error {0}")]
     DomainParseError(#[from] hickory_proto::ProtoError),
 
+    /// domain decode error
+    #[error("domain decode error {0}")]
+    DomainDecodeError(#[from] hickory_proto::serialize::binary::DecodeError),
+
     /// Unknown decode error
     #[error("unknown error")]
     Unknown(Box<dyn core::error::Error + Send + Sync + 'static>),
