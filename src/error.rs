@@ -58,6 +58,10 @@ pub enum EncodeError {
         len: usize,
     },
 
+    /// Too many values in array/vector
+    #[error("trying to write more values than the max amount ({max_num})")]
+    TooManyItems { max_num: usize },
+
     // /// io error
     // #[error("io error {0}")]
     // IoError(#[from] io::Error),

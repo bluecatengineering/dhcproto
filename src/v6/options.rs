@@ -8,13 +8,17 @@ use serde::{Deserialize, Serialize};
 use alloc::{string::String, vec::Vec};
 use core::{cmp::Ordering, net::Ipv6Addr, ops::RangeInclusive};
 
-use crate::v6::option_codes::OptionCode;
+use crate::v6::{EncodeError, option_codes::OptionCode};
 use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
     error::{DecodeResult, EncodeResult},
     v6::{MessageType, RelayMessage},
 };
+
+// V6 arch types are the same as V4, so just re-export it.
+#[doc(inline)]
+pub use crate::v4::Architecture;
 
 // server can send multiple IA_NA options to request multiple addresses
 // so we must be able to handle multiple of the same option type
@@ -153,6 +157,9 @@ pub enum DhcpOption {
     InformationRefreshTime(u32),
     /// 56 - <https://datatracker.ietf.org/doc/html/rfc5908>
     NtpServer(Vec<NtpSuboption>),
+    /// 61 - <https://datatracker.ietf.org/doc/html/rfc5970#section-3.3>
+    ClientArchType(Vec<Architecture>),
+
     // SolMaxRt(u32),
     // InfMaxRt(u32),
     // LqQuery(_),
@@ -688,6 +695,15 @@ impl Decodable for DhcpOption {
 
                 DhcpOption::NtpServer(suboptions)
             }
+            OptionCode::ClientArchType => {
+                let mut dec = Decoder::new(decoder.read_slice(len)?);
+                let num_types = len / 2;
+                let mut types = Vec::with_capacity(num_types);
+                for _ in 0..num_types {
+                    types.push(Architecture(dec.read_u16()?));
+                }
+                DhcpOption::ClientArchType(types)
+            }
             // not yet implemented
             OptionCode::Unknown(code) => DhcpOption::Unknown(UnknownOption {
                 code,
@@ -883,6 +899,19 @@ impl Encodable for DhcpOption {
                 }
                 e.write_u16(buf.len() as _)?;
                 e.write_slice(&buf)?;
+            }
+            DhcpOption::ClientArchType(types) => {
+                let len: u16 =
+                    (types.len() * 2)
+                        .try_into()
+                        .map_err(|_| EncodeError::TooManyItems {
+                            max_num: types.len(),
+                        })?;
+
+                e.write_u16(len)?;
+                for ty in types {
+                    e.write_u16(ty.0)?;
+                }
             }
             DhcpOption::Unknown(UnknownOption { data, .. }) => {
                 e.write_u16(data.len() as u16)?;
