@@ -409,69 +409,109 @@ impl Ord for DhcpOption {
     }
 }
 
-/// Architecture name from - <https://www.rfc-editor.org/rfc/rfc4578.html>
+/// Architecture name from - <https://www.iana.org/assignments/dhcpv6-parameters/dhcpv6-parameters.xhtml#processor-architecture>
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Architecture {
+#[repr(transparent)]
+pub struct Architecture(pub u16);
+
+#[allow(non_upper_case_globals)]
+impl Architecture {
     /// Intel x86PC
-    Intelx86PC,
+    pub const X86_Bios: Self = Self(0x0);
     /// NEC/PC98
-    NECPC98,
+    pub const NECPC98: Self = Self(0x1);
     /// EFI Itanium
-    Itanium,
+    pub const Itanium: Self = Self(0x2);
     /// DEC Alpha
-    DECAlpha,
+    pub const DECAlpha: Self = Self(0x3);
     /// Arc x86
-    Arcx86,
+    pub const ArcX86: Self = Self(0x4);
     /// Intel Lean Client
-    IntelLeanClient,
-    /// EFI IA32
-    IA32,
-    /// EFI BC
-    BC,
+    pub const IntelLeanClient: Self = Self(0x5);
+    /// X86 EUFI
+    pub const X86: Self = Self(0x6);
+    /// x86-64 EUFI
+    pub const X64: Self = Self(0x7);
     /// EFI Xscale
-    Xscale,
-    /// EFI x86-64
-    X86_64,
-    /// Unknown
-    Unknown(u16),
+    pub const Xscale: Self = Self(0x8);
+    /// EFI BC
+    pub const BC: Self = Self(0x9);
+    /// Arm 32-bit EUFI
+    pub const Arm32: Self = Self(0xA);
+    /// Arm 64-bit EUFI
+    pub const Arm64: Self = Self(0xB);
+    /// PowerPC Open Firmware
+    pub const PowerPC_OpenFirmware: Self = Self(0xC);
+    /// PowerPC ePAPR
+    pub const PowerPC_EPAPR: Self = Self(0xD);
+    /// POWER OPAL v3
+    pub const PowerOpalV3: Self = Self(0xE);
+    /// x86 EUFI (HTTP boot)
+    pub const X86_Http: Self = Self(0xF);
+    /// x64 EUFI (HTTP boot)
+    pub const X64_Http: Self = Self(0x10);
+    /// EFI BC (HTTP boot)
+    pub const BC_Http: Self = Self(0x11);
+    /// ARM EUFI 32 boot from http
+    pub const Arm32_Http: Self = Self(0x12);
+    /// ARM EUFI 64 boot from http
+    pub const Arm64_Http: Self = Self(0x13);
+    /// PC/AT BIOS boot from http
+    pub const PCAT_Bios_Http: Self = Self(0x14);
+    /// ARM 32 uboot
+    pub const Arm32_Uboot: Self = Self(0x15);
+    /// ARM 64 uboot
+    pub const Arm64_Uboot: Self = Self(0x16);
+    /// ARM uboot 32 boot from http
+    pub const Arm32_Uboot_Http: Self = Self(0x17);
+    /// ARM uboot 64 boot from http
+    pub const Arm64_Uboot_Http: Self = Self(0x18);
+    /// RISC-V 32-bit UEFI
+    pub const RiscV32: Self = Self(0x19);
+    /// RISC-V 32-bit UEFI boot from http
+    pub const RiscV32_Http: Self = Self(0x1a);
+    /// RISC-V 64-bit UEFI
+    pub const RiscV64: Self = Self(0x1b);
+    /// RISC-V 64-bit UEFI boot from http
+    pub const RiscV64_Http: Self = Self(0x1c);
+    /// RISC-V 128-bit UEFI
+    pub const RiscV128: Self = Self(0x1d);
+    /// RISC-V 128-bit UEFI boot from http
+    pub const RiscV128_Http: Self = Self(0x1e);
+    /// s390 Basic
+    pub const S390Basic: Self = Self(0x1f);
+    /// s390 Extended
+    pub const S390Extended: Self = Self(0x20);
+    /// MIPS 32-bit UEFI
+    pub const Mips32: Self = Self(0x21);
+    /// MIPS 64-bit UEFI
+    pub const Mips64: Self = Self(0x22);
+    /// Sunway 32-bit UEFI
+    pub const Sunway32: Self = Self(0x23);
+    /// Sunway 64-bit UEFI
+    pub const Sunway64: Self = Self(0x24);
+    /// LoongArch 32-bit UEFI
+    pub const LoongArch32: Self = Self(0x25);
+    /// LoongArch 32-bit UEFI boot from http
+    pub const LoongArch32_Http: Self = Self(0x26);
+    /// LoongArch 64-bit UEFI
+    pub const LoongArch64: Self = Self(0x27);
+    /// LoongArch 64-bit UEFI boot from http
+    pub const LoongArch64_Http: Self = Self(0x28);
+    /// arm rpiboot
+    pub const Arm_RPIBoot: Self = Self(0x29);
 }
 
 impl From<u16> for Architecture {
     fn from(n: u16) -> Self {
-        use Architecture::*;
-        match n {
-            0 => Intelx86PC,
-            1 => NECPC98,
-            2 => Itanium,
-            3 => DECAlpha,
-            4 => Arcx86,
-            5 => IntelLeanClient,
-            6 => IA32,
-            7 => BC,
-            8 => Xscale,
-            9 => X86_64,
-            _ => Unknown(n),
-        }
+        Self(n)
     }
 }
 
 impl From<Architecture> for u16 {
     fn from(n: Architecture) -> Self {
-        use Architecture as A;
-        match n {
-            A::Intelx86PC => 0,
-            A::NECPC98 => 1,
-            A::Itanium => 2,
-            A::DECAlpha => 3,
-            A::Arcx86 => 4,
-            A::IntelLeanClient => 5,
-            A::IA32 => 6,
-            A::BC => 7,
-            A::Xscale => 8,
-            A::X86_64 => 9,
-            A::Unknown(n) => n,
-        }
+        n.0
     }
 }
 
@@ -1442,7 +1482,7 @@ mod tests {
     #[test]
     fn test_arch() -> Result<()> {
         test_opt(
-            DhcpOption::ClientSystemArchitecture(Architecture::Intelx86PC),
+            DhcpOption::ClientSystemArchitecture(Architecture::X86_Bios),
             vec![93, 2, 0, 0],
         )?;
 
