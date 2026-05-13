@@ -220,125 +220,69 @@ impl Message {
 /// <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum MessageType {
+#[repr(transparent)]
+pub struct MessageType(pub u8);
+
+#[allow(non_upper_case_globals)]
+impl MessageType {
     // RFC 3315
     /// client solicit - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
-    Solicit,
+    pub const Solicit: Self = Self(1);
     /// server advertise - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
-    Advertise,
+    pub const Advertise: Self = Self(2);
     /// request - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
-    Request,
+    pub const Request: Self = Self(3);
     /// confirm - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
-    Confirm,
+    pub const Confirm: Self = Self(4);
     /// renew - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
-    Renew,
+    pub const Renew: Self = Self(5);
     /// rebind - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
-    Rebind,
+    pub const Rebind: Self = Self(6);
     /// reply - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
-    Reply,
+    pub const Reply: Self = Self(7);
     /// release message type - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
-    Release,
+    pub const Release: Self = Self(8);
     /// decline - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
-    Decline,
+    pub const Decline: Self = Self(9);
     /// reconfigure - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
-    Reconfigure,
+    pub const Reconfigure: Self = Self(10);
     /// information request - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
-    InformationRequest,
+    pub const InformationRequest: Self = Self(11);
     /// relay forward - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
-    RelayForw,
+    pub const RelayForw: Self = Self(12);
     /// relay reply - <https://datatracker.ietf.org/doc/html/rfc8415#section-7.3>
-    RelayRepl,
+    pub const RelayRepl: Self = Self(13);
     // RFC 5007
     /// lease query - <https://datatracker.ietf.org/doc/html/rfc5007#section-4.2.1>
-    LeaseQuery,
+    pub const LeaseQuery: Self = Self(14);
     /// lease query reply - <https://datatracker.ietf.org/doc/html/rfc5007#section-4.2.2>
-    LeaseQueryReply,
+    pub const LeaseQueryReply: Self = Self(15);
     // RFC 5460
     /// lease query done - <https://datatracker.ietf.org/doc/html/rfc5460#section-5.2.2>
-    LeaseQueryDone,
+    pub const LeaseQueryDone: Self = Self(16);
     /// lease query data - <https://datatracker.ietf.org/doc/html/rfc5460#section-5.2.1>
-    LeaseQueryData,
+    pub const LeaseQueryData: Self = Self(17);
     // RFC 6977
     /// reconfigure request - <https://datatracker.ietf.org/doc/html/rfc6977#section-6.2.1>
-    ReconfigureRequest,
+    pub const ReconfigureRequest: Self = Self(18);
     /// reconfigure reply - <https://datatracker.ietf.org/doc/html/rfc6977#section-6.2.2>
-    ReconfigureReply,
+    pub const ReconfigureReply: Self = Self(19);
     // RFC 7341
     /// dhcpv4 query - <https://datatracker.ietf.org/doc/html/rfc7341#section-6.2>
-    DHCPv4Query,
+    pub const DHCPv4Query: Self = Self(20);
     /// dhcpv4 response - <https://datatracker.ietf.org/doc/html/rfc7341#section-6.2>
-    DHCPv4Response,
-    /// unknown/unimplemented message type
-    Unknown(u8),
+    pub const DHCPv4Response: Self = Self(21);
 }
 
 impl From<u8> for MessageType {
     fn from(n: u8) -> Self {
-        use MessageType::*;
-        match n {
-            // RFC 3315
-            1 => Solicit,
-            2 => Advertise,
-            3 => Request,
-            4 => Confirm,
-            5 => Renew,
-            6 => Rebind,
-            7 => Reply,
-            8 => Release,
-            9 => Decline,
-            10 => Reconfigure,
-            11 => InformationRequest,
-            12 => RelayForw,
-            13 => RelayRepl,
-            // RFC 5007
-            14 => LeaseQuery,
-            15 => LeaseQueryReply,
-            // RFC 5460
-            16 => LeaseQueryDone,
-            17 => LeaseQueryData,
-            // RFC 6977
-            18 => ReconfigureRequest,
-            19 => ReconfigureReply,
-            // RFC 7341
-            20 => DHCPv4Query,
-            21 => DHCPv4Response,
-            n => Unknown(n),
-        }
+        Self(n)
     }
 }
 
 impl From<MessageType> for u8 {
     fn from(m: MessageType) -> Self {
-        use MessageType as M;
-        match m {
-            // RFC 3315
-            M::Solicit => 1,
-            M::Advertise => 2,
-            M::Request => 3,
-            M::Confirm => 4,
-            M::Renew => 5,
-            M::Rebind => 6,
-            M::Reply => 7,
-            M::Release => 8,
-            M::Decline => 9,
-            M::Reconfigure => 10,
-            M::InformationRequest => 11,
-            M::RelayForw => 12,
-            M::RelayRepl => 13,
-            // RFC 5007
-            M::LeaseQuery => 14,
-            M::LeaseQueryReply => 15,
-            // RFC 5460
-            M::LeaseQueryDone => 16,
-            M::LeaseQueryData => 17,
-            // RFC 6977
-            M::ReconfigureRequest => 18,
-            M::ReconfigureReply => 19,
-            // RFC 7341
-            M::DHCPv4Query => 20,
-            M::DHCPv4Response => 21,
-            M::Unknown(n) => n,
-        }
+        m.0
     }
 }
 
