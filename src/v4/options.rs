@@ -132,7 +132,9 @@ dhcproto_macros::declare_codes!(
     {116, DisableSLAAC, "Disable Stateless Autoconfig for Ipv4 - <https://datatracker.ietf.org/doc/html/rfc2563>", (AutoConfig)},
     {118, SubnetSelection, "Subnet selection - <https://datatracker.ietf.org/doc/html/rfc3011>", (Ipv4Addr)},
     {119, DomainSearch, "Domain Search - <https://www.rfc-editor.org/rfc/rfc3397.html>", (Vec<Name>)},
+    {120, SipServers, "SIP Servers - <https://www.rfc-editor.org/rfc/rfc3361>", (SipServers)},
     {121, ClasslessStaticRoute, "Classless Static Route - <https://www.rfc-editor.org/rfc/rfc3442>", (Vec<(Ipv4Net, Ipv4Addr)>)},
+    {125, VendorIdentifyingVendorSpecificInfo, "Vendor-Identifying Vendor-Specific Information - <https://www.rfc-editor.org/rfc/rfc3925>", (Vec<ViVendorSpecificInfo>)},
     {150, TFTPServerAddress, "TFTP Server Address - <https://www.rfc-editor.org/rfc/rfc5859.html>", (Ipv4Addr)},
     {151, BulkLeaseQueryStatusCode, "BLQ status-code - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.2>", (bulk_query::Code, String)},
     {152, BulkLeaseQueryBaseTime, "BLQ base time - <https://www.rfc-editor.org/rfc/rfc6926.html#section-6.2.3>", (u32)},
@@ -583,6 +585,62 @@ impl TryFrom<u8> for AutoConfig {
     }
 }
 
+/// SIP servers from RFC 3361 DHCPv4 option 120.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum SipServers {
+    /// SIP server domain names, encoded with RFC 1035 DNS labels.
+    DomainNames(Vec<Name>),
+    /// SIP server IPv4 addresses.
+    Addresses(Vec<Ipv4Addr>),
+}
+
+/// Vendor-specific data for one enterprise in RFC 3925 DHCPv4 option 125.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ViVendorSpecificInfo {
+    /// IANA enterprise number identifying the vendor-specific namespace.
+    pub enterprise_number: u32,
+    /// Opaque vendor-specific option data.
+    pub data: Vec<u8>,
+}
+
+fn decode_sip_servers(len: usize, decoder: &mut Decoder<'_>) -> DecodeResult<SipServers> {
+    if len == 0 {
+        return Err(crate::error::DecodeError::NotEnoughBytes);
+    }
+
+    let encoding = decoder.read_u8()?;
+    let data_len = len - 1;
+    match encoding {
+        0 => Ok(SipServers::DomainNames(decoder.read_domains(data_len)?)),
+        1 => Ok(SipServers::Addresses(decoder.read_ipv4s(data_len)?)),
+        enc => Err(crate::error::DecodeError::InvalidData(
+            enc.into(),
+            "invalid SIP servers encoding",
+        )),
+    }
+}
+
+fn decode_vi_vendor_specific_info(
+    len: usize,
+    decoder: &mut Decoder<'_>,
+) -> DecodeResult<Vec<ViVendorSpecificInfo>> {
+    let mut decoder = Decoder::new(decoder.read_slice(len)?);
+    let mut entries = Vec::new();
+    while !decoder.buffer().is_empty() {
+        let enterprise_number = decoder.read_u32()?;
+        let data_len = decoder.read_u8()? as usize;
+        let data = decoder.read_slice(data_len)?.to_vec();
+        entries.push(ViVendorSpecificInfo {
+            enterprise_number,
+            data,
+        });
+    }
+
+    Ok(entries)
+}
+
 #[inline]
 pub(crate) fn decode_inner(
     code: OptionCode,
@@ -716,7 +774,11 @@ pub(crate) fn decode_inner(
         OptionCode::DisableSLAAC => DisableSLAAC(decoder.read_u8()?.try_into()?),
         OptionCode::SubnetSelection => SubnetSelection(decoder.read_ipv4(len)?),
         OptionCode::DomainSearch => DomainSearch(decoder.read_domains(len)?),
+        OptionCode::SipServers => SipServers(decode_sip_servers(len, decoder)?),
         OptionCode::TFTPServerAddress => TFTPServerAddress(decoder.read_ipv4(len)?),
+        OptionCode::VendorIdentifyingVendorSpecificInfo => {
+            VendorIdentifyingVendorSpecificInfo(decode_vi_vendor_specific_info(len, decoder)?)
+        }
         OptionCode::BulkLeaseQueryStatusCode => {
             let code = decoder.read_u8()?.into();
             // len - 1 because code is included in length
@@ -1156,6 +1218,27 @@ impl Encodable for DhcpOption {
             O::DomainSearch(names) | O::BcmsControllerNames(names) => {
                 encode_long_opt_domains(code, names, e)?
             }
+            O::SipServers(sip_servers) => {
+                let mut buf = Vec::new();
+                match sip_servers {
+                    SipServers::DomainNames(names) => {
+                        buf.push(0);
+                        let mut name_encoder = BinEncoder::with_offset(&mut buf, 1);
+                        for name in names {
+                            name.emit(&mut name_encoder)?;
+                        }
+                    }
+                    SipServers::Addresses(addrs) => {
+                        let mut sip_enc = Encoder::new(&mut buf);
+                        sip_enc.write_u8(1)?;
+                        for addr in addrs {
+                            sip_enc.write_u32((*addr).into())?;
+                        }
+                    }
+                }
+
+                encode_long_opt_bytes(code, &buf, e)?;
+            }
             O::ClientFQDN(fqdn) => {
                 let fqdn::ClientFQDN {
                     flags,
@@ -1184,6 +1267,23 @@ impl Encodable for DhcpOption {
                     route_enc.write_u8(dest.prefix_len())?;
                     route_enc.write_slice(&dest.addr().octets()[0..byte_len as usize])?;
                     route_enc.write(gw.octets())?;
+                }
+
+                encode_long_opt_bytes(code, &buf, e)?;
+            }
+            O::VendorIdentifyingVendorSpecificInfo(entries) => {
+                let mut buf = Vec::new();
+                let mut entry_enc = Encoder::new(&mut buf);
+                for entry in entries {
+                    if entry.data.len() > u8::MAX as usize {
+                        return Err(crate::error::EncodeError::StringSizeTooBig {
+                            len: entry.data.len(),
+                        });
+                    }
+
+                    entry_enc.write_u32(entry.enterprise_number)?;
+                    entry_enc.write_u8(entry.data.len() as u8)?;
+                    entry_enc.write_slice(&entry.data)?;
                 }
 
                 encode_long_opt_bytes(code, &buf, e)?;
@@ -1543,6 +1643,56 @@ mod tests {
             vec![
                 119, 27, 3, b'e', b'n', b'g', 5, b'a', b'p', b'p', b'l', b'e', 3, b'c', b'o', b'm',
                 0, 9, b'm', b'a', b'r', b'k', b'e', b't', b'i', b'n', b'g', 0xC0, 0x04,
+            ],
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_sip_servers_domains() -> Result<()> {
+        test_opt(
+            DhcpOption::SipServers(SipServers::DomainNames(vec![
+                Name::from_str("example.com.").unwrap(),
+                Name::from_str("example.net.").unwrap(),
+            ])),
+            vec![
+                120, 27, 0, 7, b'e', b'x', b'a', b'm', b'p', b'l', b'e', 3, b'c', b'o', b'm', 0, 7,
+                b'e', b'x', b'a', b'm', b'p', b'l', b'e', 3, b'n', b'e', b't', 0,
+            ],
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_sip_servers_addrs() -> Result<()> {
+        test_opt(
+            DhcpOption::SipServers(SipServers::Addresses(vec![
+                Ipv4Addr::new(192, 0, 2, 1),
+                Ipv4Addr::new(198, 51, 100, 7),
+            ])),
+            vec![120, 9, 1, 192, 0, 2, 1, 198, 51, 100, 7],
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_vi_vendor_specific_info() -> Result<()> {
+        test_opt(
+            DhcpOption::VendorIdentifyingVendorSpecificInfo(vec![
+                ViVendorSpecificInfo {
+                    enterprise_number: 4491,
+                    data: vec![1, 3, b'a', b'b', b'c'],
+                },
+                ViVendorSpecificInfo {
+                    enterprise_number: 32473,
+                    data: vec![2, 1, 7],
+                },
+            ]),
+            vec![
+                125, 18, 0, 0, 17, 139, 5, 1, 3, b'a', b'b', b'c', 0, 0, 126, 217, 3, 2, 1, 7,
             ],
         )?;
 
