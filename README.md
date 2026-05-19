@@ -19,7 +19,7 @@ A DHCP parser and encoder for DHCPv4/DHCPv6. `dhcproto` aims to be a functionall
 
 ## Minimum Rust Version
 
-This crate uses const generics, Rust 1.53 is required
+This crate uses edition 2024, Rust 1.87 is required
 
 ## Examples
 
@@ -79,26 +79,38 @@ DHCPv6:
 - <https://datatracker.ietf.org/doc/html/rfc5007> (message types only)
 - <https://datatracker.ietf.org/doc/html/rfc5908>
 - <https://datatracker.ietf.org/doc/html/rfc5460> (message types/status codes only, no opt 53)
+- <https://datatracker.ietf.org/doc/html/rfc5970>
 - <https://datatracker.ietf.org/doc/html/rfc6977> (message types only)
 - <https://datatracker.ietf.org/doc/html/rfc7341> (message types only)
 
 DHCPv4:
 
+- <https://tools.ietf.org/html/rfc1534>
 - <https://tools.ietf.org/html/rfc2131>
+- <https://tools.ietf.org/html/rfc2132>
+- <https://tools.ietf.org/html/rfc2242>
+- <https://tools.ietf.org/html/rfc2563>
+- <https://tools.ietf.org/html/rfc3004>
 - <https://tools.ietf.org/html/rfc3011>
-- <https://tools.ietf.org/html/rfc3232>
-- <https://tools.ietf.org/html/rfc3203>
 - <https://tools.ietf.org/html/rfc3046>
+- <https://tools.ietf.org/html/rfc3203>
+- <https://tools.ietf.org/html/rfc3232>
+- <https://tools.ietf.org/html/rfc3256> (relay agent sub-opt 4)
 - <https://tools.ietf.org/html/rfc3396>
 - <https://tools.ietf.org/html/rfc3397>
+- <https://tools.ietf.org/html/rfc3442>
+- <https://tools.ietf.org/html/rfc3527> (relay agent sub-opt 5)
+- <https://tools.ietf.org/html/rfc3993> (relay agent sub-opt 6)
 - <https://tools.ietf.org/html/rfc4039>
 - <https://tools.ietf.org/html/rfc4280>
 - <https://tools.ietf.org/html/rfc4388> (message types & opts)
 - <https://tools.ietf.org/html/rfc4578>
 - <https://tools.ietf.org/html/rfc4702>
 - <https://tools.ietf.org/html/rfc4833>
+- <https://tools.ietf.org/html/rfc5010> (relay agent sub-opt 10)
+- <https://tools.ietf.org/html/rfc5107> (relay agent sub-opt 11)
+- <https://tools.ietf.org/html/rfc5859>
 - <https://tools.ietf.org/html/rfc6926> (message types & opts 151-157)
 - <https://tools.ietf.org/html/rfc7724> (message types only, status codes for opt 151 unimplemented)
 - <https://tools.ietf.org/html/rfc8910>
-- <https://tools.ietf.org/html/rfc2563>
 - <https://tools.ietf.org/html/rfc8925>

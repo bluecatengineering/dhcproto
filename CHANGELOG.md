@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0]
+
+### Added
+
+- v4 options 100 (`TimezonePosixString`) and 101 (`TimezoneDatabaseString`) from RFC 4833
+- v6 option 61 `ClientArchType` from RFC 5970
+- `EncodeError::TooManyItems` variant
+- `DecodeError::DomainDecodeError` variant (from hickory 0.26)
+
+### Changed
+
+- updated hickory to 0.26 and other dependencies
+- **breaking** v4 `Architecture` is now a `#[repr(transparent)] struct Architecture(pub u16)` with associated constants rather than an enum, and the IANA-assigned architecture types have been expanded (Arm32/64, RISC-V, LoongArch, MIPS, etc.). `Architecture::Intelx86PC` is now `Architecture::X86_Bios`, `Architecture::X86_64` is `Architecture::X64`, `Architecture::IA32` is `Architecture::X86`, etc.
+
 ## [0.14.0]
 
 ### Added
