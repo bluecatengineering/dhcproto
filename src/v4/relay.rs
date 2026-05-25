@@ -177,7 +177,10 @@ impl Decodable for RelayInfo {
             code => {
                 let length = d.read_u8()?;
                 let bytes = d.read_slice(length as usize)?.to_vec();
-                Unknown(UnknownInfo { code: code.0, data: bytes })
+                Unknown(UnknownInfo {
+                    code: code.0,
+                    data: bytes,
+                })
             }
         })
     }
