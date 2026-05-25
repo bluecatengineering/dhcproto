@@ -8,14 +8,16 @@ use serde::{Deserialize, Serialize};
 
 /// Opcode of Message
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Opcode {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct Opcode(pub u8);
+
+#[allow(non_upper_case_globals)]
+impl Opcode {
     /// BootRequest - <https://datatracker.ietf.org/doc/html/rfc1534#section-2>
-    BootRequest,
+    pub const BootRequest: Self = Self(1);
     /// BootReply - <https://datatracker.ietf.org/doc/html/rfc1534#section-2>
-    BootReply,
-    /// Unknown or not yet implemented
-    Unknown(u8),
+    pub const BootReply: Self = Self(2);
 }
 
 impl Decodable for Opcode {
@@ -32,19 +34,12 @@ impl Encodable for Opcode {
 
 impl From<u8> for Opcode {
     fn from(opcode: u8) -> Self {
-        match opcode {
-            1 => Opcode::BootRequest,
-            2 => Opcode::BootReply,
-            _ => Opcode::Unknown(opcode),
-        }
+        Self(opcode)
     }
 }
+
 impl From<Opcode> for u8 {
     fn from(opcode: Opcode) -> Self {
-        match opcode {
-            Opcode::BootRequest => 1,
-            Opcode::BootReply => 2,
-            Opcode::Unknown(opcode) => opcode,
-        }
+        opcode.0
     }
 }

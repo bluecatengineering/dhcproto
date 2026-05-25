@@ -6,427 +6,156 @@ use serde::{Deserialize, Serialize};
 /// option code type
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum OptionCode {
-    ClientId,
-    ServerId,
-    IANA,
-    IATA,
-    IAAddr,
-    ORO,
-    Preference,
-    ElapsedTime,
-    RelayMsg,
-    Authentication,
-    ServerUnicast,
-    StatusCode,
-    RapidCommit,
-    UserClass,
-    VendorClass,
-    VendorOpts,
-    InterfaceId,
-    ReconfMsg,
-    ReconfAccept,
-    SipServerD,
-    SipServerA,
-    DomainNameServers,
-    DomainSearchList,
-    IAPD,
-    IAPrefix,
-    NisServers,
-    NispServers,
-    NisDomainName,
-    NispDomainName,
-    SntpServers,
-    InformationRefreshTime,
-    BcmcsServerD,
-    BcmcsServerA,
-    GeoconfCivic,
-    RemoteId,
-    SubscriberId,
-    ClientFqdn,
-    PanaAgent,
-    NewPosixTimezone,
-    NewTzdbTimezone,
-    ERO,
-    LqQuery,
-    ClientData,
-    CltTime,
-    LqRelayData,
-    LqClientLink,
-    Mip6Hnidf,
-    Mip6Vdinf,
-    V6Lost,
-    CapwapAcV6,
-    RelayId,
-    Ipv6AddressMoS,
-    Ipv6FQDNMoS,
-    NtpServer,
-    V6AccessDomain,
-    SipUaCsList,
-    OptBootfileUrl,
-    OptBootfileParam,
-    ClientArchType,
-    Nii,
-    Geolocation,
-    AftrName,
-    ErpLocalDomainName,
-    Rsoo,
-    PdExclude,
-    Vss,
-    Mip6Idinf,
-    Mip6Udinf,
-    Mip6Hnp,
-    Mip6Haa,
-    Mip6Haf,
-    RdnssSelection,
-    KrbPrincipalName,
-    KrbRealmName,
-    KrbDefaultRealmName,
-    KrbKdc,
-    ClientLinklayerAddr,
-    LinkAddress,
-    Radius,
-    SolMaxRt,
-    InfMaxRt,
-    Addrsel,
-    AddrselTable,
-    V6PcpServer,
-    Dhcpv4Msg,
-    Dhcp4ODhcp6Server,
-    S46Rule,
-    S46Br,
-    S46Dmr,
-    S46V4v6bind,
-    S46Portparams,
-    S46ContMape,
-    S46ContMapt,
-    S46ContLw,
-    _4Rd,
-    _4RdMapRule,
-    _4RdNonMapRule,
-    LqBaseTime,
-    LqStartTime,
-    LqEndTime,
-    DhcpCaptivePortal,
-    MplParameters,
-    AniAtt,
-    AniNetworkName,
-    AniApName,
-    AniApBssid,
-    AniOperatorId,
-    AniOperatorRealm,
-    S46Priority,
-    MudUrlV6,
-    V6Prefix64,
-    FBindingStatus,
-    FConnectFlags,
-    Fdnsremovalinfo,
-    FDNSHostName,
-    FDNSZoneName,
-    Fdnsflags,
-    Fexpirationtime,
-    FMaxUnackedBndupd,
-    FMclt,
-    FPartnerLifetime,
-    FPartnerLifetimeSent,
-    FPartnerDownTime,
-    FPartnerRawCltTime,
-    FProtocolVersion,
-    FKeepaliveTime,
-    FReconfigureData,
-    FRelationshipName,
-    FServerFlags,
-    FServerState,
-    FStartTimeOfState,
-    FStateExpirationTime,
-    RelayPort,
-    Ipv6AddressANDSF,
-    Unknown(u16),
+#[repr(transparent)]
+pub struct OptionCode(pub u16);
+
+#[allow(non_upper_case_globals)]
+impl OptionCode {
+    pub const ClientId: Self = Self(1);
+    pub const ServerId: Self = Self(2);
+    pub const IANA: Self = Self(3);
+    pub const IATA: Self = Self(4);
+    pub const IAAddr: Self = Self(5);
+    pub const ORO: Self = Self(6);
+    pub const Preference: Self = Self(7);
+    pub const ElapsedTime: Self = Self(8);
+    pub const RelayMsg: Self = Self(9);
+    pub const Authentication: Self = Self(11);
+    pub const ServerUnicast: Self = Self(12);
+    pub const StatusCode: Self = Self(13);
+    pub const RapidCommit: Self = Self(14);
+    pub const UserClass: Self = Self(15);
+    pub const VendorClass: Self = Self(16);
+    pub const VendorOpts: Self = Self(17);
+    pub const InterfaceId: Self = Self(18);
+    pub const ReconfMsg: Self = Self(19);
+    pub const ReconfAccept: Self = Self(20);
+    pub const SipServerD: Self = Self(21);
+    pub const SipServerA: Self = Self(22);
+    pub const DomainNameServers: Self = Self(23);
+    pub const DomainSearchList: Self = Self(24);
+    pub const IAPD: Self = Self(25);
+    pub const IAPrefix: Self = Self(26);
+    pub const NisServers: Self = Self(27);
+    pub const NispServers: Self = Self(28);
+    pub const NisDomainName: Self = Self(29);
+    pub const NispDomainName: Self = Self(30);
+    pub const SntpServers: Self = Self(31);
+    pub const InformationRefreshTime: Self = Self(32);
+    pub const BcmcsServerD: Self = Self(33);
+    pub const BcmcsServerA: Self = Self(34);
+    pub const GeoconfCivic: Self = Self(36);
+    pub const RemoteId: Self = Self(37);
+    pub const SubscriberId: Self = Self(38);
+    pub const ClientFqdn: Self = Self(39);
+    pub const PanaAgent: Self = Self(40);
+    pub const NewPosixTimezone: Self = Self(41);
+    pub const NewTzdbTimezone: Self = Self(42);
+    pub const ERO: Self = Self(43);
+    pub const LqQuery: Self = Self(44);
+    pub const ClientData: Self = Self(45);
+    pub const CltTime: Self = Self(46);
+    pub const LqRelayData: Self = Self(47);
+    pub const LqClientLink: Self = Self(48);
+    pub const Mip6Hnidf: Self = Self(49);
+    pub const Mip6Vdinf: Self = Self(50);
+    pub const V6Lost: Self = Self(51);
+    pub const CapwapAcV6: Self = Self(52);
+    pub const RelayId: Self = Self(53);
+    pub const Ipv6AddressMoS: Self = Self(54);
+    pub const Ipv6FQDNMoS: Self = Self(55);
+    pub const NtpServer: Self = Self(56);
+    pub const V6AccessDomain: Self = Self(57);
+    pub const SipUaCsList: Self = Self(58);
+    pub const OptBootfileUrl: Self = Self(59);
+    pub const OptBootfileParam: Self = Self(60);
+    pub const ClientArchType: Self = Self(61);
+    pub const Nii: Self = Self(62);
+    pub const Geolocation: Self = Self(63);
+    pub const AftrName: Self = Self(64);
+    pub const ErpLocalDomainName: Self = Self(65);
+    pub const Rsoo: Self = Self(66);
+    pub const PdExclude: Self = Self(67);
+    pub const Vss: Self = Self(68);
+    pub const Mip6Idinf: Self = Self(69);
+    pub const Mip6Udinf: Self = Self(70);
+    pub const Mip6Hnp: Self = Self(71);
+    pub const Mip6Haa: Self = Self(72);
+    pub const Mip6Haf: Self = Self(73);
+    pub const RdnssSelection: Self = Self(74);
+    pub const KrbPrincipalName: Self = Self(75);
+    pub const KrbRealmName: Self = Self(76);
+    pub const KrbDefaultRealmName: Self = Self(77);
+    pub const KrbKdc: Self = Self(78);
+    pub const ClientLinklayerAddr: Self = Self(79);
+    pub const LinkAddress: Self = Self(80);
+    pub const Radius: Self = Self(81);
+    pub const SolMaxRt: Self = Self(82);
+    pub const InfMaxRt: Self = Self(83);
+    pub const Addrsel: Self = Self(84);
+    pub const AddrselTable: Self = Self(85);
+    pub const V6PcpServer: Self = Self(86);
+    pub const Dhcpv4Msg: Self = Self(87);
+    pub const Dhcp4ODhcp6Server: Self = Self(88);
+    pub const S46Rule: Self = Self(89);
+    pub const S46Br: Self = Self(90);
+    pub const S46Dmr: Self = Self(91);
+    pub const S46V4v6bind: Self = Self(92);
+    pub const S46Portparams: Self = Self(93);
+    pub const S46ContMape: Self = Self(94);
+    pub const S46ContMapt: Self = Self(95);
+    pub const S46ContLw: Self = Self(96);
+    pub const _4Rd: Self = Self(97);
+    pub const _4RdMapRule: Self = Self(98);
+    pub const _4RdNonMapRule: Self = Self(99);
+    pub const LqBaseTime: Self = Self(100);
+    pub const LqStartTime: Self = Self(101);
+    pub const LqEndTime: Self = Self(102);
+    pub const DhcpCaptivePortal: Self = Self(103);
+    pub const MplParameters: Self = Self(104);
+    pub const AniAtt: Self = Self(105);
+    pub const AniNetworkName: Self = Self(106);
+    pub const AniApName: Self = Self(107);
+    pub const AniApBssid: Self = Self(108);
+    pub const AniOperatorId: Self = Self(109);
+    pub const AniOperatorRealm: Self = Self(110);
+    pub const S46Priority: Self = Self(111);
+    pub const MudUrlV6: Self = Self(112);
+    pub const V6Prefix64: Self = Self(113);
+    pub const FBindingStatus: Self = Self(114);
+    pub const FConnectFlags: Self = Self(115);
+    pub const Fdnsremovalinfo: Self = Self(116);
+    pub const FDNSHostName: Self = Self(117);
+    pub const FDNSZoneName: Self = Self(118);
+    pub const Fdnsflags: Self = Self(119);
+    pub const Fexpirationtime: Self = Self(120);
+    pub const FMaxUnackedBndupd: Self = Self(121);
+    pub const FMclt: Self = Self(122);
+    pub const FPartnerLifetime: Self = Self(123);
+    pub const FPartnerLifetimeSent: Self = Self(124);
+    pub const FPartnerDownTime: Self = Self(125);
+    pub const FPartnerRawCltTime: Self = Self(126);
+    pub const FProtocolVersion: Self = Self(127);
+    pub const FKeepaliveTime: Self = Self(128);
+    pub const FReconfigureData: Self = Self(129);
+    pub const FRelationshipName: Self = Self(130);
+    pub const FServerFlags: Self = Self(131);
+    pub const FServerState: Self = Self(132);
+    pub const FStartTimeOfState: Self = Self(133);
+    pub const FStateExpirationTime: Self = Self(134);
+    pub const RelayPort: Self = Self(135);
+    pub const Ipv6AddressANDSF: Self = Self(143);
 }
 
 impl From<OptionCode> for u16 {
     fn from(opt: OptionCode) -> Self {
-        use OptionCode as O;
-        match opt {
-            O::ClientId => 1,
-            O::ServerId => 2,
-            O::IANA => 3,
-            O::IATA => 4,
-            O::IAAddr => 5,
-            O::ORO => 6,
-            O::Preference => 7,
-            O::ElapsedTime => 8,
-            O::RelayMsg => 9,
-            O::Authentication => 11,
-            O::ServerUnicast => 12,
-            O::StatusCode => 13,
-            O::RapidCommit => 14,
-            O::UserClass => 15,
-            O::VendorClass => 16,
-            O::VendorOpts => 17,
-            O::InterfaceId => 18,
-            O::ReconfMsg => 19,
-            O::ReconfAccept => 20,
-            O::SipServerD => 21,
-            O::SipServerA => 22,
-            O::DomainNameServers => 23,
-            O::DomainSearchList => 24,
-            O::IAPD => 25,
-            O::IAPrefix => 26,
-            O::NisServers => 27,
-            O::NispServers => 28,
-            O::NisDomainName => 29,
-            O::NispDomainName => 30,
-            O::SntpServers => 31,
-            O::InformationRefreshTime => 32,
-            O::BcmcsServerD => 33,
-            O::BcmcsServerA => 34,
-            O::GeoconfCivic => 36,
-            O::RemoteId => 37,
-            O::SubscriberId => 38,
-            O::ClientFqdn => 39,
-            O::PanaAgent => 40,
-            O::NewPosixTimezone => 41,
-            O::NewTzdbTimezone => 42,
-            O::ERO => 43,
-            O::LqQuery => 44,
-            O::ClientData => 45,
-            O::CltTime => 46,
-            O::LqRelayData => 47,
-            O::LqClientLink => 48,
-            O::Mip6Hnidf => 49,
-            O::Mip6Vdinf => 50,
-            O::V6Lost => 51,
-            O::CapwapAcV6 => 52,
-            O::RelayId => 53,
-            O::Ipv6AddressMoS => 54,
-            O::Ipv6FQDNMoS => 55,
-            O::NtpServer => 56,
-            O::V6AccessDomain => 57,
-            O::SipUaCsList => 58,
-            O::OptBootfileUrl => 59,
-            O::OptBootfileParam => 60,
-            O::ClientArchType => 61,
-            O::Nii => 62,
-            O::Geolocation => 63,
-            O::AftrName => 64,
-            O::ErpLocalDomainName => 65,
-            O::Rsoo => 66,
-            O::PdExclude => 67,
-            O::Vss => 68,
-            O::Mip6Idinf => 69,
-            O::Mip6Udinf => 70,
-            O::Mip6Hnp => 71,
-            O::Mip6Haa => 72,
-            O::Mip6Haf => 73,
-            O::RdnssSelection => 74,
-            O::KrbPrincipalName => 75,
-            O::KrbRealmName => 76,
-            O::KrbDefaultRealmName => 77,
-            O::KrbKdc => 78,
-            O::ClientLinklayerAddr => 79,
-            O::LinkAddress => 80,
-            O::Radius => 81,
-            O::SolMaxRt => 82,
-            O::InfMaxRt => 83,
-            O::Addrsel => 84,
-            O::AddrselTable => 85,
-            O::V6PcpServer => 86,
-            O::Dhcpv4Msg => 87,
-            O::Dhcp4ODhcp6Server => 88,
-            O::S46Rule => 89,
-            O::S46Br => 90,
-            O::S46Dmr => 91,
-            O::S46V4v6bind => 92,
-            O::S46Portparams => 93,
-            O::S46ContMape => 94,
-            O::S46ContMapt => 95,
-            O::S46ContLw => 96,
-            O::_4Rd => 97,
-            O::_4RdMapRule => 98,
-            O::_4RdNonMapRule => 99,
-            O::LqBaseTime => 100,
-            O::LqStartTime => 101,
-            O::LqEndTime => 102,
-            O::DhcpCaptivePortal => 103,
-            O::MplParameters => 104,
-            O::AniAtt => 105,
-            O::AniNetworkName => 106,
-            O::AniApName => 107,
-            O::AniApBssid => 108,
-            O::AniOperatorId => 109,
-            O::AniOperatorRealm => 110,
-            O::S46Priority => 111,
-            O::MudUrlV6 => 112,
-            O::V6Prefix64 => 113,
-            O::FBindingStatus => 114,
-            O::FConnectFlags => 115,
-            O::Fdnsremovalinfo => 116,
-            O::FDNSHostName => 117,
-            O::FDNSZoneName => 118,
-            O::Fdnsflags => 119,
-            O::Fexpirationtime => 120,
-            O::FMaxUnackedBndupd => 121,
-            O::FMclt => 122,
-            O::FPartnerLifetime => 123,
-            O::FPartnerLifetimeSent => 124,
-            O::FPartnerDownTime => 125,
-            O::FPartnerRawCltTime => 126,
-            O::FProtocolVersion => 127,
-            O::FKeepaliveTime => 128,
-            O::FReconfigureData => 129,
-            O::FRelationshipName => 130,
-            O::FServerFlags => 131,
-            O::FServerState => 132,
-            O::FStartTimeOfState => 133,
-            O::FStateExpirationTime => 134,
-            O::RelayPort => 135,
-            O::Ipv6AddressANDSF => 143,
-            O::Unknown(n) => n,
-        }
+        opt.0
     }
 }
 
 impl From<u16> for OptionCode {
     fn from(n: u16) -> Self {
-        use OptionCode::*;
-        match n {
-            1 => ClientId,
-            2 => ServerId,
-            3 => IANA,
-            4 => IATA,
-            5 => IAAddr,
-            6 => ORO,
-            7 => Preference,
-            8 => ElapsedTime,
-            9 => RelayMsg,
-            11 => Authentication,
-            12 => ServerUnicast,
-            13 => StatusCode,
-            14 => RapidCommit,
-            15 => UserClass,
-            16 => VendorClass,
-            17 => VendorOpts,
-            18 => InterfaceId,
-            19 => ReconfMsg,
-            20 => ReconfAccept,
-            21 => SipServerD,
-            22 => SipServerA,
-            23 => DomainNameServers,
-            24 => DomainSearchList,
-            25 => IAPD,
-            26 => IAPrefix,
-            27 => NisServers,
-            28 => NispServers,
-            29 => NisDomainName,
-            30 => NispDomainName,
-            31 => SntpServers,
-            32 => InformationRefreshTime,
-            33 => BcmcsServerD,
-            34 => BcmcsServerA,
-            36 => GeoconfCivic,
-            37 => RemoteId,
-            38 => SubscriberId,
-            39 => ClientFqdn,
-            40 => PanaAgent,
-            41 => NewPosixTimezone,
-            42 => NewTzdbTimezone,
-            43 => ERO,
-            44 => LqQuery,
-            45 => ClientData,
-            46 => CltTime,
-            47 => LqRelayData,
-            48 => LqClientLink,
-            49 => Mip6Hnidf,
-            50 => Mip6Vdinf,
-            51 => V6Lost,
-            52 => CapwapAcV6,
-            53 => RelayId,
-            54 => Ipv6AddressMoS,
-            55 => Ipv6FQDNMoS,
-            56 => NtpServer,
-            57 => V6AccessDomain,
-            58 => SipUaCsList,
-            59 => OptBootfileUrl,
-            60 => OptBootfileParam,
-            61 => ClientArchType,
-            62 => Nii,
-            63 => Geolocation,
-            64 => AftrName,
-            65 => ErpLocalDomainName,
-            66 => Rsoo,
-            67 => PdExclude,
-            68 => Vss,
-            69 => Mip6Idinf,
-            70 => Mip6Udinf,
-            71 => Mip6Hnp,
-            72 => Mip6Haa,
-            73 => Mip6Haf,
-            74 => RdnssSelection,
-            75 => KrbPrincipalName,
-            76 => KrbRealmName,
-            77 => KrbDefaultRealmName,
-            78 => KrbKdc,
-            79 => ClientLinklayerAddr,
-            80 => LinkAddress,
-            81 => Radius,
-            82 => SolMaxRt,
-            83 => InfMaxRt,
-            84 => Addrsel,
-            85 => AddrselTable,
-            86 => V6PcpServer,
-            87 => Dhcpv4Msg,
-            88 => Dhcp4ODhcp6Server,
-            89 => S46Rule,
-            90 => S46Br,
-            91 => S46Dmr,
-            92 => S46V4v6bind,
-            93 => S46Portparams,
-            94 => S46ContMape,
-            95 => S46ContMapt,
-            96 => S46ContLw,
-            97 => _4Rd,
-            98 => _4RdMapRule,
-            99 => _4RdNonMapRule,
-            100 => LqBaseTime,
-            101 => LqStartTime,
-            102 => LqEndTime,
-            103 => DhcpCaptivePortal,
-            104 => MplParameters,
-            105 => AniAtt,
-            106 => AniNetworkName,
-            107 => AniApName,
-            108 => AniApBssid,
-            109 => AniOperatorId,
-            110 => AniOperatorRealm,
-            111 => S46Priority,
-            112 => MudUrlV6,
-            113 => V6Prefix64,
-            114 => FBindingStatus,
-            115 => FConnectFlags,
-            116 => Fdnsremovalinfo,
-            117 => FDNSHostName,
-            118 => FDNSZoneName,
-            119 => Fdnsflags,
-            120 => Fexpirationtime,
-            121 => FMaxUnackedBndupd,
-            122 => FMclt,
-            123 => FPartnerLifetime,
-            124 => FPartnerLifetimeSent,
-            125 => FPartnerDownTime,
-            126 => FPartnerRawCltTime,
-            127 => FProtocolVersion,
-            128 => FKeepaliveTime,
-            129 => FReconfigureData,
-            130 => FRelationshipName,
-            131 => FServerFlags,
-            132 => FServerState,
-            133 => FStartTimeOfState,
-            134 => FStateExpirationTime,
-            135 => RelayPort,
-            143 => Ipv6AddressANDSF,
-            _ => Unknown(n),
-        }
+        Self(n)
     }
 }
 
@@ -438,7 +167,7 @@ impl PartialOrd for OptionCode {
 
 impl Ord for OptionCode {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-        u16::from(*self).cmp(&u16::from(*other))
+        self.0.cmp(&other.0)
     }
 }
 
@@ -481,7 +210,7 @@ impl From<&DhcpOption> for OptionCode {
             // LqClientLink(_) => OptionCode::LqClientLink,
             // RelayId(_) => OptionCode::RelayId,
             // LinkAddress(_) => OptionCode::LinkAddress,
-            O::Unknown(UnknownOption { code, .. }) => OptionCode::Unknown(*code),
+            O::Unknown(UnknownOption { code, .. }) => OptionCode(*code),
         }
     }
 }

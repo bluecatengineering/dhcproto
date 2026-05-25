@@ -243,94 +243,45 @@ pub struct StatusCode {
 /// Status code for Server Unicast
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Status {
-    Success,
-    UnspecFail,
-    NoAddrsAvail,
-    NoBinding,
-    NotOnLink,
-    UseMulticast,
-    NoPrefixAvail,
-    UnknownQueryType,
-    MalformedQuery,
-    NotConfigured,
-    NotAllowed,
-    QueryTerminated,
-    DataMissing,
-    CatchUpComplete,
-    NotSupported,
-    TLSConnectionRefused,
-    AddressInUse,
-    ConfigurationConflict,
-    MissingBindingInformation,
-    OutdatedBindingInformation,
-    ServerShuttingDown,
-    DNSUpdateNotSupported,
-    ExcessiveTimeSkew,
-    /// unknown/unimplemented message type
-    Unknown(u16),
+#[repr(transparent)]
+pub struct Status(pub u16);
+
+#[allow(non_upper_case_globals)]
+impl Status {
+    pub const Success: Self = Self(0);
+    pub const UnspecFail: Self = Self(1);
+    pub const NoAddrsAvail: Self = Self(2);
+    pub const NoBinding: Self = Self(3);
+    pub const NotOnLink: Self = Self(4);
+    pub const UseMulticast: Self = Self(5);
+    pub const NoPrefixAvail: Self = Self(6);
+    pub const UnknownQueryType: Self = Self(7);
+    pub const MalformedQuery: Self = Self(8);
+    pub const NotConfigured: Self = Self(9);
+    pub const NotAllowed: Self = Self(10);
+    pub const QueryTerminated: Self = Self(11);
+    pub const DataMissing: Self = Self(12);
+    pub const CatchUpComplete: Self = Self(13);
+    pub const NotSupported: Self = Self(14);
+    pub const TLSConnectionRefused: Self = Self(15);
+    pub const AddressInUse: Self = Self(16);
+    pub const ConfigurationConflict: Self = Self(17);
+    pub const MissingBindingInformation: Self = Self(18);
+    pub const OutdatedBindingInformation: Self = Self(19);
+    pub const ServerShuttingDown: Self = Self(20);
+    pub const DNSUpdateNotSupported: Self = Self(21);
+    pub const ExcessiveTimeSkew: Self = Self(22);
 }
 
 impl From<u16> for Status {
     fn from(n: u16) -> Self {
-        use Status::*;
-        match n {
-            0 => Success,
-            1 => UnspecFail,
-            2 => NoAddrsAvail,
-            3 => NoBinding,
-            4 => NotOnLink,
-            5 => UseMulticast,
-            6 => NoPrefixAvail,
-            7 => UnknownQueryType,
-            8 => MalformedQuery,
-            9 => NotConfigured,
-            10 => NotAllowed,
-            11 => QueryTerminated,
-            12 => DataMissing,
-            13 => CatchUpComplete,
-            14 => NotSupported,
-            15 => TLSConnectionRefused,
-            16 => AddressInUse,
-            17 => ConfigurationConflict,
-            18 => MissingBindingInformation,
-            19 => OutdatedBindingInformation,
-            20 => ServerShuttingDown,
-            21 => DNSUpdateNotSupported,
-            22 => ExcessiveTimeSkew,
-            _ => Unknown(n),
-        }
+        Self(n)
     }
 }
+
 impl From<Status> for u16 {
     fn from(n: Status) -> Self {
-        use Status as S;
-        match n {
-            S::Success => 0,
-            S::UnspecFail => 1,
-            S::NoAddrsAvail => 2,
-            S::NoBinding => 3,
-            S::NotOnLink => 4,
-            S::UseMulticast => 5,
-            S::NoPrefixAvail => 6,
-            S::UnknownQueryType => 7,
-            S::MalformedQuery => 8,
-            S::NotConfigured => 9,
-            S::NotAllowed => 10,
-            S::QueryTerminated => 11,
-            S::DataMissing => 12,
-            S::CatchUpComplete => 13,
-            S::NotSupported => 14,
-            S::TLSConnectionRefused => 15,
-            S::AddressInUse => 16,
-            S::ConfigurationConflict => 17,
-            S::MissingBindingInformation => 18,
-            S::OutdatedBindingInformation => 19,
-            S::ServerShuttingDown => 20,
-            S::DNSUpdateNotSupported => 21,
-            S::ExcessiveTimeSkew => 22,
-            S::Unknown(n) => n,
-        }
+        n.0
     }
 }
 
@@ -704,13 +655,9 @@ impl Decodable for DhcpOption {
                 }
                 DhcpOption::ClientArchType(types)
             }
-            // not yet implemented
-            OptionCode::Unknown(code) => DhcpOption::Unknown(UnknownOption {
-                code,
-                data: decoder.read_slice(len)?.to_vec(),
-            }),
-            _ => DhcpOption::Unknown(UnknownOption {
-                code: code.into(),
+            // not yet implemented / unknown
+            code => DhcpOption::Unknown(UnknownOption {
+                code: code.0,
                 data: decoder.read_slice(len)?.to_vec(),
             }),
         })

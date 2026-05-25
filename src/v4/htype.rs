@@ -10,134 +10,76 @@ use serde::{Deserialize, Serialize};
 /// Hardware type of message
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
-pub enum HType {
+#[repr(transparent)]
+pub struct HType(pub u8);
+
+#[allow(non_upper_case_globals)]
+impl HType {
     /// 1 Ethernet
-    Eth,
+    pub const Eth: Self = Self(1);
     /// 2 Experimental Ethernet
-    ExperimentalEth,
+    pub const ExperimentalEth: Self = Self(2);
     /// 3 Amateur Radio AX25
-    AmRadioAX25,
+    pub const AmRadioAX25: Self = Self(3);
     /// 4 Proteon Token Ring
-    ProteonTokenRing,
+    pub const ProteonTokenRing: Self = Self(4);
     /// 5 Chaos
-    Chaos,
+    pub const Chaos: Self = Self(5);
     /// 6 IEEE.802
-    IEEE802,
+    pub const IEEE802: Self = Self(6);
     /// 7 ARCNET
-    ARCNET,
+    pub const ARCNET: Self = Self(7);
     /// 8 Hyperchannel
-    Hyperchannel,
+    pub const Hyperchannel: Self = Self(8);
     /// 9 LANSTAR
-    Lanstar,
+    pub const Lanstar: Self = Self(9);
     /// 10 Autonet Short Addr
-    AutonetShortAddr,
+    pub const AutonetShortAddr: Self = Self(10);
     /// 11 LocalTalk
-    LocalTalk,
+    pub const LocalTalk: Self = Self(11);
     /// 12 LocalNet
-    LocalNet,
+    pub const LocalNet: Self = Self(12);
     /// 13 Ultralink
-    Ultralink,
+    pub const Ultralink: Self = Self(13);
     /// 14 SMDS
-    SMDS,
+    pub const SMDS: Self = Self(14);
     /// 15 FrameRelay
-    FrameRelay,
+    pub const FrameRelay: Self = Self(15);
     /// 17 HDLC
-    HDLC,
+    pub const HDLC: Self = Self(17);
     /// 18 FibreChannel
-    FibreChannel,
+    pub const FibreChannel: Self = Self(18);
     /// 20 SerialLine
-    SerialLine,
+    pub const SerialLine: Self = Self(20);
     /// 22 Mil STD
-    MilStd188220,
+    pub const MilStd188220: Self = Self(22);
     /// 23 Metricom
-    Metricom,
+    pub const Metricom: Self = Self(23);
     /// 25 MAPOS
-    MAPOS,
+    pub const MAPOS: Self = Self(25);
     /// 26 Twinaxial
-    Twinaxial,
+    pub const Twinaxial: Self = Self(26);
     /// 30 ARPSec
-    ARPSec,
+    pub const ARPSec: Self = Self(30);
     /// 31 IPsec tunnel
-    IPsecTunnel,
+    pub const IPsecTunnel: Self = Self(31);
     /// 32 Infiniband
-    Infiniband,
+    pub const Infiniband: Self = Self(32);
     /// 34 WeigandInt
-    WiegandInt,
+    pub const WiegandInt: Self = Self(34);
     /// 35 PureIP
-    PureIP,
-    /// Unknown or not yet implemented htype
-    Unknown(u8),
+    pub const PureIP: Self = Self(35);
 }
 
 impl From<u8> for HType {
     fn from(n: u8) -> Self {
-        use HType::*;
-        match n {
-            1 => Eth,
-            2 => ExperimentalEth,
-            3 => AmRadioAX25,
-            4 => ProteonTokenRing,
-            5 => Chaos,
-            6 => IEEE802,
-            7 => ARCNET,
-            8 => Hyperchannel,
-            9 => Lanstar,
-            10 => AutonetShortAddr,
-            11 => LocalTalk,
-            12 => LocalNet,
-            13 => Ultralink,
-            14 => SMDS,
-            15 => FrameRelay,
-            17 => HDLC,
-            18 => FibreChannel,
-            20 => SerialLine,
-            22 => MilStd188220,
-            23 => Metricom,
-            25 => MAPOS,
-            26 => Twinaxial,
-            30 => ARPSec,
-            31 => IPsecTunnel,
-            32 => Infiniband,
-            34 => WiegandInt,
-            35 => PureIP,
-            n => Unknown(n),
-        }
+        Self(n)
     }
 }
 
 impl From<HType> for u8 {
     fn from(n: HType) -> Self {
-        use HType as H;
-        match n {
-            H::Eth => 1,
-            H::ExperimentalEth => 2,
-            H::AmRadioAX25 => 3,
-            H::ProteonTokenRing => 4,
-            H::Chaos => 5,
-            H::IEEE802 => 6,
-            H::ARCNET => 7,
-            H::Hyperchannel => 8,
-            H::Lanstar => 9,
-            H::AutonetShortAddr => 10,
-            H::LocalTalk => 11,
-            H::LocalNet => 12,
-            H::Ultralink => 13,
-            H::SMDS => 14,
-            H::FrameRelay => 15,
-            H::HDLC => 17,
-            H::FibreChannel => 18,
-            H::SerialLine => 20,
-            H::MilStd188220 => 22,
-            H::Metricom => 23,
-            H::MAPOS => 25,
-            H::Twinaxial => 26,
-            H::ARPSec => 30,
-            H::IPsecTunnel => 31,
-            H::Infiniband => 32,
-            H::WiegandInt => 34,
-            H::PureIP => 35,
-            H::Unknown(n) => n,
-        }
+        n.0
     }
 }
 

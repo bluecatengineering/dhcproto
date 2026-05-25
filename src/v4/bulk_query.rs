@@ -51,88 +51,56 @@ impl From<DataSourceFlags> for u8 {
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum QueryState {
-    Available,
-    Active,
-    Expired,
-    Release,
-    Abandoned,
-    Reset,
-    Remote,
-    Transitioning,
-    Unknown(u8),
+#[repr(transparent)]
+pub struct QueryState(pub u8);
+
+#[allow(non_upper_case_globals)]
+impl QueryState {
+    pub const Available: Self = Self(1);
+    pub const Active: Self = Self(2);
+    pub const Expired: Self = Self(3);
+    pub const Release: Self = Self(4);
+    pub const Abandoned: Self = Self(5);
+    pub const Reset: Self = Self(6);
+    pub const Remote: Self = Self(7);
+    pub const Transitioning: Self = Self(8);
 }
 
 impl From<u8> for QueryState {
     fn from(n: u8) -> Self {
-        use QueryState::*;
-        match n {
-            1 => Available,
-            2 => Active,
-            3 => Expired,
-            4 => Release,
-            5 => Abandoned,
-            6 => Reset,
-            7 => Remote,
-            8 => Transitioning,
-            _ => Unknown(n),
-        }
+        Self(n)
     }
 }
 
 impl From<QueryState> for u8 {
     fn from(state: QueryState) -> Self {
-        use QueryState as Q;
-        match state {
-            Q::Available => 1,
-            Q::Active => 2,
-            Q::Expired => 3,
-            Q::Release => 4,
-            Q::Abandoned => 5,
-            Q::Reset => 6,
-            Q::Remote => 7,
-            Q::Transitioning => 8,
-            Q::Unknown(code) => code,
-        }
+        state.0
     }
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Code {
-    Success,
-    UnspecFail,
-    QueryTerminated,
-    MalformedQuery,
-    NotAllowed,
-    Unknown(u8),
+#[repr(transparent)]
+pub struct Code(pub u8);
+
+#[allow(non_upper_case_globals)]
+impl Code {
+    pub const Success: Self = Self(0);
+    pub const UnspecFail: Self = Self(1);
+    pub const QueryTerminated: Self = Self(2);
+    pub const MalformedQuery: Self = Self(3);
+    pub const NotAllowed: Self = Self(4);
 }
 
 impl From<u8> for Code {
     fn from(n: u8) -> Self {
-        use Code::*;
-        match n {
-            0 => Success,
-            1 => UnspecFail,
-            2 => QueryTerminated,
-            3 => MalformedQuery,
-            4 => NotAllowed,
-            _ => Unknown(n),
-        }
+        Self(n)
     }
 }
 
 impl From<Code> for u8 {
     fn from(code: Code) -> Self {
-        use Code as C;
-        match code {
-            C::Success => 0,
-            C::UnspecFail => 1,
-            C::QueryTerminated => 2,
-            C::MalformedQuery => 3,
-            C::NotAllowed => 4,
-            C::Unknown(code) => code,
-        }
+        code.0
     }
 }
 

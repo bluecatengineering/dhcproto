@@ -520,68 +520,56 @@ impl From<Architecture> for u16 {
 /// NetBIOS allows several different node types
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum NodeType {
+#[repr(transparent)]
+pub struct NodeType(pub u8);
+
+#[allow(non_upper_case_globals)]
+impl NodeType {
     /// Broadcast
-    B,
+    pub const B: Self = Self(1);
     /// Peer-to-peer
-    P,
+    pub const P: Self = Self(2);
     /// Mixed (B & P)
-    M,
+    pub const M: Self = Self(4);
     /// Hybrid (P & B)
-    H,
-    /// Unknown
-    Unknown(u8),
+    pub const H: Self = Self(8);
 }
 
 impl From<u8> for NodeType {
     fn from(n: u8) -> Self {
-        use NodeType::*;
-        match n {
-            1 => B,
-            2 => P,
-            4 => M,
-            8 => H,
-            _ => Unknown(n),
-        }
+        Self(n)
     }
 }
 
 impl From<NodeType> for u8 {
     fn from(n: NodeType) -> Self {
-        use NodeType as N;
-        match n {
-            N::B => 1,
-            N::P => 2,
-            N::M => 4,
-            N::H => 8,
-            N::Unknown(n) => n,
-        }
+        n.0
     }
 }
 
 /// AutoConfigure option values
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[repr(u8)]
-pub enum AutoConfig {
+#[repr(transparent)]
+pub struct AutoConfig(pub u8);
+
+#[allow(non_upper_case_globals)]
+impl AutoConfig {
     /// Do not autoconfig
-    DoNotAutoConfigure = 0,
+    pub const DoNotAutoConfigure: Self = Self(0);
     /// autoconfig
-    AutoConfigure = 1,
+    pub const AutoConfigure: Self = Self(1);
 }
 
-impl TryFrom<u8> for AutoConfig {
-    type Error = crate::error::DecodeError;
+impl From<u8> for AutoConfig {
+    fn from(value: u8) -> Self {
+        Self(value)
+    }
+}
 
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(AutoConfig::DoNotAutoConfigure),
-            1 => Ok(AutoConfig::AutoConfigure),
-            n => Err(super::DecodeError::InvalidData(
-                n as u32,
-                "invalid number in disable SLAAC autoconfig",
-            )),
-        }
+impl From<AutoConfig> for u8 {
+    fn from(a: AutoConfig) -> Self {
+        a.0
     }
 }
 
@@ -771,7 +759,7 @@ pub(crate) fn decode_inner(
         OptionCode::TimezoneDatabaseString => TimezoneDatabaseString(decoder.read_string(len)?),
         OptionCode::Ipv6OnlyPreferred => Ipv6OnlyPreferred(decoder.read_u32()?),
         OptionCode::CaptivePortal => CaptivePortal(decoder.read_str(len)?.to_string()),
-        OptionCode::DisableSLAAC => DisableSLAAC(decoder.read_u8()?.try_into()?),
+        OptionCode::DisableSLAAC => DisableSLAAC(decoder.read_u8()?.into()),
         OptionCode::SubnetSelection => SubnetSelection(decoder.read_ipv4(len)?),
         OptionCode::DomainSearch => DomainSearch(decoder.read_domains(len)?),
         OptionCode::SipServers => SipServers(decode_sip_servers(len, decoder)?),
@@ -1294,7 +1282,7 @@ impl Encodable for DhcpOption {
             O::DisableSLAAC(val) => {
                 e.write_u8(code.into())?;
                 e.write_u8(1)?;
-                e.write_u8(*val as u8)?;
+                e.write_u8(val.0)?;
             }
             // not yet implemented
             O::Unknown(opt) => {
@@ -1357,95 +1345,58 @@ impl Encodable for UnknownOption {
 /// <https://datatracker.ietf.org/doc/html/rfc2131#section-3.1>
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum MessageType {
+#[repr(transparent)]
+pub struct MessageType(pub u8);
+
+#[allow(non_upper_case_globals)]
+impl MessageType {
     /// DHCPDiscover
-    Discover,
+    pub const Discover: Self = Self(1);
     /// DHCPOffer
-    Offer,
+    pub const Offer: Self = Self(2);
     /// DHCPRequest
-    Request,
+    pub const Request: Self = Self(3);
     /// DHCPDecline
-    Decline,
+    pub const Decline: Self = Self(4);
     /// DHCPAck
-    Ack,
+    pub const Ack: Self = Self(5);
     /// DHCPNak
-    Nak,
+    pub const Nak: Self = Self(6);
     /// DHCPRelease
-    Release,
+    pub const Release: Self = Self(7);
     /// DHCPInform
-    Inform,
+    pub const Inform: Self = Self(8);
     /// DHCPForceRenew - <https://www.rfc-editor.org/rfc/rfc3203.html>
-    ForceRenew,
+    pub const ForceRenew: Self = Self(9);
     /// DHCPLeaseQuery - <https://www.rfc-editor.org/rfc/rfc4388#section-6.1>
-    LeaseQuery,
+    pub const LeaseQuery: Self = Self(10);
     /// DHCPLeaseUnassigned
-    LeaseUnassigned,
+    pub const LeaseUnassigned: Self = Self(11);
     /// DHCPLeaseUnknown
-    LeaseUnknown,
+    pub const LeaseUnknown: Self = Self(12);
     /// DHCPLeaseActive
-    LeaseActive,
+    pub const LeaseActive: Self = Self(13);
     /// DHCPBulkLeaseQuery - <https://www.rfc-editor.org/rfc/rfc6926.html>
-    BulkLeaseQuery,
+    pub const BulkLeaseQuery: Self = Self(14);
     /// DHCPLeaseQueryDone
-    LeaseQueryDone,
+    pub const LeaseQueryDone: Self = Self(15);
     /// DHCPActiveLeaseQuery - <https://www.rfc-editor.org/rfc/rfc7724.html>
-    ActiveLeaseQuery,
+    pub const ActiveLeaseQuery: Self = Self(16);
     /// DHCPLeaseQueryStatus
-    LeaseQueryStatus,
+    pub const LeaseQueryStatus: Self = Self(17);
     /// DHCPTLS
-    Tls,
-    /// an unknown message type
-    Unknown(u8),
+    pub const Tls: Self = Self(18);
 }
 
 impl From<u8> for MessageType {
     fn from(n: u8) -> Self {
-        match n {
-            1 => MessageType::Discover,
-            2 => MessageType::Offer,
-            3 => MessageType::Request,
-            4 => MessageType::Decline,
-            5 => MessageType::Ack,
-            6 => MessageType::Nak,
-            7 => MessageType::Release,
-            8 => MessageType::Inform,
-            9 => MessageType::ForceRenew,
-            10 => MessageType::LeaseQuery,
-            11 => MessageType::LeaseUnassigned,
-            12 => MessageType::LeaseUnknown,
-            13 => MessageType::LeaseActive,
-            14 => MessageType::BulkLeaseQuery,
-            15 => MessageType::LeaseQueryDone,
-            16 => MessageType::ActiveLeaseQuery,
-            17 => MessageType::LeaseQueryStatus,
-            18 => MessageType::Tls,
-            n => MessageType::Unknown(n),
-        }
+        Self(n)
     }
 }
+
 impl From<MessageType> for u8 {
     fn from(m: MessageType) -> Self {
-        match m {
-            MessageType::Discover => 1,
-            MessageType::Offer => 2,
-            MessageType::Request => 3,
-            MessageType::Decline => 4,
-            MessageType::Ack => 5,
-            MessageType::Nak => 6,
-            MessageType::Release => 7,
-            MessageType::Inform => 8,
-            MessageType::ForceRenew => 9,
-            MessageType::LeaseQuery => 10,
-            MessageType::LeaseUnassigned => 11,
-            MessageType::LeaseUnknown => 12,
-            MessageType::LeaseActive => 13,
-            MessageType::BulkLeaseQuery => 14,
-            MessageType::LeaseQueryDone => 15,
-            MessageType::ActiveLeaseQuery => 16,
-            MessageType::LeaseQueryStatus => 17,
-            MessageType::Tls => 18,
-            MessageType::Unknown(n) => n,
-        }
+        m.0
     }
 }
 

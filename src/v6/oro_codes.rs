@@ -7,227 +7,99 @@ use serde::{Deserialize, Serialize};
 use crate::v6::OptionCode;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum OROCode {
+#[repr(transparent)]
+pub struct OROCode(pub u16);
+
+#[allow(non_upper_case_globals)]
+impl OROCode {
     /// Optional
-    VendorOpts,
-    SipServerD,
-    SipServerA,
-    DomainNameServers,
-    DomainSearchList,
-    NisServers,
-    NispServers,
-    NisDomainName,
-    NispDomainName,
-    SntpServers,
+    pub const VendorOpts: Self = Self(17);
+    pub const SipServerD: Self = Self(21);
+    pub const SipServerA: Self = Self(22);
+    pub const DomainNameServers: Self = Self(23);
+    pub const DomainSearchList: Self = Self(24);
+    pub const NisServers: Self = Self(27);
+    pub const NispServers: Self = Self(28);
+    pub const NisDomainName: Self = Self(29);
+    pub const NispDomainName: Self = Self(30);
+    pub const SntpServers: Self = Self(31);
     /// Required for Information-request
-    InformationRefreshTime,
-    BcmcsServerD,
-    BcmcsServerA,
-    GeoconfCivic,
-    ClientFqdn,
-    PanaAgent,
-    NewPosixTimezone,
-    NewTzdbTimezone,
-    Mip6Hnidf,
-    Mip6Vdinf,
-    V6Lost,
-    CapwapAcV6,
-    Ipv6AddressMoS,
-    Ipv6FQDNMoS,
-    NtpServer,
-    V6AccessDomain,
-    SipUaCsList,
-    OptBootfileUrl,
-    OptBootfileParam,
-    Nii,
-    Geolocation,
-    AftrName,
-    ErpLocalDomainName,
-    PdExclude,
-    Mip6Idinf,
-    Mip6Udinf,
-    Mip6Hnp,
-    Mip6Haa,
-    Mip6Haf,
-    RdnssSelection,
-    KrbPrincipalName,
-    KrbRealmName,
-    KrbDefaultRealmName,
-    KrbKdc,
+    pub const InformationRefreshTime: Self = Self(32);
+    pub const BcmcsServerD: Self = Self(33);
+    pub const BcmcsServerA: Self = Self(34);
+    pub const GeoconfCivic: Self = Self(36);
+    pub const ClientFqdn: Self = Self(39);
+    pub const PanaAgent: Self = Self(40);
+    pub const NewPosixTimezone: Self = Self(41);
+    pub const NewTzdbTimezone: Self = Self(42);
+    pub const Mip6Hnidf: Self = Self(49);
+    pub const Mip6Vdinf: Self = Self(50);
+    pub const V6Lost: Self = Self(51);
+    pub const CapwapAcV6: Self = Self(52);
+    pub const Ipv6AddressMoS: Self = Self(54);
+    pub const Ipv6FQDNMoS: Self = Self(55);
+    pub const NtpServer: Self = Self(56);
+    pub const V6AccessDomain: Self = Self(57);
+    pub const SipUaCsList: Self = Self(58);
+    pub const OptBootfileUrl: Self = Self(59);
+    pub const OptBootfileParam: Self = Self(60);
+    pub const Nii: Self = Self(62);
+    pub const Geolocation: Self = Self(63);
+    pub const AftrName: Self = Self(64);
+    pub const ErpLocalDomainName: Self = Self(65);
+    pub const PdExclude: Self = Self(67);
+    pub const Mip6Idinf: Self = Self(69);
+    pub const Mip6Udinf: Self = Self(70);
+    pub const Mip6Hnp: Self = Self(71);
+    pub const Mip6Haa: Self = Self(72);
+    pub const Mip6Haf: Self = Self(73);
+    pub const RdnssSelection: Self = Self(74);
+    pub const KrbPrincipalName: Self = Self(75);
+    pub const KrbRealmName: Self = Self(76);
+    pub const KrbDefaultRealmName: Self = Self(77);
+    pub const KrbKdc: Self = Self(78);
     /// Required for Solicit
-    SolMaxRt,
+    pub const SolMaxRt: Self = Self(82);
     /// Required for Information-request
-    InfMaxRt,
-    Addrsel,
-    AddrselTable,
-    V6PcpServer,
-    Dhcp4ODhcp6Server,
-    S46ContMape,
-    S46ContMapt,
-    S46ContLw,
-    _4Rd,
-    _4RdMapRule,
-    _4RdNonMapRule,
-    DhcpCaptivePortal,
-    MplParameters,
-    S46Priority,
-    V6Prefix64,
-    Ipv6AddressANDSF,
-    /// Avalible for future codes.
-    Unknown(u16),
+    pub const InfMaxRt: Self = Self(83);
+    pub const Addrsel: Self = Self(84);
+    pub const AddrselTable: Self = Self(85);
+    pub const V6PcpServer: Self = Self(86);
+    pub const Dhcp4ODhcp6Server: Self = Self(88);
+    pub const S46ContMape: Self = Self(94);
+    pub const S46ContMapt: Self = Self(95);
+    pub const S46ContLw: Self = Self(96);
+    pub const _4Rd: Self = Self(97);
+    pub const _4RdMapRule: Self = Self(98);
+    pub const _4RdNonMapRule: Self = Self(99);
+    pub const DhcpCaptivePortal: Self = Self(103);
+    pub const MplParameters: Self = Self(104);
+    pub const S46Priority: Self = Self(111);
+    pub const V6Prefix64: Self = Self(113);
+    pub const Ipv6AddressANDSF: Self = Self(143);
 }
 
 impl From<OROCode> for u16 {
     fn from(opt: OROCode) -> Self {
-        OptionCode::from(opt).into()
+        opt.0
     }
 }
 
 // should this be a TryFrom?
 impl From<u16> for OROCode {
     fn from(opt: u16) -> Self {
-        OptionCode::from(opt)
-            .try_into()
-            .unwrap_or(OROCode::Unknown(opt))
+        OROCode(opt)
     }
 }
 
-impl TryFrom<OptionCode> for OROCode {
-    type Error = &'static str;
-    fn try_from(opt: OptionCode) -> Result<OROCode, Self::Error> {
-        match opt {
-            OptionCode::VendorOpts => Ok(OROCode::VendorOpts),
-            OptionCode::SipServerD => Ok(OROCode::SipServerD),
-            OptionCode::SipServerA => Ok(OROCode::SipServerA),
-            OptionCode::DomainNameServers => Ok(OROCode::DomainNameServers),
-            OptionCode::DomainSearchList => Ok(OROCode::DomainSearchList),
-            OptionCode::NisServers => Ok(OROCode::NisServers),
-            OptionCode::NispServers => Ok(OROCode::NispServers),
-            OptionCode::NisDomainName => Ok(OROCode::NisDomainName),
-            OptionCode::NispDomainName => Ok(OROCode::NispDomainName),
-            OptionCode::SntpServers => Ok(OROCode::SntpServers),
-            OptionCode::InformationRefreshTime => Ok(OROCode::InformationRefreshTime),
-            OptionCode::BcmcsServerD => Ok(OROCode::BcmcsServerD),
-            OptionCode::BcmcsServerA => Ok(OROCode::BcmcsServerA),
-            OptionCode::GeoconfCivic => Ok(OROCode::GeoconfCivic),
-            OptionCode::ClientFqdn => Ok(OROCode::ClientFqdn),
-            OptionCode::PanaAgent => Ok(OROCode::PanaAgent),
-            OptionCode::NewPosixTimezone => Ok(OROCode::NewPosixTimezone),
-            OptionCode::NewTzdbTimezone => Ok(OROCode::NewTzdbTimezone),
-            OptionCode::Mip6Hnidf => Ok(OROCode::Mip6Hnidf),
-            OptionCode::Mip6Vdinf => Ok(OROCode::Mip6Vdinf),
-            OptionCode::V6Lost => Ok(OROCode::V6Lost),
-            OptionCode::CapwapAcV6 => Ok(OROCode::CapwapAcV6),
-            OptionCode::Ipv6AddressMoS => Ok(OROCode::Ipv6AddressMoS),
-            OptionCode::Ipv6FQDNMoS => Ok(OROCode::Ipv6FQDNMoS),
-            OptionCode::NtpServer => Ok(OROCode::NtpServer),
-            OptionCode::V6AccessDomain => Ok(OROCode::V6AccessDomain),
-            OptionCode::SipUaCsList => Ok(OROCode::SipUaCsList),
-            OptionCode::OptBootfileUrl => Ok(OROCode::OptBootfileUrl),
-            OptionCode::OptBootfileParam => Ok(OROCode::OptBootfileParam),
-            OptionCode::Nii => Ok(OROCode::Nii),
-            OptionCode::Geolocation => Ok(OROCode::Geolocation),
-            OptionCode::AftrName => Ok(OROCode::AftrName),
-            OptionCode::ErpLocalDomainName => Ok(OROCode::ErpLocalDomainName),
-            OptionCode::PdExclude => Ok(OROCode::PdExclude),
-            OptionCode::Mip6Idinf => Ok(OROCode::Mip6Idinf),
-            OptionCode::Mip6Udinf => Ok(OROCode::Mip6Udinf),
-            OptionCode::Mip6Hnp => Ok(OROCode::Mip6Hnp),
-            OptionCode::Mip6Haa => Ok(OROCode::Mip6Haa),
-            OptionCode::Mip6Haf => Ok(OROCode::Mip6Haf),
-            OptionCode::RdnssSelection => Ok(OROCode::RdnssSelection),
-            OptionCode::KrbPrincipalName => Ok(OROCode::KrbPrincipalName),
-            OptionCode::KrbRealmName => Ok(OROCode::KrbRealmName),
-            OptionCode::KrbDefaultRealmName => Ok(OROCode::KrbDefaultRealmName),
-            OptionCode::KrbKdc => Ok(OROCode::KrbKdc),
-            OptionCode::SolMaxRt => Ok(OROCode::SolMaxRt),
-            OptionCode::InfMaxRt => Ok(OROCode::InfMaxRt),
-            OptionCode::Addrsel => Ok(OROCode::Addrsel),
-            OptionCode::AddrselTable => Ok(OROCode::AddrselTable),
-            OptionCode::V6PcpServer => Ok(OROCode::V6PcpServer),
-            OptionCode::Dhcp4ODhcp6Server => Ok(OROCode::Dhcp4ODhcp6Server),
-            OptionCode::S46ContMape => Ok(OROCode::S46ContMape),
-            OptionCode::S46ContMapt => Ok(OROCode::S46ContMapt),
-            OptionCode::S46ContLw => Ok(OROCode::S46ContLw),
-            OptionCode::_4Rd => Ok(OROCode::_4Rd),
-            OptionCode::_4RdMapRule => Ok(OROCode::_4RdMapRule),
-            OptionCode::_4RdNonMapRule => Ok(OROCode::_4RdNonMapRule),
-            OptionCode::DhcpCaptivePortal => Ok(OROCode::DhcpCaptivePortal),
-            OptionCode::MplParameters => Ok(OROCode::MplParameters),
-            OptionCode::S46Priority => Ok(OROCode::S46Priority),
-            OptionCode::V6Prefix64 => Ok(OROCode::V6Prefix64),
-            OptionCode::Ipv6AddressANDSF => Ok(OROCode::Ipv6AddressANDSF),
-            OptionCode::Unknown(u16) => Ok(OROCode::Unknown(u16)),
-            _ => Err("conversion error, is not a valid OROCode"),
-        }
+impl From<OptionCode> for OROCode {
+    fn from(opt: OptionCode) -> OROCode {
+        OROCode(opt.0)
     }
 }
 
 impl From<OROCode> for OptionCode {
     fn from(opt: OROCode) -> OptionCode {
-        match opt {
-            OROCode::VendorOpts => OptionCode::VendorOpts,
-            OROCode::SipServerD => OptionCode::SipServerD,
-            OROCode::SipServerA => OptionCode::SipServerA,
-            OROCode::DomainNameServers => OptionCode::DomainNameServers,
-            OROCode::DomainSearchList => OptionCode::DomainSearchList,
-            OROCode::NisServers => OptionCode::NisServers,
-            OROCode::NispServers => OptionCode::NispServers,
-            OROCode::NisDomainName => OptionCode::NisDomainName,
-            OROCode::NispDomainName => OptionCode::NispDomainName,
-            OROCode::SntpServers => OptionCode::SntpServers,
-            OROCode::InformationRefreshTime => OptionCode::InformationRefreshTime,
-            OROCode::BcmcsServerD => OptionCode::BcmcsServerD,
-            OROCode::BcmcsServerA => OptionCode::BcmcsServerA,
-            OROCode::GeoconfCivic => OptionCode::GeoconfCivic,
-            OROCode::ClientFqdn => OptionCode::ClientFqdn,
-            OROCode::PanaAgent => OptionCode::PanaAgent,
-            OROCode::NewPosixTimezone => OptionCode::NewPosixTimezone,
-            OROCode::NewTzdbTimezone => OptionCode::NewTzdbTimezone,
-            OROCode::Mip6Hnidf => OptionCode::Mip6Hnidf,
-            OROCode::Mip6Vdinf => OptionCode::Mip6Vdinf,
-            OROCode::V6Lost => OptionCode::V6Lost,
-            OROCode::CapwapAcV6 => OptionCode::CapwapAcV6,
-            OROCode::Ipv6AddressMoS => OptionCode::Ipv6AddressMoS,
-            OROCode::Ipv6FQDNMoS => OptionCode::Ipv6FQDNMoS,
-            OROCode::NtpServer => OptionCode::NtpServer,
-            OROCode::V6AccessDomain => OptionCode::V6AccessDomain,
-            OROCode::SipUaCsList => OptionCode::SipUaCsList,
-            OROCode::OptBootfileUrl => OptionCode::OptBootfileUrl,
-            OROCode::OptBootfileParam => OptionCode::OptBootfileParam,
-            OROCode::Nii => OptionCode::Nii,
-            OROCode::Geolocation => OptionCode::Geolocation,
-            OROCode::AftrName => OptionCode::AftrName,
-            OROCode::ErpLocalDomainName => OptionCode::ErpLocalDomainName,
-            OROCode::PdExclude => OptionCode::PdExclude,
-            OROCode::Mip6Idinf => OptionCode::Mip6Idinf,
-            OROCode::Mip6Udinf => OptionCode::Mip6Udinf,
-            OROCode::Mip6Hnp => OptionCode::Mip6Hnp,
-            OROCode::Mip6Haa => OptionCode::Mip6Haa,
-            OROCode::Mip6Haf => OptionCode::Mip6Haf,
-            OROCode::RdnssSelection => OptionCode::RdnssSelection,
-            OROCode::KrbPrincipalName => OptionCode::KrbPrincipalName,
-            OROCode::KrbRealmName => OptionCode::KrbRealmName,
-            OROCode::KrbDefaultRealmName => OptionCode::KrbDefaultRealmName,
-            OROCode::KrbKdc => OptionCode::KrbKdc,
-            OROCode::SolMaxRt => OptionCode::SolMaxRt,
-            OROCode::InfMaxRt => OptionCode::InfMaxRt,
-            OROCode::Addrsel => OptionCode::Addrsel,
-            OROCode::AddrselTable => OptionCode::AddrselTable,
-            OROCode::V6PcpServer => OptionCode::V6PcpServer,
-            OROCode::Dhcp4ODhcp6Server => OptionCode::Dhcp4ODhcp6Server,
-            OROCode::S46ContMape => OptionCode::S46ContMape,
-            OROCode::S46ContMapt => OptionCode::S46ContMapt,
-            OROCode::S46ContLw => OptionCode::S46ContLw,
-            OROCode::_4Rd => OptionCode::_4Rd,
-            OROCode::_4RdMapRule => OptionCode::_4RdMapRule,
-            OROCode::_4RdNonMapRule => OptionCode::_4RdNonMapRule,
-            OROCode::DhcpCaptivePortal => OptionCode::DhcpCaptivePortal,
-            OROCode::MplParameters => OptionCode::MplParameters,
-            OROCode::S46Priority => OptionCode::S46Priority,
-            OROCode::V6Prefix64 => OptionCode::V6Prefix64,
-            OROCode::Ipv6AddressANDSF => OptionCode::Ipv6AddressANDSF,
-            OROCode::Unknown(u16) => OptionCode::Unknown(u16),
-        }
+        OptionCode(opt.0)
     }
 }

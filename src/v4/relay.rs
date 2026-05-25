@@ -174,10 +174,10 @@ impl Decodable for RelayInfo {
                 })
             }
             // not yet implemented
-            RelayCode::Unknown(code) => {
+            code => {
                 let length = d.read_u8()?;
                 let bytes = d.read_slice(length as usize)?.to_vec();
-                Unknown(UnknownInfo { code, data: bytes })
+                Unknown(UnknownInfo { code: code.0, data: bytes })
             }
         })
     }
@@ -294,21 +294,23 @@ impl UnknownInfo {
 /// relay code, represented as a u8
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum RelayCode {
-    AgentCircuitId,
-    AgentRemoteId,
-    DocsisDeviceClass,
-    LinkSelection,
-    SubscriberId,
-    RadiusAttributes,
-    Authentication,
-    VendorSpecificInformation,
-    RelayAgentFlags,
-    ServerIdentifierOverride,
-    VirtualSubnet,
-    VirtualSubnetControl,
-    /// unknown/unimplemented message type
-    Unknown(u8),
+#[repr(transparent)]
+pub struct RelayCode(pub u8);
+
+#[allow(non_upper_case_globals)]
+impl RelayCode {
+    pub const AgentCircuitId: Self = Self(1);
+    pub const AgentRemoteId: Self = Self(2);
+    pub const DocsisDeviceClass: Self = Self(4);
+    pub const LinkSelection: Self = Self(5);
+    pub const SubscriberId: Self = Self(6);
+    pub const RadiusAttributes: Self = Self(7);
+    pub const Authentication: Self = Self(8);
+    pub const VendorSpecificInformation: Self = Self(9);
+    pub const RelayAgentFlags: Self = Self(10);
+    pub const ServerIdentifierOverride: Self = Self(11);
+    pub const VirtualSubnet: Self = Self(151);
+    pub const VirtualSubnetControl: Self = Self(152);
 }
 
 impl PartialOrd for RelayCode {
@@ -319,48 +321,18 @@ impl PartialOrd for RelayCode {
 
 impl Ord for RelayCode {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-        u8::from(*self).cmp(&u8::from(*other))
+        self.0.cmp(&other.0)
     }
 }
 
 impl From<u8> for RelayCode {
     fn from(n: u8) -> Self {
-        use RelayCode::*;
-        match n {
-            1 => AgentCircuitId,
-            2 => AgentRemoteId,
-            4 => DocsisDeviceClass,
-            5 => LinkSelection,
-            6 => SubscriberId,
-            7 => RadiusAttributes,
-            8 => Authentication,
-            9 => VendorSpecificInformation,
-            10 => RelayAgentFlags,
-            11 => ServerIdentifierOverride,
-            151 => VirtualSubnet,
-            152 => VirtualSubnetControl,
-            _ => Unknown(n),
-        }
+        Self(n)
     }
 }
 impl From<RelayCode> for u8 {
     fn from(code: RelayCode) -> Self {
-        use RelayCode as R;
-        match code {
-            R::AgentCircuitId => 1,
-            R::AgentRemoteId => 2,
-            R::DocsisDeviceClass => 4,
-            R::LinkSelection => 5,
-            R::SubscriberId => 6,
-            R::RadiusAttributes => 7,
-            R::Authentication => 8,
-            R::VendorSpecificInformation => 9,
-            R::RelayAgentFlags => 10,
-            R::ServerIdentifierOverride => 11,
-            R::VirtualSubnet => 151,
-            R::VirtualSubnetControl => 152,
-            R::Unknown(n) => n,
-        }
+        code.0
     }
 }
 
@@ -375,7 +347,7 @@ impl From<&RelayInfo> for RelayCode {
             R::SubscriberId(_) => RelayCode::SubscriberId,
             R::RelayAgentFlags(_) => RelayCode::RelayAgentFlags,
             R::ServerIdentifierOverride(_) => RelayCode::ServerIdentifierOverride,
-            R::Unknown(unknown) => RelayCode::Unknown(unknown.code),
+            R::Unknown(unknown) => RelayCode(unknown.code),
         }
     }
 }
@@ -448,7 +420,7 @@ mod tests {
     #[test]
     fn test_unknown() -> Result<()> {
         test_opt(
-            RelayInfo::Unknown(UnknownInfo::new(RelayCode::Unknown(149), vec![1, 2, 3, 4])),
+            RelayInfo::Unknown(UnknownInfo::new(RelayCode(149), vec![1, 2, 3, 4])),
             vec![149, 4, 1, 2, 3, 4],
         )?;
 
