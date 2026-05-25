@@ -66,6 +66,7 @@ impl OROCode {
     pub const AddrselTable: Self = Self(85);
     pub const V6PcpServer: Self = Self(86);
     pub const Dhcp4ODhcp6Server: Self = Self(88);
+    pub const S46Br: Self = Self(90);
     pub const S46ContMape: Self = Self(94);
     pub const S46ContMapt: Self = Self(95);
     pub const S46ContLw: Self = Self(96);
@@ -77,6 +78,75 @@ impl OROCode {
     pub const S46Priority: Self = Self(111);
     pub const V6Prefix64: Self = Self(113);
     pub const Ipv6AddressANDSF: Self = Self(143);
+
+    /// Returns `true` if this code is a known/valid ORO-requestable option.
+    pub fn is_known(self) -> bool {
+        matches!(
+            self,
+            Self::VendorOpts
+                | Self::SipServerD
+                | Self::SipServerA
+                | Self::DomainNameServers
+                | Self::DomainSearchList
+                | Self::NisServers
+                | Self::NispServers
+                | Self::NisDomainName
+                | Self::NispDomainName
+                | Self::SntpServers
+                | Self::InformationRefreshTime
+                | Self::BcmcsServerD
+                | Self::BcmcsServerA
+                | Self::GeoconfCivic
+                | Self::ClientFqdn
+                | Self::PanaAgent
+                | Self::NewPosixTimezone
+                | Self::NewTzdbTimezone
+                | Self::Mip6Hnidf
+                | Self::Mip6Vdinf
+                | Self::V6Lost
+                | Self::CapwapAcV6
+                | Self::Ipv6AddressMoS
+                | Self::Ipv6FQDNMoS
+                | Self::NtpServer
+                | Self::V6AccessDomain
+                | Self::SipUaCsList
+                | Self::OptBootfileUrl
+                | Self::OptBootfileParam
+                | Self::Nii
+                | Self::Geolocation
+                | Self::AftrName
+                | Self::ErpLocalDomainName
+                | Self::PdExclude
+                | Self::Mip6Idinf
+                | Self::Mip6Udinf
+                | Self::Mip6Hnp
+                | Self::Mip6Haa
+                | Self::Mip6Haf
+                | Self::RdnssSelection
+                | Self::KrbPrincipalName
+                | Self::KrbRealmName
+                | Self::KrbDefaultRealmName
+                | Self::KrbKdc
+                | Self::SolMaxRt
+                | Self::InfMaxRt
+                | Self::Addrsel
+                | Self::AddrselTable
+                | Self::V6PcpServer
+                | Self::Dhcp4ODhcp6Server
+                | Self::S46Br
+                | Self::S46ContMape
+                | Self::S46ContMapt
+                | Self::S46ContLw
+                | Self::_4Rd
+                | Self::_4RdMapRule
+                | Self::_4RdNonMapRule
+                | Self::DhcpCaptivePortal
+                | Self::MplParameters
+                | Self::S46Priority
+                | Self::V6Prefix64
+                | Self::Ipv6AddressANDSF
+        )
+    }
 }
 
 impl From<OROCode> for u16 {
@@ -85,16 +155,19 @@ impl From<OROCode> for u16 {
     }
 }
 
-// should this be a TryFrom?
 impl From<u16> for OROCode {
     fn from(opt: u16) -> Self {
         OROCode(opt)
     }
 }
 
-impl From<OptionCode> for OROCode {
-    fn from(opt: OptionCode) -> OROCode {
-        OROCode(opt.0)
+impl TryFrom<OptionCode> for OROCode {
+    type Error = OptionCode;
+    /// Converts an [`OptionCode`] to an [`OROCode`], returning `Err` if the
+    /// code is not a known ORO-requestable option.
+    fn try_from(opt: OptionCode) -> Result<OROCode, Self::Error> {
+        let code = OROCode(opt.0);
+        if code.is_known() { Ok(code) } else { Err(opt) }
     }
 }
 
