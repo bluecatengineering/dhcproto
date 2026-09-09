@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use alloc::{string::String, vec::Vec};
 use core::{cmp::Ordering, net::Ipv6Addr, ops::RangeInclusive};
 
-use crate::v6::{EncodeError, option_codes::OptionCode};
+use crate::v6::{EncodeError, fqdn::ClientFqdn, option_codes::OptionCode};
 use crate::{
     decoder::{Decodable, Decoder},
     encoder::{Encodable, Encoder},
@@ -159,6 +159,8 @@ pub enum DhcpOption {
     NtpServer(Vec<NtpSuboption>),
     /// 61 - <https://datatracker.ietf.org/doc/html/rfc5970#section-3.3>
     ClientArchType(Vec<Architecture>),
+    /// 39 - <https://datatracker.ietf.org/doc/html/rfc4704#section-4>
+    ClientFqdn(ClientFqdn),
 
     // SolMaxRt(u32),
     // InfMaxRt(u32),
@@ -655,6 +657,10 @@ impl Decodable for DhcpOption {
                 }
                 DhcpOption::ClientArchType(types)
             }
+            OptionCode::ClientFqdn => {
+                let mut dec = Decoder::new(decoder.read_slice(len)?);
+                DhcpOption::ClientFqdn(ClientFqdn::decode(&mut dec)?)
+            }
             // not yet implemented / unknown
             code => DhcpOption::Unknown(UnknownOption {
                 code: code.0,
@@ -860,6 +866,13 @@ impl Encodable for DhcpOption {
                     e.write_u16(ty.0)?;
                 }
             }
+            DhcpOption::ClientFqdn(fqdn) => {
+                let mut buf = Vec::new();
+                let mut fqdn_enc = Encoder::new(&mut buf);
+                fqdn.encode(&mut fqdn_enc)?;
+                e.write_u16(buf.len() as u16)?;
+                e.write_slice(&buf)?;
+            }
             DhcpOption::Unknown(UnknownOption { data, .. }) => {
                 e.write_u16(data.len() as u16)?;
                 e.write_slice(data)?;
@@ -947,6 +960,8 @@ where
 mod tests {
     use alloc::vec;
     use core::str::FromStr;
+
+    use crate::v6::fqdn::{ClientFqdn, FqdnFlags};
 
     use super::*;
     #[test]
@@ -1074,5 +1089,177 @@ mod tests {
 
         assert_eq!(opts, expected_opts);
         assert_eq!(buffer.as_slice(), raw);
+    }
+
+    fn encode_opt(opt: &DhcpOption) -> Vec<u8> {
+        let mut buf = Vec::new();
+        opt.encode(&mut Encoder::new(&mut buf)).unwrap();
+        buf
+    }
+
+    fn decode_opt(bytes: &[u8]) -> DhcpOption {
+        DhcpOption::decode(&mut Decoder::new(bytes)).unwrap()
+    }
+
+    fn roundtrip(opt: DhcpOption) {
+        let bytes = encode_opt(&opt);
+        let decoded = decode_opt(&bytes);
+        assert_eq!(opt, decoded);
+        assert_eq!(encode_opt(&decoded), bytes);
+    }
+
+    #[test]
+    fn test_client_fqdn_full_name() {
+        let name = Name::from_str("www.example.com.").unwrap();
+        assert!(name.is_fqdn());
+        let opt = DhcpOption::ClientFqdn(ClientFqdn::new(FqdnFlags::default().set_s(true), name));
+        // option code 39, length 18: flags(1) + 3www + 7example + 3com + 0
+        let expected = vec![
+            0x00, 39, 0x00, 18, 0x01, 3, b'w', b'w', b'w', 7, b'e', b'x', b'a', b'm', b'p', b'l',
+            b'e', 3, b'c', b'o', b'm', 0,
+        ];
+        assert_eq!(encode_opt(&opt), expected);
+        roundtrip(opt);
+    }
+
+    #[test]
+    fn test_client_fqdn_flags_only_empty_name() {
+        let name = Name::new();
+        assert!(!name.is_fqdn());
+        assert_eq!(name.iter().count(), 0);
+        let opt = DhcpOption::ClientFqdn(ClientFqdn::new(FqdnFlags::default().set_n(true), name));
+        // option code 39, length 1: flags only (N=1)
+        let expected = vec![0x00, 39, 0x00, 1, 0x04];
+        assert_eq!(encode_opt(&opt), expected);
+        let decoded = decode_opt(&expected);
+        match &decoded {
+            DhcpOption::ClientFqdn(fqdn) => {
+                assert!(fqdn.flags().n());
+                assert!(!fqdn.flags().s());
+                assert!(!fqdn.domain().is_fqdn());
+                assert_eq!(fqdn.domain().iter().count(), 0);
+            }
+            other => panic!("expected ClientFqdn, got {other:?}"),
+        }
+        roundtrip(opt);
+    }
+
+    #[test]
+    fn test_client_fqdn_partial_name() {
+        // a single-label partial name is not an FQDN and must not get a trailing 0
+        let name = Name::from_str("host").unwrap();
+        assert!(!name.is_fqdn());
+        let opt = DhcpOption::ClientFqdn(ClientFqdn::new(FqdnFlags::default(), name));
+        let expected = vec![0x00, 39, 0x00, 6, 0x00, 4, b'h', b'o', b's', b't'];
+        assert_eq!(encode_opt(&opt), expected);
+        let decoded = decode_opt(&expected);
+        match &decoded {
+            DhcpOption::ClientFqdn(fqdn) => {
+                assert!(!fqdn.domain().is_fqdn());
+                assert_eq!(fqdn.domain().to_ascii(), "host");
+            }
+            other => panic!("expected ClientFqdn, got {other:?}"),
+        }
+        roundtrip(opt);
+    }
+
+    #[test]
+    fn test_client_fqdn_root_name() {
+        let name = Name::root();
+        assert!(name.is_fqdn());
+        let opt = DhcpOption::ClientFqdn(ClientFqdn::new(FqdnFlags::default().set_o(true), name));
+        // flags + terminating 0
+        let expected = vec![0x00, 39, 0x00, 2, 0x02, 0x00];
+        assert_eq!(encode_opt(&opt), expected);
+        roundtrip(opt);
+    }
+
+    #[test]
+    fn test_client_fqdn_rejects_compression_pointer() {
+        // 0xC0 0x0C would be a DNS compression pointer; must not be read as a label
+        let raw = vec![0x00, 39, 0x00, 3, 0x00, 0xC0, 0x0C];
+        let err = DhcpOption::decode(&mut Decoder::new(&raw)).unwrap_err();
+        match err {
+            crate::error::DecodeError::InvalidData(code, _) => assert_eq!(code, 0xC0),
+            other => panic!("expected InvalidData, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_client_fqdn_multi_label_partial_name() {
+        let name = Name::from_str("host.example").unwrap();
+        assert!(!name.is_fqdn());
+        let opt = DhcpOption::ClientFqdn(ClientFqdn::new(FqdnFlags::default().set_s(true), name));
+        // flags + 4host + 7example, no trailing 0
+        let expected = vec![
+            0x00, 39, 0x00, 14, 0x01, 4, b'h', b'o', b's', b't', 7, b'e', b'x', b'a', b'm', b'p',
+            b'l', b'e',
+        ];
+        assert_eq!(encode_opt(&opt), expected);
+        let decoded = decode_opt(&expected);
+        match &decoded {
+            DhcpOption::ClientFqdn(fqdn) => {
+                assert!(!fqdn.domain().is_fqdn());
+                assert_eq!(fqdn.domain().to_ascii(), "host.example");
+                assert!(fqdn.flags().s());
+            }
+            other => panic!("expected ClientFqdn, got {other:?}"),
+        }
+        roundtrip(opt);
+    }
+
+    #[test]
+    fn test_client_fqdn_in_message() {
+        use crate::v6::{Encodable, Message, MessageType};
+
+        let mut msg = Message::new(MessageType::Request);
+        msg.set_xid([0x11, 0x22, 0x33]);
+        msg.opts_mut()
+            .insert(DhcpOption::ClientFqdn(ClientFqdn::new(
+                FqdnFlags::default().set_n(true),
+                Name::from_str("node").unwrap(),
+            )));
+
+        let bytes = msg.to_vec().unwrap();
+        let decoded = Message::decode(&mut Decoder::new(&bytes)).unwrap();
+        assert_eq!(decoded.msg_type(), MessageType::Request);
+        match decoded.opts().get(OptionCode::ClientFqdn) {
+            Some(DhcpOption::ClientFqdn(fqdn)) => {
+                assert!(fqdn.flags().n());
+                assert!(!fqdn.flags().s());
+                assert!(!fqdn.domain().is_fqdn());
+                assert_eq!(fqdn.domain().to_ascii(), "node");
+            }
+            other => panic!("expected ClientFqdn in message, got {other:?}"),
+        }
+        assert_eq!(decoded, msg);
+    }
+
+    #[test]
+    fn test_client_fqdn_nos_bits_on_wire() {
+        // S=1 O=1 N=0 → 0x03; then N=1 must clear S → 0x06 (N|O)
+        let flags = FqdnFlags::default().set_s(true).set_o(true).set_n(true);
+        assert!(flags.n() && flags.o() && !flags.s());
+        let opt = DhcpOption::ClientFqdn(ClientFqdn::new(flags, Name::new()));
+        assert_eq!(encode_opt(&opt), vec![0x00, 39, 0x00, 1, 0x06]);
+    }
+
+    #[test]
+    fn test_client_fqdn_truncated_label_is_error() {
+        // label length 4 but only 2 bytes remain in the option
+        let raw = vec![0x00, 39, 0x00, 4, 0x00, 4, b'a', b'b'];
+        assert!(DhcpOption::decode(&mut Decoder::new(&raw)).is_err());
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_client_fqdn_serde() {
+        let opt = DhcpOption::ClientFqdn(ClientFqdn::new(
+            FqdnFlags::default().set_o(true),
+            Name::from_str("www.example.com.").unwrap(),
+        ));
+        let json = serde_json::to_string(&opt).unwrap();
+        let back: DhcpOption = serde_json::from_str(&json).unwrap();
+        assert_eq!(opt, back);
     }
 }

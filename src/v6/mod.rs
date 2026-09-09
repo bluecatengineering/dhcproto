@@ -53,6 +53,7 @@
 //! ```
 //!
 pub mod duid;
+pub mod fqdn;
 mod htype;
 mod option_codes;
 mod options;
