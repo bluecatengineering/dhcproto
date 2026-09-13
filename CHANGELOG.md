@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.16.0]
 
+### Added
+
+- v6 option 39 `ClientFqdn` from RFC 4704, with a dedicated `v6::fqdn` module. Flags are `N|O|S` only (no v4 `E` bit or RCODE fields). Encode/decode handles fully-qualified, partial, and empty (flags-only) names without DNS compression.
+
 ### Changed
 
 - **breaking** All remaining numeric enum types have been converted to `#[repr(transparent)]` newtype structs with `pub const` associated constants, matching the pattern introduced for `Architecture` in 0.15.0. Affected types:
