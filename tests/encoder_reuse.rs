@@ -50,11 +50,15 @@ fn reused_buffers_encode_complete_v4_and_v6_messages() {
                 v4_message
             );
 
+            v6_message.opts_mut().remove(v6::OptionCode::InterfaceId);
             v6_message
                 .opts_mut()
                 .insert(v6::DhcpOption::InterfaceId(vec![42; data_len]));
             let mut encoder = Encoder::new(&mut buffer);
             v6_message.encode(&mut encoder).unwrap();
+            // Four header bytes, an eight-byte ClientId option and the
+            // InterfaceId option's four-byte header plus its current payload.
+            assert_eq!(encoder.len_filled(), 16 + data_len);
             assert_eq!(encoder.buffer_filled(), v6_message.to_vec().unwrap());
             assert_eq!(
                 v6::Message::decode(&mut Decoder::new(encoder.buffer_filled())).unwrap(),
