@@ -233,6 +233,18 @@ fn decode_data(decoder: &'_ mut Decoder<'_>) -> Vec<Vec<u8>> {
     data
 }
 
+// Include the two-byte length of every class and any option-specific prefix.
+fn class_data_len(data: &[Vec<u8>], prefix_len: usize) -> EncodeResult<u16> {
+    let len = data.iter().try_fold(prefix_len, |len, value| {
+        len.checked_add(2)
+            .and_then(|len| len.checked_add(value.len()))
+            .ok_or(EncodeError::AddOverflow)
+    })?;
+    u16::try_from(len).map_err(|_| EncodeError::StringSizeTooBig {
+        len: u16::MAX as usize,
+    })
+}
+
 /// Server Unicast
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -772,14 +784,14 @@ impl Encodable for DhcpOption {
                 e.write_u16(0)?;
             }
             DhcpOption::UserClass(UserClass { data }) => {
-                e.write_u16(data.len() as u16)?;
+                e.write_u16(class_data_len(data, 0)?)?;
                 for s in data {
                     e.write_u16(s.len() as u16)?;
                     e.write_slice(s)?;
                 }
             }
             DhcpOption::VendorClass(VendorClass { num, data }) => {
-                e.write_u16(4 + data.len() as u16)?;
+                e.write_u16(class_data_len(data, 4)?)?;
                 e.write_u32(*num)?;
                 for s in data {
                     e.write_u16(s.len() as u16)?;
