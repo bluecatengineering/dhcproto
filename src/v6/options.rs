@@ -122,7 +122,7 @@ pub enum DhcpOption {
     /// 7 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.8>
     Preference(u8),
     /// 8 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.9>
-    /// Elapsed time in millis
+    /// Elapsed time in centiseconds (10 ms resolution)
     ElapsedTime(u16),
     /// 9 - <https://datatracker.ietf.org/doc/html/rfc8415#section-21.10>
     RelayMsg(RelayMessage),

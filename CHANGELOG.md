@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - v6 clientfqdn from [RFC 4704](https://datatracker.ietf.org/doc/html/rfc4704>)
 
+### Fixed
+
+- v6 documentation for `ElapsedTime`. It was documented incorrectly as milliseconds, although [RFC 8415](https://www.rfc-editor.org/rfc/rfc8415.html#section-21.9) specifies centiseconds.
+
 ## [0.16.0]
 
 ### Added
