@@ -55,53 +55,21 @@ impl<'a> Encoder<'a> {
     /// Return:
     ///     number of bytes written
     pub fn write_slice(&mut self, bytes: &[u8]) -> EncodeResult<()> {
-        let additional = bytes.len();
-        // space already reserved, we may not need this
-        if self.offset + additional <= self.buffer.len() {
-            // if self.offset == self.buffer.len() indexing can panic
-            for (byte, b) in self.buffer[self.offset..].iter_mut().zip(bytes.iter()) {
-                *byte = *b;
-            }
-        } else {
-            let expected_len = self.buffer.len() + additional;
-            self.buffer.reserve(additional);
-            self.buffer.extend_from_slice(bytes);
-
-            debug_assert!(self.buffer.len() == expected_len);
-        }
-
-        let index = self
+        let end = self
             .offset
-            .checked_add(additional)
+            .checked_add(bytes.len())
             .ok_or(EncodeError::AddOverflow)?;
-        self.offset = index;
+        if end > self.buffer.len() {
+            self.buffer.resize(end, 0);
+        }
+        self.buffer[self.offset..end].copy_from_slice(bytes);
+        self.offset = end;
         Ok(())
     }
 
     /// Write const number of bytes to buffer
     pub fn write<const N: usize>(&mut self, bytes: [u8; N]) -> EncodeResult<()> {
-        // TODO: refactor this and above method?
-        // only difference is zip & extend
-        let additional = bytes.len();
-        // space already reserved, we may not need this
-        if self.offset + additional <= self.buffer.len() {
-            // if self.offset == self.buffer.len() indexing can panic
-            for (byte, b) in self.buffer[self.offset..].iter_mut().zip(bytes) {
-                *byte = b;
-            }
-        } else {
-            let expected_len = self.buffer.len() + additional;
-            self.buffer.reserve(additional);
-            self.buffer.extend(bytes);
-            debug_assert!(self.buffer.len() == expected_len);
-        }
-
-        let index = self
-            .offset
-            .checked_add(additional)
-            .ok_or(EncodeError::AddOverflow)?;
-        self.offset = index;
-        Ok(())
+        self.write_slice(&bytes)
     }
 
     /// write a u8
