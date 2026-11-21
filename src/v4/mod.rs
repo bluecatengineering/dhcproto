@@ -285,8 +285,13 @@ impl Message {
     }
 
     /// Get the message's chaddr.
+    ///
+    /// `hlen` arrives from the wire and can name a length larger than
+    /// `chaddr` can hold: it is a `u8`, while RFC 2131 fixes `chaddr` at
+    /// 16 octets. The length is therefore clamped to the field rather
+    /// than used to index it.
     pub fn chaddr(&self) -> &[u8] {
-        &self.chaddr[..(self.hlen as usize)]
+        &self.chaddr[..(self.hlen as usize).min(self.chaddr.len())]
     }
 
     /// Set the message's chaddr. `chaddr` can only up to 16 bytes in length
@@ -581,6 +586,20 @@ mod tests {
         let res = Message::decode(&mut Decoder::new(&buf))?;
         // check Messages are equal after decoding/encoding
         assert_eq!(msg, res);
+        Ok(())
+    }
+
+    #[test]
+    fn chaddr_is_clamped_to_the_field() -> Result<()> {
+        // hlen is a wire byte and can claim more than the 16 octets
+        // chaddr holds. Such a message still decodes, so the accessor
+        // is where the length has to be handled.
+        let mut input = discover();
+        input[2] = 0xff;
+        let msg = Message::decode(&mut Decoder::new(&input))?;
+        assert_eq!(msg.hlen(), 0xff);
+        assert_eq!(msg.chaddr().len(), 16);
+        assert_eq!(&msg.chaddr()[..6], &[0xde, 0xad, 0xc0, 0xde, 0xca, 0xfe]);
         Ok(())
     }
 

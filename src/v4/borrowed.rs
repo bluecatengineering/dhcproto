@@ -88,8 +88,13 @@ impl<'a> Message<'a> {
     }
 
     /// chaddr
+    ///
+    /// As in the owned `Message`: `hlen` is a wire byte and `chaddr` is a
+    /// fixed 16 octets, so a larger `hlen` must not reach past the field
+    /// into `sname`, `file` or the options.
     pub fn chaddr(&self) -> &'a [u8] {
-        &self.buffer[28..28 + self.hlen() as usize]
+        let len = (self.hlen() as usize).min(16);
+        &self.buffer[28..28 + len]
     }
 
     // For variable-length fields, we can return slices
@@ -270,6 +275,30 @@ mod tests {
             0, // file: "mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}mnopqrstuvwxyz{|}m",
             99, 130, 83, 99, // magic cookie
         ]
+    }
+
+    #[test]
+    fn chaddr_is_clamped_to_the_field() {
+        // An hlen larger than the 16 octets chaddr holds must not reach
+        // past the field into sname, file or the options, and must not
+        // panic on a buffer too short to reach that far either.
+        let mut buf = bootreq();
+        buf[2] = 0xff;
+        let msg = Message::new(&buf).unwrap();
+        assert_eq!(msg.hlen(), 0xff);
+        assert_eq!(msg.chaddr().len(), 16);
+        assert_eq!(msg.chaddr(), &buf[28..44]);
+
+        // The same message with options appended, where an out-of-field
+        // read would have stayed in bounds and quietly returned the
+        // wrong bytes rather than panicking.
+        let mut padded = bootreq();
+        padded[2] = 0xff;
+        padded.extend_from_slice(&[53, 1, 1, 255]);
+        padded.resize(300, 0);
+        let msg = Message::new(&padded).unwrap();
+        assert_eq!(msg.chaddr().len(), 16);
+        assert_eq!(msg.chaddr(), &padded[28..44]);
     }
 
     #[test]
