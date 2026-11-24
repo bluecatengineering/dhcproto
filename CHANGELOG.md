@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+### Fixed
+
+- `v4::Message::chaddr()` and `v4::borrowed::Message::chaddr()` no longer use the packet's `hlen` byte to index the fixed 16-octet `chaddr` field. A message whose `hlen` exceeded 16 decoded successfully and then panicked in the accessor; in the borrowed case, on a buffer long enough to absorb the over-long slice, it instead returned bytes from `sname`, `file` and the options as the client's hardware address. The length is now clamped to the field in both.
+
 ### Added
 
 - v6 clientfqdn from [RFC 4704](https://datatracker.ietf.org/doc/html/rfc4704>)
